@@ -12,7 +12,7 @@ DeepSeek Harness 的轻量 Tauri 2 桌面壳。它使用系统 WebView，不携�
 ## 吉祥物
 
 <p align="center">
-  <img src="assets/dsh-desk-whale-girl-grok-friendly-v2.png" width="420" alt="Friendly DSH Desk anthropomorphic anime whale navigator mascot generated with Grok Imagine Image 2.0">
+  <img src="assets/dsh-desk-whale-girl-grok-pearl-v3.png" width="420" alt="Friendly DSH Desk anime whale navigator mascot in a pearl couture outfit generated with Grok Imagine Image 2.0">
 </p>
 
 鲸鱼娘是 DSH Desk 的副吉祥物与深海导航员；应用主图标仍使用更适合小尺寸显示的小鲸鱼形象。
