@@ -104,7 +104,7 @@ jobs:
             src-tauri/target/release/bundle/**/*.AppImage
             src-tauri/target/release/bundle/**/*.deb
       - name: Upload draft release assets
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           draft: true
           fail_on_unmatched_files: false
