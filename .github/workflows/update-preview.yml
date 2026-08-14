@@ -2,6 +2,9 @@ name: Update-capable unsigned preview
 
 on:
   workflow_dispatch:
+  push:
+    branches: [feat/automatic-updates]
+    paths: [.github/workflows/update-preview.yml]
 
 permissions:
   contents: write
