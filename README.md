@@ -60,11 +60,11 @@ Release 工作流缺少生产证书时会直接失败，不会把未签名资产
 
 1. 从 [`v0.1.0-alpha.1` Release](https://github.com/majiayu000/dsh-desk/releases/tag/v0.1.0-alpha.1) 下载 macOS Apple Silicon 安装包。
 2. 安装并启动 DSH Desk；应用自动验证并启动内置 Harness。
-3. 在官方 Harness 首次配置中选择模型、填写凭证，然后发送第一条任务。
+3. 官方 Harness 首次启动弹窗会要求配置可用模型；填写 API Key 并点击“保存并继续”，即可发送第一条任务。
 
 预览版 macOS 用户若遇到 Gatekeeper 拦截，可在 Finder 中右键应用并选择“打开”。正式签名版发布后会删除这一步。
 
-DSH Desk 不读取模型 API Key；当前凭据继续由上游 Harness provider 管理。其安全边界见[桌面架构](docs/desktop-architecture.md)。
+DSH Desk 不读取或保存模型 API Key；首次启动弹窗通过 Harness 官方只写 `credentials.set` 接口保存凭据，`settings.yaml` 不包含 Key。其安全边界见[桌面架构](docs/desktop-architecture.md)。
 
 ## 当前限制
 

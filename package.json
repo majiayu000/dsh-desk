@@ -28,6 +28,7 @@
     "check": "pnpm build && cargo check --manifest-path src-tauri/Cargo.toml",
     "test:rust": "cargo test --manifest-path src-tauri/Cargo.toml",
     "test:harness-contract": "node scripts/test-harness-contract.mjs",
+    "test:onboarding-contract": "node scripts/test-onboarding-contract.mjs",
     "test:packaged-runtime": "node scripts/test-harness-contract.mjs --runtime-root resources/runtime",
     "test:plugin-parity": "node scripts/test-plugin-parity.mjs",
     "test:plugin-template": "node scripts/test-plugin-template.mjs",

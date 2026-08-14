@@ -49,6 +49,8 @@ jobs:
         run: pnpm test:cross-device
       - name: Verify development Harness contract
         run: pnpm test:harness-contract
+      - name: Verify first-run model onboarding contract
+        run: pnpm test:onboarding-contract
       - name: Assemble fixed offline runtime
         run: pnpm prepare:runtime
       - name: Verify packaged runtime contract

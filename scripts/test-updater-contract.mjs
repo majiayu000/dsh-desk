@@ -1,15 +1,9 @@
-import { readFileSync, readdirSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import { resolve } from "node:path";
+import { assertContract as assert, createContractReader } from "./lib/contract.mjs";
 
 const root = resolve(import.meta.dirname, "..");
-
-function read(path) {
-  return readFileSync(resolve(root, path), "utf8");
-}
-
-function assert(condition, message) {
-  if (!condition) throw new Error(message);
-}
+const read = createContractReader(root);
 
 const packageJson = JSON.parse(read("package.json"));
 const tauriConfig = JSON.parse(read("src-tauri/tauri.conf.json"));
