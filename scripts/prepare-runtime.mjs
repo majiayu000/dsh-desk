@@ -69,6 +69,22 @@ function makeSymlinksPortable(root, sourceRoot, destinationRoot) {
   }
 }
 
+function pruneIncompatibleNativeVariants(modulesRoot) {
+  if (process.platform !== "linux" || process.arch !== "x64") return [];
+
+  const koffiRoot = join(modulesRoot, "@koromix", "koffi-linux-x64");
+  if (!existsSync(koffiRoot)) return [];
+  const glibcBinary = join(koffiRoot, "linux_x64", "koffi.node");
+  if (!existsSync(glibcBinary)) {
+    throw new Error(`glibc Koffi binary missing from Linux runtime: ${glibcBinary}`);
+  }
+
+  const muslVariant = join(koffiRoot, "musl_x64");
+  if (!existsSync(muslVariant)) return [];
+  rmSync(muslVariant, { recursive: true, force: true });
+  return [relative(modulesRoot, muslVariant).split(sep).join("/")];
+}
+
 try {
   const pnpmCli = process.env.npm_execpath;
   if (!pnpmCli || !existsSync(pnpmCli)) {
@@ -112,6 +128,7 @@ try {
     recursive: true,
   });
   makeSymlinksPortable(bundledModules, realpathSync(deployedModules), bundledModules);
+  const prunedNativeVariants = pruneIncompatibleNativeVariants(bundledModules);
 
   const bundledNode = process.platform === "win32"
     ? join(runtimeRoot, "node", "node.exe")
@@ -148,6 +165,7 @@ try {
       platform: platformKey,
       node: nodeVersion,
       harness: packageJson.dependencies["@deepseek-ai/dsh"],
+      prunedNativeVariants,
     }, null, 2)}\n`,
   );
 

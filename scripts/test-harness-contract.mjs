@@ -1,5 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, join, resolve } from "node:path";
 import { createInterface } from "node:readline";
@@ -44,6 +44,25 @@ function verifyVersion() {
   const actualVersion = result.stdout.trim();
   if (actualVersion !== expectedVersion) {
     fail(`package.json pins ${expectedVersion}, executable reports ${actualVersion}`);
+  }
+}
+
+function verifyPackagedNativeVariants() {
+  if (!runtimeRoot) return;
+  const manifest = JSON.parse(readFileSync(join(runtimeRoot, "runtime-manifest.json"), "utf8"));
+  if (process.platform !== "linux" || process.arch !== "x64") return;
+
+  const koffiRoot = join(runtimeRoot, "node_modules", "@koromix", "koffi-linux-x64");
+  if (!existsSync(koffiRoot)) return;
+  const muslVariant = "@koromix/koffi-linux-x64/musl_x64";
+  if (!manifest.prunedNativeVariants?.includes(muslVariant)) {
+    fail(`runtime manifest does not record pruned native variant ${muslVariant}`);
+  }
+  if (existsSync(join(koffiRoot, "musl_x64"))) {
+    fail("glibc runtime still contains the incompatible Koffi musl binary");
+  }
+  if (!existsSync(join(koffiRoot, "linux_x64", "koffi.node"))) {
+    fail("glibc runtime is missing the required Koffi binary");
   }
 }
 
@@ -123,6 +142,7 @@ async function waitForHealthyUrl(child) {
 
 let child;
 try {
+  verifyPackagedNativeVariants();
   verifyVersion();
   child = spawn(node, [entry, "web", "--host", "127.0.0.1", "--port", "0"], {
     cwd: projectRoot,
