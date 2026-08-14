@@ -6,6 +6,12 @@ use tauri_plugin_updater::UpdaterExt;
 
 use crate::runtime_supervisor::RuntimeHandle;
 
+#[derive(Debug, PartialEq, Eq)]
+enum InstallAfterShutdownError {
+    Shutdown(String),
+    Install(String),
+}
+
 #[derive(Default)]
 pub struct UpdateCoordinator {
     checking: AtomicBool,
@@ -90,21 +96,34 @@ async fn check_and_maybe_install(app: &AppHandle, interactive: bool) -> Result<(
         .map_err(|error| format!("更新包下载或签名校验失败：{error}"))?;
 
     let runtime = app.state::<RuntimeHandle>().inner().clone();
-    tauri::async_runtime::spawn_blocking(move || runtime.shutdown_blocking())
+    let shutdown = tauri::async_runtime::spawn_blocking(move || runtime.shutdown_blocking())
         .await
-        .map_err(|error| format!("停止 DeepSeek Harness 时发生内部错误：{error}"))?
-        .map_err(|error| format!("无法安全停止 DeepSeek Harness：{error}"))?;
+        .map_err(|error| format!("停止 DeepSeek Harness 时发生内部错误：{error}"))?;
 
-    if let Err(error) = update.install(bytes) {
-        show_error(
-            app,
-            "安装更新失败",
-            &format!("安装更新时发生错误：{error}\n\n应用将重新启动当前版本。"),
-        );
-        app.restart();
+    match install_after_shutdown(shutdown, || {
+        update.install(bytes).map_err(|error| error.to_string())
+    }) {
+        Ok(()) => app.restart(),
+        Err(InstallAfterShutdownError::Shutdown(error)) => {
+            return Err(format!("无法安全停止 DeepSeek Harness：{error}"));
+        }
+        Err(InstallAfterShutdownError::Install(error)) => {
+            show_error(
+                app,
+                "安装更新失败",
+                &format!("安装更新时发生错误：{error}\n\n应用将重新启动当前版本。"),
+            );
+            app.restart();
+        }
     }
+}
 
-    app.restart();
+fn install_after_shutdown(
+    shutdown: Result<(), String>,
+    install: impl FnOnce() -> Result<(), String>,
+) -> Result<(), InstallAfterShutdownError> {
+    shutdown.map_err(InstallAfterShutdownError::Shutdown)?;
+    install().map_err(InstallAfterShutdownError::Install)
 }
 
 fn show_info(app: &AppHandle, title: &str, message: &str) {
@@ -125,7 +144,9 @@ fn show_error(app: &AppHandle, title: &str, message: &str) {
 
 #[cfg(test)]
 mod tests {
-    use super::UpdateCoordinator;
+    use std::cell::Cell;
+
+    use super::{InstallAfterShutdownError, UpdateCoordinator, install_after_shutdown};
 
     #[test]
     fn coordinator_allows_only_one_check_at_a_time() {
@@ -136,5 +157,41 @@ mod tests {
 
         coordinator.finish();
         assert!(coordinator.begin());
+    }
+
+    #[test]
+    fn shutdown_rejection_prevents_installation() {
+        let installed = Cell::new(false);
+
+        let result = install_after_shutdown(Err("still running".to_string()), || {
+            installed.set(true);
+            Ok(())
+        });
+
+        assert_eq!(
+            result,
+            Err(InstallAfterShutdownError::Shutdown(
+                "still running".to_string()
+            ))
+        );
+        assert!(!installed.get());
+    }
+
+    #[test]
+    fn install_runs_only_after_confirmed_shutdown() {
+        let installed = Cell::new(false);
+
+        let result = install_after_shutdown(Ok(()), || {
+            installed.set(true);
+            Err("installer failed".to_string())
+        });
+
+        assert_eq!(
+            result,
+            Err(InstallAfterShutdownError::Install(
+                "installer failed".to_string()
+            ))
+        );
+        assert!(installed.get());
     }
 }

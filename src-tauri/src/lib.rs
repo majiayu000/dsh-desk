@@ -1,4 +1,5 @@
 mod plugin_manager;
+mod process_termination;
 mod runtime_supervisor;
 mod security_policy;
 mod updater;

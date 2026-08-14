@@ -53,9 +53,14 @@ try {
     "--test",
     "updater_signing",
     "configured_public_key_verifies_the_release_signing_key",
+    "--",
+    "--ignored",
   ], {
     DSH_UPDATER_TEST_PAYLOAD: payload,
     DSH_UPDATER_TEST_SIGNATURE: signature,
+    TAURI_SIGNING_PRIVATE_KEY: undefined,
+    TAURI_SIGNING_PRIVATE_KEY_PATH: undefined,
+    TAURI_SIGNING_PRIVATE_KEY_PASSWORD: undefined,
   });
   console.log("Updater release private key matches the configured public key.");
 } finally {

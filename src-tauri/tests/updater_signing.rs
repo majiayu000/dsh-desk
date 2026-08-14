@@ -4,10 +4,20 @@ use base64::{Engine, engine::general_purpose::STANDARD};
 use minisign_verify::{PublicKey, Signature};
 
 #[test]
+#[ignore = "requires release signing secrets and is run by pnpm check:updater-key"]
 fn configured_public_key_verifies_the_release_signing_key() {
-    let Ok(payload_path) = env::var("DSH_UPDATER_TEST_PAYLOAD") else {
-        return;
-    };
+    for name in [
+        "TAURI_SIGNING_PRIVATE_KEY",
+        "TAURI_SIGNING_PRIVATE_KEY_PATH",
+        "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
+    ] {
+        assert!(
+            env::var_os(name).is_none(),
+            "{name} must not be exposed to Cargo tests"
+        );
+    }
+    let payload_path = env::var("DSH_UPDATER_TEST_PAYLOAD")
+        .expect("DSH_UPDATER_TEST_PAYLOAD is required for the release key gate");
     let signature_path = env::var("DSH_UPDATER_TEST_SIGNATURE")
         .expect("DSH_UPDATER_TEST_SIGNATURE must accompany the updater test payload");
 
