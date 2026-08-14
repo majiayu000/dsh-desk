@@ -9,6 +9,14 @@ DeepSeek Harness 的轻量 Tauri 2 桌面壳。它使用系统 WebView，不携�
 > [!IMPORTANT]
 > DSH Desk 是社区项目，并非 DeepSeek 官方产品，也不代表或隶属于 DeepSeek。DeepSeek Harness 及相关名称、商标和代码归其各自权利人所有。
 
+## 吉祥物
+
+<p align="center">
+  <img src="assets/dsh-desk-whale-girl-v1.png" width="420" alt="DSH Desk anthropomorphic anime whale navigator mascot">
+</p>
+
+鲸鱼娘是 DSH Desk 的副吉祥物与深海导航员；应用主图标仍使用更适合小尺寸显示的小鲸鱼形象。
+
 ## 当前能力
 
 - Tauri 2 原生窗口与启动/失败恢复页
