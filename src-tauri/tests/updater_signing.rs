@@ -47,4 +47,13 @@ fn configured_public_key_verifies_the_release_signing_key() {
     public_key
         .verify(&payload, &signature, false)
         .expect("release private key does not match the updater public key");
+
+    let mut tampered_payload = payload;
+    tampered_payload[0] ^= 1;
+    assert!(
+        public_key
+            .verify(&tampered_payload, &signature, false)
+            .is_err(),
+        "the updater must reject a modified package"
+    );
 }

@@ -97,4 +97,39 @@ assert(
   "Preview artifact upload action must be pinned to a reviewed commit",
 );
 
+const updatePreviewConfig = JSON.parse(read("src-tauri/tauri.update-preview.json"));
+assert(
+  updatePreviewConfig.bundle?.createUpdaterArtifacts === true,
+  "Update previews must create independently signed updater artifacts",
+);
+assert(
+  updatePreviewConfig.plugins?.updater?.endpoints?.[0] ===
+    "https://github.com/majiayu000/dsh-desk/releases/download/preview-channel/latest.json",
+  "Update previews must use the isolated preview channel",
+);
+
+const updatePreviewWorkflow = read(".github/workflows/update-preview.yml");
+for (const token of [
+  "workflow_dispatch:",
+  "max-parallel: 1",
+  "preview-v__VERSION__",
+  "src-tauri/tauri.update-preview.json",
+  "pnpm check:updater-key",
+  "node scripts/validate-update-manifest.mjs",
+  "tag_name: preview-channel",
+  "overwrite_files: true",
+]) {
+  assert(updatePreviewWorkflow.includes(token), `Update preview workflow is missing ${token}`);
+}
+assert(
+  !updatePreviewWorkflow.includes("APPLE_CERTIFICATE") &&
+    !updatePreviewWorkflow.includes("WINDOWS_CERTIFICATE"),
+  "Update previews must not pretend to use unavailable OS signing identities",
+);
+assert(
+  !updatePreviewWorkflow.includes("uses: tauri-apps/tauri-action@v1") &&
+    !updatePreviewWorkflow.includes("uses: softprops/action-gh-release@v2"),
+  "Update preview publishing actions must be pinned to reviewed commits",
+);
+
 console.log("Updater configuration, signing, release, and capability contracts passed.");
