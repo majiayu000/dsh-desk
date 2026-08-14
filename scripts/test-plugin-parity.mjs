@@ -50,6 +50,28 @@ function profileFile(home, name) {
   return readFileSync(join(home, "profiles", "web", name), "utf8");
 }
 
+function normalizeLockfileImporter(value) {
+  const lines = value.replaceAll("\r\n", "\n").split("\n");
+  const importersIndex = lines.indexOf("importers:");
+  if (importersIndex === -1) {
+    throw new Error("pnpm-lock.yaml does not contain an importers section");
+  }
+
+  const importerIndex = lines.findIndex(
+    (line, index) => index > importersIndex && /^  \S.*:$/.test(line),
+  );
+  if (importerIndex === -1) {
+    return lines.join("\n");
+  }
+
+  // On Windows, pnpm can make the importer key relative to a workspace on a
+  // different drive, which embeds each temporary profile's directory name.
+  // The importer location is expected to differ; its complete dependency tree
+  // below this key must still match byte-for-byte.
+  lines[importerIndex] = "  <profile-importer>:";
+  return lines.join("\n");
+}
+
 function assertEqual(label, left, right) {
   if (left !== right) {
     const leftLines = left.replaceAll("\r\n", "\n").split("\n");
@@ -91,8 +113,8 @@ try {
   );
   assertEqual(
     "pnpm-lock.yaml after add",
-    profileFile(referenceHome, "pnpm-lock.yaml"),
-    profileFile(desktopHome, "pnpm-lock.yaml"),
+    normalizeLockfileImporter(profileFile(referenceHome, "pnpm-lock.yaml")),
+    normalizeLockfileImporter(profileFile(desktopHome, "pnpm-lock.yaml")),
   );
   assertEqual(
     "composed config after add",
@@ -112,8 +134,8 @@ try {
   );
   assertEqual(
     "pnpm-lock.yaml after update",
-    profileFile(referenceHome, "pnpm-lock.yaml"),
-    profileFile(desktopHome, "pnpm-lock.yaml"),
+    normalizeLockfileImporter(profileFile(referenceHome, "pnpm-lock.yaml")),
+    normalizeLockfileImporter(profileFile(desktopHome, "pnpm-lock.yaml")),
   );
 
   for (const [runtime, home] of [[development, referenceHome], [packaged, desktopHome]]) {
@@ -126,8 +148,8 @@ try {
   );
   assertEqual(
     "pnpm-lock.yaml after remove",
-    profileFile(referenceHome, "pnpm-lock.yaml"),
-    profileFile(desktopHome, "pnpm-lock.yaml"),
+    normalizeLockfileImporter(profileFile(referenceHome, "pnpm-lock.yaml")),
+    normalizeLockfileImporter(profileFile(desktopHome, "pnpm-lock.yaml")),
   );
 
   console.log("Plugin parity verified: add, why, update, dump-config, and remove match original dsh.");
