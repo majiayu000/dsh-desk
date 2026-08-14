@@ -51,3 +51,5 @@ jobs:
         run: pnpm test:packaged-runtime
       - name: Verify plugin parity
         run: pnpm test:plugin-parity
+      - name: Verify plugin developer template
+        run: pnpm test:plugin-template

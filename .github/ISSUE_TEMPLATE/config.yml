@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 私密安全报告
+    url: https://github.com/majiayu000/dsh-desk/security/advisories/new
+    about: 请不要在公开 Issue 中提交漏洞利用、凭据或私人数据。

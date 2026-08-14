@@ -18,6 +18,8 @@
     "test:harness-contract": "node scripts/test-harness-contract.mjs",
     "test:packaged-runtime": "node scripts/test-harness-contract.mjs --runtime-root resources/runtime",
     "test:plugin-parity": "node scripts/test-plugin-parity.mjs",
+    "test:plugin-template": "node scripts/test-plugin-template.mjs",
+    "create:plugin": "node scripts/create-plugin.mjs",
     "check:upstream": "node scripts/check-upstream-version.mjs",
     "check:release-env": "node scripts/check-release-env.mjs",
     "release:checksums": "node scripts/write-release-checksums.mjs",

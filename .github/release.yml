@@ -1,0 +1,28 @@
+changelog:
+  exclude:
+    labels:
+      - skip-changelog
+  categories:
+    - title: 用户可见变化
+      labels:
+        - feature
+        - enhancement
+    - title: 官方兼容与可靠性
+      labels:
+        - compatibility
+        - reliability
+        - bug
+    - title: 安全与发布
+      labels:
+        - security
+        - release
+    - title: 插件生态
+      labels:
+        - plugin
+    - title: 维护
+      labels:
+        - dependencies
+        - documentation
+    - title: 其他变化
+      labels:
+        - "*"

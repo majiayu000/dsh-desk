@@ -1,0 +1,46 @@
+name: 插件兼容验证
+description: 申请把插件加入 DSH Desk 精选兼容候选
+title: "[Plugin] "
+labels: [plugin]
+body:
+  - type: input
+    id: package
+    attributes:
+      label: 精确包名与版本
+      placeholder: "@scope/plugin@1.2.3"
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: 源码与发布地址
+    validations:
+      required: true
+  - type: textarea
+    id: permissions
+    attributes:
+      label: 文件、网络、命令与凭据需求
+    validations:
+      required: true
+  - type: textarea
+    id: scripts
+    attributes:
+      label: 生命周期脚本及必要性
+      description: 没有时明确填写“无”。
+    validations:
+      required: true
+  - type: input
+    id: compatibility
+    attributes:
+      label: 已验证 DSH 版本
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 回归确认
+      options:
+        - label: add、dump-config、启动、update 和 remove 均在全新 DSH_HOME 通过。
+          required: true
+        - label: README 已说明权限、数据流向和安装脚本。
+          required: true

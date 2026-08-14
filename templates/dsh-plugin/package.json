@@ -1,0 +1,14 @@
+{
+  "name": "@your-scope/dsh-plugin-example",
+  "version": "0.1.0",
+  "description": "A DeepSeek Harness plugin bundle",
+  "license": "MIT",
+  "files": [
+    "cordis.patch.yml"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

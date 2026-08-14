@@ -1,0 +1,45 @@
+name: Bug 报告
+description: 报告可复现的安装、启动、运行或插件问题
+title: "[Bug] "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: 请删除 API Key、提示词、私有路径和完整工具输出后再提交。
+  - type: input
+    id: desktop-version
+    attributes:
+      label: DSH Desk 版本
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: 操作系统与架构
+      placeholder: macOS 15 arm64 / Windows 11 x64 / Ubuntu 24.04 x64
+    validations:
+      required: true
+  - type: input
+    id: error-code
+    attributes:
+      label: 稳定错误码
+      description: 启动恢复页或诊断日志中的错误码，不要粘贴敏感正文。
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 最小复现步骤
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望与实际结果
+    validations:
+      required: true
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: 隐私确认
+      options:
+        - label: 我已删除凭据、提示词、用户名、工作区路径和私有仓库信息。
+          required: true
