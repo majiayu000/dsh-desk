@@ -70,11 +70,29 @@ function makeSymlinksPortable(root, sourceRoot, destinationRoot) {
 }
 
 try {
+  const pnpmCli = process.env.npm_execpath;
+  if (!pnpmCli || !existsSync(pnpmCli)) {
+    throw new Error(
+      "prepare:runtime must be started through pnpm so npm_execpath points to the pnpm CLI",
+    );
+  }
+
   const deploy = spawnSync(
-    "pnpm",
-    ["--config.node-linker=hoisted", "--filter", "dsh-desk", "deploy", "--prod", stagingRoot],
+    process.execPath,
+    [
+      pnpmCli,
+      "--config.node-linker=hoisted",
+      "--filter",
+      "dsh-desk",
+      "deploy",
+      "--prod",
+      stagingRoot,
+    ],
     { cwd: projectRoot, env, stdio: "inherit" },
   );
+  if (deploy.error) {
+    throw new Error(`pnpm deploy could not start: ${deploy.error.message}`);
+  }
   if (deploy.status !== 0) {
     throw new Error(`pnpm deploy failed with status ${deploy.status}`);
   }
