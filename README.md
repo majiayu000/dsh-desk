@@ -125,7 +125,7 @@ pnpm create:plugin ./my-dsh-plugin @your-scope/my-dsh-plugin
 
 - **当前重点**：签名、公证、三平台实机门禁、首次任务体验和兼容自动化。
 - **下一步**：签名 runtime manifest、原子更新与回滚、可信精选插件 catalog。
-- **实验项**：跨设备查看与审批；在认证、权限继承和中继模型完成安全评审前不开放端口。
+- **实验项**：跨设备 Phase A 已有 E2EE 密文中继、可安装 PWA 与只读状态契约；尚未接入真实 Harness 会话或生产云服务，远程审批仍未开放。
 
 项目不会为了演示速度静默安装 `latest`、向远端页面暴露桌面 IPC、明文记录 API Key，或把 GitHub Topic 当成已审核应用商店。
 

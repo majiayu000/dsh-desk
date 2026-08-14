@@ -14,6 +14,7 @@ export default defineConfig({
       input: {
         main: 'index.html',
         plugins: 'plugins.html',
+        companion: 'companion.html',
       },
     },
   },

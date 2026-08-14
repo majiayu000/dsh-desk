@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#f0eadc" />
+    <meta name="description" content="安全查看 DSH Desk 长任务状态的可安装伴侣应用" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https: http://127.0.0.1:* http://localhost:*; img-src 'self'; style-src 'self'; script-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'" />
+    <link rel="manifest" href="/companion.webmanifest" />
+    <link rel="icon" href="/companion-icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/companion-icon.svg" />
+    <title>DSH Companion</title>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="wordmark" href="/companion.html" aria-label="DSH Companion 首页">
+        <span class="wordmark-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span>DSH / COMPANION</span>
+      </a>
+      <button id="install-button" class="text-button" type="button" hidden>安装</button>
+    </header>
+
+    <main>
+      <section class="hero">
+        <p class="kicker">REMOTE STATUS / PHASE A</p>
+        <h1>电脑在工作。<br /><em>你不必守在旁边。</em></h1>
+        <div class="connection-pill">
+          <span id="connection-dot" class="connection-dot" data-state="offline"></span>
+          <span id="connection-label">正在检查配对</span>
+        </div>
+      </section>
+
+      <p id="error-banner" class="error-banner" role="alert" hidden></p>
+
+      <section id="pairing-panel" class="pairing-panel">
+        <div class="pairing-index">01</div>
+        <div>
+          <h2>从桌面发起配对</h2>
+          <p>在 DSH Desk 中选择“添加移动设备”，再用手机打开二维码中的链接。配对链接两分钟后失效。</p>
+        </div>
+        <div class="scope-stamp">
+          <span>当前权限</span>
+          <strong>TASK:READ</strong>
+        </div>
+      </section>
+
+      <section id="task-panel" class="task-panel" hidden>
+        <div class="section-heading">
+          <div>
+            <p class="kicker">LIVE BOARD</p>
+            <h2>任务状态</h2>
+          </div>
+          <span id="updated-at">尚未同步</span>
+        </div>
+        <div id="empty-state" class="empty-state">
+          <span class="scan-line"></span>
+          <p>加密通道已就绪</p>
+          <small>等待桌面发送第一条最小化状态</small>
+        </div>
+        <div id="task-list" class="task-list"></div>
+      </section>
+
+      <section class="privacy-strip" aria-label="隐私说明">
+        <span class="lock" aria-hidden="true"></span>
+        <div>
+          <strong>中继只看见密文</strong>
+          <p>不发送提示词、回复、文件内容、路径、API Key 或工具参数。</p>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <span>PROTOCOL 01</span>
+      <button id="disconnect-button" class="text-button danger" type="button" hidden>移除此设备</button>
+    </footer>
+    <script type="module" src="/src/companion/main.ts"></script>
+  </body>
+</html>

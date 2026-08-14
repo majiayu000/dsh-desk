@@ -1,0 +1,19 @@
+{
+  "name": "DSH Companion",
+  "short_name": "Companion",
+  "description": "端到端加密查看 DSH Desk 长任务状态",
+  "id": "/companion.html",
+  "start_url": "/companion.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f0eadc",
+  "theme_color": "#f0eadc",
+  "icons": [
+    {
+      "src": "/companion-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 # 跨设备查看、审批与继续任务 RFC
 
-> 状态：安全设计门禁，尚未实现；在中继模式和移动端载体确定前，不开放监听地址、不暴露 Harness API。
+> 状态：Phase A 基础骨架已实现；PWA、E2EE 协议和不可信密文中继已有自动化测试，但尚未接入真实 Harness 会话，也未部署生产云中继。Phase B/C 继续受本文门禁约束。
 
 ## 1. 目标
 
@@ -118,6 +118,16 @@ sequence
 - 不发送提示词、工具参数，不支持审批或补充指令；
 - 每周使用两次以上的用户达到 30% 才进入 Phase B。
 
+当前仓库中的 Phase A 骨架包括：
+
+- `companion.html`：可安装 PWA，只渲染最小任务状态；
+- `src/cross-device/protocol.ts`：P-256 ECDH、HKDF-SHA-256、AES-256-GCM、短时信封和重放序列；
+- `relay/server.mjs`：内存型参考中继，只接受固定结构密文，读、写和一次性配对 capability 分离；
+- `pnpm test:cross-device`：篡改、重放、过期、明文字段与 capability 越权测试；
+- `pnpm relay:dev` + `pnpm companion:demo`：本地端到端演示，不代表生产部署。
+
+PWA 把 capability 和不可导出的 `CryptoKey` 存在 IndexedDB，不使用 `localStorage`。配对载荷放在 URL fragment 中，浏览器不会把 fragment 发送给 Web 服务器。由于 Phase A 仍是纯 Web 客户端，XSS 仍能以当前页面身份发请求；因此页面使用严格 CSP、零第三方脚本，生产部署还必须配置 HTTPS、精确 CORS、速率限制、持久化 TTL、密钥撤销和安全响应头。
+
 ### Phase B：精确审批
 
 - 只支持 Harness 已产生的待审批工具调用；
@@ -155,4 +165,4 @@ sequence
 
 优点：高级用户拥有基础设施。代价：首次使用门槛高、推送困难、支持矩阵大，不适合作为默认增长功能。
 
-建议选择 **A，移动端先用可安装 PWA**，把中继限制为不可信密文邮箱；稳定后再决定是否做原生 App。用户明确选择前，仓库不加入网络监听、云账号或后台常驻能力。
+已选择 **A，移动端先用可安装 PWA**，把中继限制为不可信密文邮箱；稳定后再决定是否做原生 App。仓库中的参考中继默认只监听 `127.0.0.1`，不会让 DSH Desk 或 Harness 对局域网/公网开放入站端口。生产云账号、域名和持久化服务仍需单独选择与部署。
