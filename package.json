@@ -15,9 +15,15 @@
     "tauri": "tauri",
     "check": "pnpm build && cargo check --manifest-path src-tauri/Cargo.toml",
     "test:rust": "cargo test --manifest-path src-tauri/Cargo.toml",
+    "test:harness-contract": "node scripts/test-harness-contract.mjs",
+    "test:packaged-runtime": "node scripts/test-harness-contract.mjs --runtime-root resources/runtime",
     "test:plugin-parity": "node scripts/test-plugin-parity.mjs",
+    "check:upstream": "node scripts/check-upstream-version.mjs",
+    "check:release-env": "node scripts/check-release-env.mjs",
+    "release:checksums": "node scripts/write-release-checksums.mjs",
     "prepare:runtime": "node scripts/prepare-runtime.mjs",
-    "release:macos": "pnpm prepare:runtime && tauri build --bundles app && node scripts/package-macos.mjs"
+    "release:macos": "pnpm check:release-env macos && pnpm prepare:runtime && tauri build --bundles dmg && pnpm release:checksums",
+    "release:macos:preview": "pnpm prepare:runtime && tauri build --bundles app && DSH_ALLOW_ADHOC=1 node scripts/package-macos.mjs"
   },
   "dependencies": {
     "@deepseek-ai/dsh": "0.1.0-rc.6",

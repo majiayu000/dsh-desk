@@ -25,6 +25,9 @@ const stagingRoot = mkdtempSync(join(tmpdir(), "dsh-desk-dmg-"));
 if (process.platform !== "darwin") {
   throw new Error("The macOS release packager must run on macOS");
 }
+if (process.env.DSH_ALLOW_ADHOC !== "1") {
+  throw new Error("Ad-hoc packaging is preview-only. Use pnpm release:macos for a signed release.");
+}
 if (!appPath.endsWith(["bundle", "macos", "DSH Desk.app"].join(sep)) || !existsSync(appPath)) {
   throw new Error(`Built application is missing: ${appPath}`);
 }

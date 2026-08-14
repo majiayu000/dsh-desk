@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  desktop-contract:
+    name: ${{ matrix.platform }} contract
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macOS-arm64
+            runner: macos-15
+          - platform: Windows-x64
+            runner: windows-2022
+          - platform: Linux-x64
+            runner: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Linux desktop dependencies
+        if: runner.os == 'Linux'
+        run: >-
+          sudo apt-get update && sudo apt-get install -y
+          libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build frontend and check Rust
+        run: pnpm check
+      - name: Run Rust tests
+        run: pnpm test:rust
+      - name: Verify development Harness contract
+        run: pnpm test:harness-contract
+      - name: Assemble fixed offline runtime
+        run: pnpm prepare:runtime
+      - name: Verify packaged runtime contract
+        run: pnpm test:packaged-runtime
+      - name: Verify plugin parity
+        run: pnpm test:plugin-parity
