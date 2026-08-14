@@ -52,7 +52,30 @@ function profileFile(home, name) {
 
 function assertEqual(label, left, right) {
   if (left !== right) {
-    throw new Error(`${label} differs between original dsh and DSH Desk runtime`);
+    const leftLines = left.replaceAll("\r\n", "\n").split("\n");
+    const rightLines = right.replaceAll("\r\n", "\n").split("\n");
+    const lineCount = Math.max(leftLines.length, rightLines.length);
+    let firstDifference = 0;
+    while (
+      firstDifference < lineCount
+      && leftLines[firstDifference] === rightLines[firstDifference]
+    ) {
+      firstDifference += 1;
+    }
+    const start = Math.max(0, firstDifference - 2);
+    const end = Math.min(lineCount, firstDifference + 3);
+    const context = [];
+    for (let index = start; index < end; index += 1) {
+      context.push(
+        `${index + 1}: original=${JSON.stringify(leftLines[index] ?? "<missing>")}`,
+        `${index + 1}: packaged=${JSON.stringify(rightLines[index] ?? "<missing>")}`,
+      );
+    }
+    throw new Error(
+      `${label} differs between original dsh and DSH Desk runtime `
+      + `(original ${left.length} bytes, packaged ${right.length} bytes; `
+      + `first normalized difference at line ${firstDifference + 1})\n${context.join("\n")}`,
+    );
   }
 }
 
