@@ -63,7 +63,8 @@ jobs:
           pnpm test:onboarding-contract &&
           pnpm prepare:runtime &&
           pnpm test:packaged-runtime &&
-          pnpm test:plugin-parity
+          pnpm test:plugin-parity &&
+          pnpm test:plugin-catalog
       - name: Build unsigned OS package and signed updater artifact
         uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f # v1
         env:

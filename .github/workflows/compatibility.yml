@@ -47,6 +47,7 @@ jobs:
       - run: pnpm test:packaged-runtime
       - run: pnpm test:plugin-parity
       - run: pnpm test:plugin-template
+      - run: pnpm test:plugin-catalog
 
   upstream-latest:
     name: npm latest candidate

@@ -59,3 +59,5 @@ jobs:
         run: pnpm test:plugin-parity
       - name: Verify plugin developer template
         run: pnpm test:plugin-template
+      - name: Verify trusted plugin catalog
+        run: pnpm test:plugin-catalog

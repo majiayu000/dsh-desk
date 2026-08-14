@@ -89,10 +89,10 @@ DSH Desk 当前不宣称安装包最小：完整离线 runtime 会显著增加�
 
 从系统菜单选择 `DSH Desk → 插件管理…`：
 
-1. 输入 npm、GitHub、TGZ 或本地目录来源；
-2. 查看包名、版本、repository、integrity、生命周期脚本和有效权限上限；
-3. 明确确认后，Desk 才委托固定版本的原版 `dsh plugin --profile web` 执行；
-4. 操作后必须通过组合配置验证，失败会恢复操作前 Profile。
+1. 先在可信目录中搜索固定 Harness 已挂载的上游能力；目录会展示兼容版本、平台、能力和信任依据；
+2. 经过审核的第三方条目将锁定精确版本，并从目录进入同一套安装审查；当前没有把未经验证的 GitHub 搜索结果放进市场；
+3. 手动输入 npm、GitHub、TGZ 或本地目录来源时，查看包名、版本、repository、integrity、生命周期脚本和有效权限上限；
+4. 明确确认后，Desk 才委托固定版本的原版 `dsh plugin --profile web` 执行；操作后组合配置验证失败会恢复操作前 Profile。
 
 `dist.integrity` 是内容校验，不是维护者签名。DSH 目前也没有标准化插件权限 manifest，因此未知插件不会被标记为“安全”。完整模型见[插件信任与回滚](docs/plugin-trust.md)。
 

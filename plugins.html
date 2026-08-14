@@ -4,20 +4,49 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0c0d10" />
-    <title>插件管理 · DSH Desk</title>
+    <title>插件市场 · DSH Desk</title>
   </head>
   <body>
     <main class="plugin-shell">
       <header class="plugin-header">
         <div>
           <p class="plugin-eyebrow">DEEPSEEK HARNESS</p>
-          <h1>插件管理</h1>
-          <p class="plugin-subtitle">原版 <code>dsh plugin --profile web</code> 的桌面界面</p>
+          <h1>插件市场</h1>
+          <p class="plugin-subtitle">发现固定版本的上游能力，安装操作仍由原版 <code>dsh plugin</code> 完成</p>
         </div>
         <button id="refresh" class="quiet-button" type="button">刷新</button>
       </header>
 
+      <section class="market-section" aria-labelledby="market-title">
+        <div class="market-toolbar">
+          <div>
+            <p class="plugin-eyebrow">CURATED CATALOG</p>
+            <h2 id="market-title">可信目录</h2>
+            <p id="catalog-count">正在读取目录…</p>
+          </div>
+          <label class="catalog-search">
+            <span class="sr-only">搜索插件</span>
+            <input id="catalog-search" type="search" autocomplete="off" placeholder="搜索名称、包名或能力" />
+          </label>
+        </div>
+        <div id="catalog-filters" class="catalog-filters" aria-label="插件分类">
+          <button type="button" class="is-active" data-category="all">全部</button>
+          <button type="button" data-category="tools">工具</button>
+          <button type="button" data-category="workflow">工作流</button>
+          <button type="button" data-category="data">数据</button>
+        </div>
+        <div id="catalog-list" class="catalog-list" aria-live="polite"></div>
+        <p class="catalog-boundary">目录条目只代表来源与兼容性经过核对，不代表代码无风险。第三方条目必须锁定版本并经过安装审查后才会出现。</p>
+      </section>
+
       <section class="install-card">
+        <div class="install-heading">
+          <div>
+            <p class="plugin-eyebrow">ADVANCED INSTALL</p>
+            <h2>从其他来源安装</h2>
+          </div>
+          <span>高级</span>
+        </div>
         <label for="plugin-source">插件包名、GitHub 地址、TGZ 或本地路径</label>
         <div class="install-row">
           <input

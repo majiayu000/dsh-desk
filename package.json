@@ -32,6 +32,7 @@
     "test:packaged-runtime": "node scripts/test-harness-contract.mjs --runtime-root resources/runtime",
     "test:plugin-parity": "node scripts/test-plugin-parity.mjs",
     "test:plugin-template": "node scripts/test-plugin-template.mjs",
+    "test:plugin-catalog": "node scripts/test-plugin-catalog.mjs",
     "test:cross-device": "node --experimental-strip-types --test tests/cross-device-protocol.test.ts tests/relay.test.mjs",
     "test:updater-contract": "node scripts/test-updater-contract.mjs",
     "relay:dev": "node relay/server.mjs",
