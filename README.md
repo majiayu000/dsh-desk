@@ -1,4 +1,8 @@
-# DSH Desk
+<p align="center">
+  <img src="assets/dsh-desk-logo-anime-v1.png" width="144" alt="DSH Desk anime whale mascot logo">
+</p>
+
+<h1 align="center">DSH Desk</h1>
 
 DeepSeek Harness 的轻量 Tauri 2 桌面壳。它使用系统 WebView，不携带 Chromium；Rust supervisor 负责启动和回收固定版本的 DeepSeek Harness，业务 UI、会话、工具、插件和设置继续由上游 Harness 拥有。
 
