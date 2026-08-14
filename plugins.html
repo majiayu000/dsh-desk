@@ -35,6 +35,27 @@
         </div>
       </section>
 
+      <section id="review-panel" class="review-panel" hidden>
+        <div class="review-heading">
+          <div>
+            <p class="plugin-eyebrow">INSTALL REVIEW</p>
+            <h2 id="review-title">检查插件来源</h2>
+          </div>
+          <span id="risk-badge" class="risk-badge"></span>
+        </div>
+        <dl id="review-metadata" class="review-metadata"></dl>
+        <ul id="review-warnings" class="review-warnings"></ul>
+        <p id="permission-notice" class="permission-notice"></p>
+        <label class="risk-confirmation">
+          <input id="confirm-risk" type="checkbox" />
+          <span>我理解该插件与 Harness 同进程运行，并确认继续本次操作。</span>
+        </label>
+        <div class="review-actions">
+          <button id="cancel-review" type="button">取消</button>
+          <button id="confirm-install" class="primary-button" type="button" disabled>确认并安装</button>
+        </div>
+      </section>
+
       <section class="library-section">
         <div class="section-heading">
           <div>

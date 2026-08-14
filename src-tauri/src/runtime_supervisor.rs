@@ -18,7 +18,10 @@ use serde::Serialize;
 use tauri::{Emitter, Manager};
 use url::Url;
 
-use crate::plugin_manager::{PluginCommandRequest, PluginCommandResult, execute_plugin_command};
+use crate::plugin_manager::{
+    PluginCommandRequest, PluginCommandResult, PluginInspection, execute_plugin_command,
+    inspect_plugin_source,
+};
 use crate::window_manager::{navigate_to_runtime, restore_bootstrap};
 
 const START_TIMEOUT: Duration = Duration::from_secs(20);
@@ -61,6 +64,7 @@ pub(crate) enum RuntimeCommand {
         PluginCommandRequest,
         Sender<Result<PluginCommandResult, String>>,
     ),
+    InspectPlugin(String, Sender<Result<PluginInspection, String>>),
     Shutdown(Sender<()>),
 }
 
@@ -103,6 +107,16 @@ impl RuntimeHandle {
         reply_rx
             .recv()
             .map_err(|_| "plugin operation stopped before completion".to_string())?
+    }
+
+    pub fn inspect_plugin(&self, operand: String) -> Result<PluginInspection, String> {
+        let (reply_tx, reply_rx) = mpsc::channel();
+        self.command_tx
+            .send(RuntimeCommand::InspectPlugin(operand, reply_tx))
+            .map_err(|_| "runtime supervisor is not running".to_string())?;
+        reply_rx
+            .recv()
+            .map_err(|_| "plugin inspection stopped before completion".to_string())?
     }
 
     pub fn shutdown_blocking(&self) {
@@ -172,6 +186,14 @@ pub fn spawn_worker(
                     if should_restart {
                         running = start_and_publish(&app, &handle);
                     }
+                    let _ = reply.send(result);
+                }
+                Ok(RuntimeCommand::InspectPlugin(operand, reply)) => {
+                    let result = resolve_runtime(&app)
+                        .map_err(|error| error.message)
+                        .and_then(|(node, entry)| {
+                            inspect_plugin_source(&app, &operand, &node, &entry)
+                        });
                     let _ = reply.send(result);
                 }
                 Ok(RuntimeCommand::Shutdown(ack)) => {

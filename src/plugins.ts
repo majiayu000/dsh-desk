@@ -15,6 +15,24 @@ interface PluginCommandResult {
   exitCode: number | null
   stdout: string
   stderr: string
+  rolledBack: boolean
+}
+
+type PluginRisk = 'low' | 'review' | 'high'
+type PluginSourceKind = 'registry' | 'github' | 'directory' | 'tarball' | 'url' | 'unknown'
+
+interface PluginInspection {
+  source: string
+  kind: PluginSourceKind
+  name: string | null
+  version: string | null
+  integrity: string | null
+  repository: string | null
+  trustSignal: string
+  lifecycleScripts: string[]
+  risk: PluginRisk
+  warnings: string[]
+  permissionNotice: string
 }
 
 const source = document.querySelector<HTMLInputElement>('#plugin-source')!
@@ -28,8 +46,18 @@ const panel = document.querySelector<HTMLElement>('#operation-panel')!
 const operationTitle = document.querySelector<HTMLElement>('#operation-title')!
 const operationState = document.querySelector<HTMLElement>('#operation-state')!
 const operationOutput = document.querySelector<HTMLPreElement>('#operation-output')!
+const reviewPanel = document.querySelector<HTMLElement>('#review-panel')!
+const reviewTitle = document.querySelector<HTMLElement>('#review-title')!
+const riskBadge = document.querySelector<HTMLElement>('#risk-badge')!
+const reviewMetadata = document.querySelector<HTMLDListElement>('#review-metadata')!
+const reviewWarnings = document.querySelector<HTMLUListElement>('#review-warnings')!
+const permissionNotice = document.querySelector<HTMLParagraphElement>('#permission-notice')!
+const confirmRisk = document.querySelector<HTMLInputElement>('#confirm-risk')!
+const confirmInstall = document.querySelector<HTMLButtonElement>('#confirm-install')!
+const cancelReview = document.querySelector<HTMLButtonElement>('#cancel-review')!
 
 let busy = false
+let pendingReview: { action: 'add' | 'update'; operand: string } | null = null
 
 function setBusy(value: boolean): void {
   busy = value
@@ -38,6 +66,7 @@ function setBusy(value: boolean): void {
   refresh.disabled = value
   choosePackage.disabled = value
   chooseDirectory.disabled = value
+  cancelReview.disabled = value
   for (const button of list.querySelectorAll('button')) button.disabled = value
 }
 
@@ -60,12 +89,18 @@ async function runAction(action: PluginAction, operand: string): Promise<void> {
   showOperation(`${actionLabel(action)} ${value}`, '执行中…')
   try {
     const result = await invoke<PluginCommandResult>('run_plugin_command', {
-      request: { action, operand: value },
+      request: {
+        action,
+        operand: value,
+        confirmedRisk: action === 'add' || action === 'update' || action === 'remove',
+      },
     })
     const output = [result.stdout.trim(), result.stderr.trim()].filter(Boolean).join('\n\n')
     showOperation(
       `${actionLabel(action)} ${value}`,
-      result.success ? '完成' : `失败${result.exitCode === null ? '' : ` · 退出码 ${result.exitCode}`}`,
+      result.success
+        ? '完成'
+        : `${result.rolledBack ? '失败 · 已恢复' : '失败'}${result.exitCode === null ? '' : ` · 退出码 ${result.exitCode}`}`,
       output || (result.success ? '命令执行成功。' : '命令执行失败。'),
     )
     if (action !== 'why') {
@@ -74,6 +109,63 @@ async function runAction(action: PluginAction, operand: string): Promise<void> {
     }
   } catch (error) {
     showOperation(`${actionLabel(action)} ${value}`, '失败', String(error))
+  } finally {
+    setBusy(false)
+  }
+}
+
+function metadataRow(label: string, value: string | null): DocumentFragment | null {
+  if (!value) return null
+  const fragment = document.createDocumentFragment()
+  const term = document.createElement('dt')
+  term.textContent = label
+  const detail = document.createElement('dd')
+  detail.textContent = value
+  fragment.append(term, detail)
+  return fragment
+}
+
+async function beginReview(action: 'add' | 'update', operand: string): Promise<void> {
+  const value = operand.trim()
+  if (!value || busy) return
+
+  setBusy(true)
+  showOperation(`检查 ${value}`, '正在读取来源和安装脚本…')
+  try {
+    const inspection = await invoke<PluginInspection>('inspect_plugin_source', { operand: value })
+    pendingReview = { action, operand: value }
+    reviewTitle.textContent = `${action === 'add' ? '安装' : '升级'} ${inspection.name ?? value}`
+    riskBadge.dataset.risk = inspection.risk
+    riskBadge.textContent = { low: '低风险信号', review: '需要检查', high: '高风险信号' }[inspection.risk]
+    const rows = [
+      metadataRow('来源类型', inspection.kind),
+      metadataRow('包名', inspection.name),
+      metadataRow('版本', inspection.version),
+      metadataRow('完整性', inspection.integrity),
+      metadataRow('信任信号', inspection.trustSignal),
+      metadataRow('仓库', inspection.repository),
+      metadataRow('生命周期脚本', inspection.lifecycleScripts.join('、') || '未发现'),
+    ].filter((row): row is DocumentFragment => row !== null)
+    reviewMetadata.replaceChildren(...rows)
+    reviewWarnings.replaceChildren(...inspection.warnings.map((warning) => {
+      const item = document.createElement('li')
+      item.textContent = warning
+      return item
+    }))
+    if (inspection.warnings.length === 0) {
+      const item = document.createElement('li')
+      item.textContent = '顶层 manifest 没有发现生命周期脚本，并且 registry 提供了内容完整性。'
+      reviewWarnings.append(item)
+    }
+    permissionNotice.textContent = inspection.permissionNotice
+    confirmRisk.checked = false
+    confirmInstall.disabled = true
+    confirmInstall.textContent = action === 'add' ? '确认并安装' : '确认并升级'
+    reviewPanel.hidden = false
+    panel.hidden = true
+  } catch (error) {
+    pendingReview = null
+    showOperation(`检查 ${value}`, '检查失败，未执行安装', String(error))
   } finally {
     setBusy(false)
   }
@@ -100,12 +192,16 @@ function pluginCard(plugin: InstalledPlugin): HTMLElement {
   const update = document.createElement('button')
   update.type = 'button'
   update.textContent = '升级'
-  update.addEventListener('click', () => void runAction('update', plugin.name))
+  update.addEventListener('click', () => void beginReview('update', plugin.name))
   const remove = document.createElement('button')
   remove.type = 'button'
   remove.className = 'danger-button'
   remove.textContent = '卸载'
-  remove.addEventListener('click', () => void runAction('remove', plugin.name))
+  remove.addEventListener('click', () => {
+    if (window.confirm(`确定卸载 ${plugin.name}？失败时会自动恢复操作前的 Profile。`)) {
+      void runAction('remove', plugin.name)
+    }
+  })
   actions.append(why, update, remove)
 
   card.append(identity, actions)
@@ -133,9 +229,23 @@ async function loadPlugins(): Promise<void> {
   }
 }
 
-install.addEventListener('click', () => void runAction('add', source.value))
+install.addEventListener('click', () => void beginReview('add', source.value))
 source.addEventListener('keydown', (event) => {
-  if (event.key === 'Enter') void runAction('add', source.value)
+  if (event.key === 'Enter') void beginReview('add', source.value)
+})
+confirmRisk.addEventListener('change', () => {
+  confirmInstall.disabled = !confirmRisk.checked
+})
+cancelReview.addEventListener('click', () => {
+  pendingReview = null
+  reviewPanel.hidden = true
+})
+confirmInstall.addEventListener('click', () => {
+  if (!pendingReview || !confirmRisk.checked) return
+  const pending = pendingReview
+  pendingReview = null
+  reviewPanel.hidden = true
+  void runAction(pending.action, pending.operand)
 })
 refresh.addEventListener('click', () => void loadPlugins())
 choosePackage.addEventListener('click', async () => {

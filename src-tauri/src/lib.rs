@@ -6,7 +6,8 @@ mod window_manager;
 use std::{process::Command, sync::Mutex};
 
 use plugin_manager::{
-    InstalledPlugin, PluginCommandRequest, PluginCommandResult, list_installed_plugins,
+    InstalledPlugin, PluginCommandRequest, PluginCommandResult, PluginInspection,
+    list_installed_plugins,
 };
 use runtime_supervisor::{RuntimeHandle, RuntimeStatus, diagnostic_dir, spawn_worker};
 use tauri::{
@@ -78,6 +79,19 @@ async fn run_plugin_command(
         .map_err(|error| error.to_string())?
 }
 
+#[tauri::command]
+async fn inspect_plugin_source(
+    window: tauri::WebviewWindow,
+    runtime: tauri::State<'_, RuntimeHandle>,
+    operand: String,
+) -> Result<PluginInspection, String> {
+    require_plugin_window(&window)?;
+    let runtime = runtime.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || runtime.inspect_plugin(operand))
+        .await
+        .map_err(|error| error.to_string())?
+}
+
 pub fn run() {
     let (runtime, command_rx) = RuntimeHandle::new();
     let setup_receiver = Mutex::new(Some(command_rx));
@@ -112,6 +126,7 @@ pub fn run() {
             open_diagnostic_folder,
             get_desktop_version,
             list_plugins,
+            inspect_plugin_source,
             run_plugin_command,
         ])
         .setup(move |app| {
