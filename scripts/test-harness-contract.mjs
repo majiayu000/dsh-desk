@@ -3,6 +3,7 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, join, resolve } from "node:path";
 import { createInterface } from "node:readline";
+import { stopProcess } from "./lib/child-process.mjs";
 
 const projectRoot = resolve(import.meta.dirname, "..");
 const runtimeRootIndex = process.argv.indexOf("--runtime-root");
@@ -44,30 +45,6 @@ function verifyVersion() {
   const actualVersion = result.stdout.trim();
   if (actualVersion !== expectedVersion) {
     fail(`package.json pins ${expectedVersion}, executable reports ${actualVersion}`);
-  }
-}
-
-async function stopProcess(child) {
-  if (child.exitCode !== null || child.signalCode !== null) return;
-  if (process.platform === "win32") {
-    spawnSync("taskkill.exe", ["/pid", String(child.pid), "/t", "/f"], { stdio: "ignore" });
-    return;
-  }
-  try {
-    process.kill(-child.pid, "SIGINT");
-  } catch {
-    child.kill("SIGINT");
-  }
-  await Promise.race([
-    new Promise((resolveExit) => child.once("exit", resolveExit)),
-    new Promise((resolveDelay) => setTimeout(resolveDelay, 3_000)),
-  ]);
-  if (child.exitCode === null && child.signalCode === null) {
-    try {
-      process.kill(-child.pid, "SIGKILL");
-    } catch {
-      child.kill("SIGKILL");
-    }
   }
 }
 
