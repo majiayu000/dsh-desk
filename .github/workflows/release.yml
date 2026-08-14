@@ -39,6 +39,8 @@ jobs:
       APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
       WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
       WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
       - name: Install Linux desktop dependencies
@@ -91,8 +93,17 @@ jobs:
           $config | ConvertTo-Json -Depth 5 | Set-Content -Encoding utf8 'src-tauri/tauri.windows-signing.json'
       - name: Build and test fixed runtime
         run: pnpm check && pnpm test:rust && pnpm prepare:runtime && pnpm test:packaged-runtime && pnpm test:plugin-parity
-      - name: Build signed platform bundle
-        run: pnpm tauri build ${{ matrix.tauri_args }}
+      - name: Build and upload signed platform bundle
+        uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: v__VERSION__
+          releaseName: DSH Desk v__VERSION__
+          releaseDraft: true
+          generateReleaseNotes: true
+          updaterJsonPreferNsis: true
+          args: ${{ matrix.tauri_args }}
       - name: Write SHA-256 checksums
         run: pnpm release:checksums
       - name: Attest release provenance
@@ -103,14 +114,13 @@ jobs:
             src-tauri/target/release/bundle/**/*.exe
             src-tauri/target/release/bundle/**/*.AppImage
             src-tauri/target/release/bundle/**/*.deb
-      - name: Upload draft release assets
+            src-tauri/target/release/bundle/**/*.sig
+            src-tauri/target/release/bundle/**/*.tar.gz
+            src-tauri/target/release/bundle/**/*.zip
+      - name: Upload draft release checksums
         uses: softprops/action-gh-release@v2
         with:
           draft: true
           fail_on_unmatched_files: false
           files: |
-            src-tauri/target/release/bundle/**/*.dmg
-            src-tauri/target/release/bundle/**/*.exe
-            src-tauri/target/release/bundle/**/*.AppImage
-            src-tauri/target/release/bundle/**/*.deb
             src-tauri/target/release/bundle/**/*.sha256
