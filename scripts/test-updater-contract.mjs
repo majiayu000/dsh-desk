@@ -71,4 +71,36 @@ assert(
   "The updater publishing action must be pinned to a reviewed commit",
 );
 
+const previewConfig = JSON.parse(read("src-tauri/tauri.unsigned-preview.json"));
+assert(
+  previewConfig.bundle?.createUpdaterArtifacts === false,
+  "Unsigned preview builds must not create updater artifacts",
+);
+
+const previewWorkflow = read(".github/workflows/preview.yml");
+for (const token of [
+  "macos-15",
+  "windows-2022",
+  "ubuntu-24.04",
+  "--bundles dmg",
+  "--bundles nsis",
+  "--bundles appimage,deb",
+  "--config src-tauri/tauri.unsigned-preview.json",
+  "if-no-files-found: error",
+]) {
+  assert(previewWorkflow.includes(token), `Preview workflow is missing ${token}`);
+}
+assert(
+  previewWorkflow.includes("permissions:\n  contents: read"),
+  "Preview workflow permissions must remain read-only",
+);
+assert(
+  !previewWorkflow.includes("secrets."),
+  "Unsigned preview builds must not consume repository secrets",
+);
+assert(
+  !previewWorkflow.includes("actions/upload-artifact@v4"),
+  "Preview artifact upload action must be pinned to a reviewed commit",
+);
+
 console.log("Updater configuration, signing, release, and capability contracts passed.");
