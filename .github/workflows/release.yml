@@ -3,7 +3,6 @@ name: Signed release
 on:
   push:
     tags: ['v*']
-  workflow_dispatch:
 
 permissions:
   contents: write
@@ -16,6 +15,9 @@ jobs:
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
+      # tauri-action merges latest.json with the existing draft asset. Serializing the
+      # matrix prevents concurrent read/delete/upload cycles from losing a platform.
+      max-parallel: 1
       matrix:
         include:
           - platform: macos
@@ -30,17 +32,6 @@ jobs:
             runner: ubuntu-24.04
             bundles: appimage-deb
             tauri_args: '--bundles appimage,deb'
-    env:
-      APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-      APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-      APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-      APPLE_API_KEY_CONTENT: ${{ secrets.APPLE_API_KEY_CONTENT }}
-      APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
-      APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
-      WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
-      WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
-      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
       - name: Install Linux desktop dependencies
@@ -57,16 +48,52 @@ jobs:
           cache: pnpm
       - uses: dtolnay/rust-toolchain@stable
       - run: pnpm install --frozen-lockfile
-      - name: Require production signing credentials
-        run: pnpm check:release-env ${{ matrix.platform }}
+      - name: Read release metadata
+        id: release
+        shell: bash
+        run: >-
+          node -e "const fs=require('node:fs');const v=require('./package.json').version;
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, 'prerelease=' + String(v.includes('-')) + '\n')"
+      - name: Require macOS production signing credentials
+        if: matrix.platform == 'macos'
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_API_KEY_CONTENT: ${{ secrets.APPLE_API_KEY_CONTENT }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: pnpm check:release-env ${{ matrix.platform }} && pnpm check:updater-key
+      - name: Require Windows production signing credentials
+        if: matrix.platform == 'windows'
+        env:
+          WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: pnpm check:release-env ${{ matrix.platform }} && pnpm check:updater-key
+      - name: Require Linux production signing credentials
+        if: matrix.platform == 'linux'
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: pnpm check:release-env ${{ matrix.platform }} && pnpm check:updater-key
       - name: Prepare Apple notarization key
         if: runner.os == 'macOS'
+        env:
+          APPLE_API_KEY_CONTENT: ${{ secrets.APPLE_API_KEY_CONTENT }}
         shell: bash
         run: |
           printf '%s' "$APPLE_API_KEY_CONTENT" | base64 --decode > "$RUNNER_TEMP/AuthKey.p8"
           echo "APPLE_API_KEY_PATH=$RUNNER_TEMP/AuthKey.p8" >> "$GITHUB_ENV"
       - name: Import Apple Developer ID certificate
         if: runner.os == 'macOS'
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
         shell: bash
         run: |
           certificate_path="$RUNNER_TEMP/dsh-desk-release.p12"
@@ -83,6 +110,9 @@ jobs:
           security find-identity -v -p codesigning "$keychain_path" | grep -F "$APPLE_SIGNING_IDENTITY"
       - name: Import Windows Authenticode certificate
         if: runner.os == 'Windows'
+        env:
+          WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
         shell: pwsh
         run: |
           $certificatePath = Join-Path $env:RUNNER_TEMP 'dsh-desk-release.pfx'
@@ -94,13 +124,19 @@ jobs:
       - name: Build and test fixed runtime
         run: pnpm check && pnpm test:rust && pnpm test:updater-contract && pnpm prepare:runtime && pnpm test:packaged-runtime && pnpm test:plugin-parity
       - name: Build and upload signed platform bundle
-        uses: tauri-apps/tauri-action@v1
+        uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f # v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ runner.os == 'macOS' && secrets.APPLE_SIGNING_IDENTITY || '' }}
+          APPLE_API_KEY: ${{ runner.os == 'macOS' && secrets.APPLE_API_KEY || '' }}
+          APPLE_API_ISSUER: ${{ runner.os == 'macOS' && secrets.APPLE_API_ISSUER || '' }}
         with:
           tagName: v__VERSION__
           releaseName: DSH Desk v__VERSION__
           releaseDraft: true
+          prerelease: ${{ steps.release.outputs.prerelease }}
           generateReleaseNotes: true
           updaterJsonPreferNsis: true
           args: ${{ matrix.tauri_args }}

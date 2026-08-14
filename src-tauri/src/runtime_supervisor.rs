@@ -119,15 +119,23 @@ impl RuntimeHandle {
             .map_err(|_| "plugin inspection stopped before completion".to_string())?
     }
 
-    pub fn shutdown_blocking(&self) {
+    pub fn shutdown_blocking(&self) -> Result<(), String> {
+        self.shutdown_blocking_with_timeout(STOP_TIMEOUT + Duration::from_secs(2))
+    }
+
+    fn shutdown_blocking_with_timeout(&self, timeout: Duration) -> Result<(), String> {
         let (ack_tx, ack_rx) = mpsc::channel();
-        if self
-            .command_tx
+        self.command_tx
             .send(RuntimeCommand::Shutdown(ack_tx))
-            .is_ok()
-        {
-            let _ = ack_rx.recv_timeout(STOP_TIMEOUT + Duration::from_secs(2));
-        }
+            .map_err(|_| "runtime supervisor is not running".to_string())?;
+        ack_rx.recv_timeout(timeout).map_err(|error| match error {
+            RecvTimeoutError::Timeout => {
+                "runtime supervisor did not confirm shutdown before the deadline".to_string()
+            }
+            RecvTimeoutError::Disconnected => {
+                "runtime supervisor stopped without confirming shutdown".to_string()
+            }
+        })
     }
 
     fn update(&self, app: &tauri::AppHandle, status: RuntimeStatus) {
@@ -702,7 +710,9 @@ fn failure(code: &'static str, error: impl std::fmt::Display) -> RuntimeFailure 
 
 #[cfg(test)]
 mod tests {
-    use super::parse_ready_url;
+    use std::time::Duration;
+
+    use super::{RuntimeHandle, parse_ready_url};
 
     #[test]
     fn accepts_only_strict_loopback_ready_lines() {
@@ -712,5 +722,26 @@ mod tests {
         );
         assert_eq!(parse_ready_url("dsh web: http://0.0.0.0:43210/"), None);
         assert_eq!(parse_ready_url("prefix dsh web: http://127.0.0.1:1/"), None);
+    }
+
+    #[test]
+    fn shutdown_fails_when_the_supervisor_is_not_running() {
+        let (handle, receiver) = RuntimeHandle::new();
+        drop(receiver);
+
+        assert_eq!(
+            handle.shutdown_blocking_with_timeout(Duration::ZERO),
+            Err("runtime supervisor is not running".to_string())
+        );
+    }
+
+    #[test]
+    fn shutdown_fails_without_a_positive_acknowledgement() {
+        let (handle, _receiver) = RuntimeHandle::new();
+
+        assert_eq!(
+            handle.shutdown_blocking_with_timeout(Duration::ZERO),
+            Err("runtime supervisor did not confirm shutdown before the deadline".to_string())
+        );
     }
 }

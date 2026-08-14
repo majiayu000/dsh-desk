@@ -847,8 +847,10 @@ dependencies = [
 name = "dsh-desk"
 version = "0.1.0-alpha.1"
 dependencies = [
+ "base64 0.22.1",
  "flate2",
  "libc",
+ "minisign-verify",
  "serde",
  "serde_json",
  "tar",

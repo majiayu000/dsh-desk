@@ -31,26 +31,44 @@ assert(
 assert(updater.windows?.installMode === "passive", "Windows updates must use passive NSIS mode");
 
 const decodedPublicKey = Buffer.from(updater.pubkey, "base64").toString("utf8");
-assert(decodedPublicKey.includes("minisign public key"), "Updater public key is not a minisign public key");
+const publicKeyLines = decodedPublicKey.trim().split(/\r?\n/);
+assert(publicKeyLines.length === 2, "Updater public key must contain a comment and key payload");
+assert(publicKeyLines[0].startsWith("untrusted comment:"), "Updater public key comment is malformed");
+const publicKeyBytes = Buffer.from(publicKeyLines[1], "base64");
+assert(publicKeyBytes.length === 42, "Updater public key payload must be 42 bytes");
+assert(
+  publicKeyBytes[0] === 0x45 && [0x44, 0x64].includes(publicKeyBytes[1]),
+  "Updater public key uses an unsupported minisign algorithm",
+);
 
 const capabilityDir = resolve(root, "src-tauri/capabilities");
 for (const name of readdirSync(capabilityDir).filter((name) => name.endsWith(".json"))) {
   const capability = JSON.parse(read(`src-tauri/capabilities/${name}`));
   const permissions = capability.permissions ?? [];
   assert(
-    permissions.every((permission) => typeof permission !== "string" || !permission.startsWith("updater:")),
+    permissions.every((permission) => {
+      const identifier = typeof permission === "string" ? permission : permission?.identifier;
+      return typeof identifier !== "string" || !identifier.startsWith("updater:");
+    }),
     `${name} must not expose updater commands to a WebView`,
   );
 }
 
 const workflow = read(".github/workflows/release.yml");
 for (const token of [
-  "tauri-apps/tauri-action@v1",
+  "tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f",
   "TAURI_SIGNING_PRIVATE_KEY",
   "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
   "updaterJsonPreferNsis: true",
+  "max-parallel: 1",
+  "prerelease: ${{ steps.release.outputs.prerelease }}",
 ]) {
   assert(workflow.includes(token), `Release workflow is missing ${token}`);
 }
+assert(!workflow.includes("workflow_dispatch:"), "Production releases must be triggered by tags only");
+assert(
+  !workflow.includes("uses: tauri-apps/tauri-action@v1"),
+  "The updater publishing action must be pinned to a reviewed commit",
+);
 
 console.log("Updater configuration, signing, release, and capability contracts passed.");

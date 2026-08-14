@@ -26,6 +26,7 @@
     "create:plugin": "node scripts/create-plugin.mjs",
     "check:upstream": "node scripts/check-upstream-version.mjs",
     "check:release-env": "node scripts/check-release-env.mjs",
+    "check:updater-key": "node scripts/check-updater-key.mjs",
     "release:checksums": "node scripts/write-release-checksums.mjs",
     "prepare:runtime": "node scripts/prepare-runtime.mjs",
     "release:macos": "pnpm check:release-env macos && pnpm prepare:runtime && tauri build --bundles dmg && pnpm release:checksums",

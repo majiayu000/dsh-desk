@@ -25,6 +25,9 @@ if (mismatchedVersions.length > 0) {
 }
 
 const expectedTag = `v${packageJson.version}`;
+if (process.env.GITHUB_ACTIONS === "true" && process.env.GITHUB_REF_TYPE !== "tag") {
+  throw new Error("Production releases must run from a Git tag");
+}
 if (process.env.GITHUB_REF_TYPE === "tag" && process.env.GITHUB_REF_NAME !== expectedTag) {
   throw new Error(`Release tag ${process.env.GITHUB_REF_NAME} must match package version ${expectedTag}`);
 }

@@ -92,7 +92,8 @@ async fn check_and_maybe_install(app: &AppHandle, interactive: bool) -> Result<(
     let runtime = app.state::<RuntimeHandle>().inner().clone();
     tauri::async_runtime::spawn_blocking(move || runtime.shutdown_blocking())
         .await
-        .map_err(|error| format!("停止 DeepSeek Harness 时发生内部错误：{error}"))?;
+        .map_err(|error| format!("停止 DeepSeek Harness 时发生内部错误：{error}"))?
+        .map_err(|error| format!("无法安全停止 DeepSeek Harness：{error}"))?;
 
     if let Err(error) = update.install(bytes) {
         show_error(

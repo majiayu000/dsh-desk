@@ -11,7 +11,7 @@ Tauri updater 使用一套独立于 Apple Developer ID 和 Windows Authenticode 
 
 当前维护机的加密私钥位于 `/Users/apple/.tauri/dsh-desk.key`，密码保存在 macOS Keychain 的 `dsh-desk-tauri-updater` service 下。私钥和密码都不得提交到仓库、Release asset、日志或工单。
 
-正式构建会生成平台更新包和 `.sig`，`tauri-apps/tauri-action` 将它们连同 `latest.json` 上传到同一个草稿 Release。客户端只访问 HTTPS 地址：
+正式构建会先用私钥签署测试载荷，并以配置中的公钥验证，密钥不匹配会在打包前失败。之后生成平台更新包和 `.sig`，`tauri-apps/tauri-action` 将它们连同 `latest.json` 上传到同一个草稿 Release。三个矩阵任务串行发布，避免并发覆盖 `latest.json` 中其他平台的记录。客户端只访问 HTTPS 地址：
 
 ```text
 https://github.com/majiayu000/dsh-desk/releases/latest/download/latest.json

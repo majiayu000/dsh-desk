@@ -153,7 +153,7 @@ pub fn run() {
             updater::request_check(app.clone(), false);
         }
         tauri::RunEvent::ExitRequested { .. } => {
-            app.state::<RuntimeHandle>().shutdown_blocking();
+            let _ = app.state::<RuntimeHandle>().shutdown_blocking();
         }
         _ => {}
     });
