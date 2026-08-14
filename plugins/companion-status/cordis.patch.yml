@@ -1,6 +1,0 @@
-- insert:
-    - id: dsh-desk-companion-status
-      name: '@dsh-desk/companion-status-plugin'
-      disabled: !!js >-
-        !process.env.DSH_DESK_STATUS_BRIDGE_URL ||
-        !process.env.DSH_DESK_STATUS_BRIDGE_TOKEN
