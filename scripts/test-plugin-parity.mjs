@@ -58,7 +58,7 @@ function normalizeLockfileImporter(value) {
   }
 
   const importerIndex = lines.findIndex(
-    (line, index) => index > importersIndex && /^  \S.*:$/.test(line),
+    (line, index) => index > importersIndex && /^  \S.*:(?: \{\})?$/.test(line),
   );
   if (importerIndex === -1) {
     return lines.join("\n");
@@ -68,7 +68,8 @@ function normalizeLockfileImporter(value) {
   // different drive, which embeds each temporary profile's directory name.
   // The importer location is expected to differ; its complete dependency tree
   // below this key must still match byte-for-byte.
-  lines[importerIndex] = "  <profile-importer>:";
+  const emptyImporter = lines[importerIndex].endsWith(": {}");
+  lines[importerIndex] = `  <profile-importer>:${emptyImporter ? " {}" : ""}`;
   return lines.join("\n");
 }
 
