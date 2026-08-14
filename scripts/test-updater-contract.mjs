@@ -113,6 +113,7 @@ for (const token of [
   "workflow_dispatch:",
   "max-parallel: 1",
   "preview-v__VERSION__",
+  "--bundles app,dmg",
   "src-tauri/tauri.update-preview.json",
   "pnpm check:updater-key",
   "node scripts/validate-update-manifest.mjs",

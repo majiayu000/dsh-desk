@@ -23,7 +23,9 @@ jobs:
         include:
           - platform: macos-arm64
             runner: macos-15
-            tauri_args: --bundles dmg
+            # `app` produces the signed .app.tar.gz consumed by Tauri's macOS updater;
+            # `dmg` remains the human-installable unsigned preview package.
+            tauri_args: --bundles app,dmg
           - platform: windows-x64
             runner: windows-2022
             tauri_args: --bundles nsis
@@ -94,7 +96,9 @@ jobs:
           version="$(node -p "require('./package.json').version")"
           mkdir -p update-channel
           gh release download "preview-v${version}" --pattern latest.json --dir update-channel
-          node scripts/validate-update-manifest.mjs update-channel/latest.json "$version"
+          gh api "repos/${GITHUB_REPOSITORY}/releases/tags/preview-v${version}" > update-channel/release.json
+          node scripts/validate-update-manifest.mjs \
+            update-channel/latest.json "$version" update-channel/release.json
       - name: Atomically replace preview channel metadata
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
