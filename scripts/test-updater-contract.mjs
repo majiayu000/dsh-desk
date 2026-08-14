@@ -75,7 +75,7 @@ const previewWorkflow = read(".github/workflows/preview.yml");
 for (const token of [
   "macos-15",
   "windows-2022",
-  "ubuntu-24.04",
+  "ubuntu-22.04",
   "--bundles dmg",
   "--bundles nsis",
   "--bundles appimage,deb",

@@ -29,16 +29,16 @@ jobs:
             bundles: nsis
             tauri_args: '--bundles nsis --config src-tauri/tauri.windows-signing.json'
           - platform: linux
-            runner: ubuntu-24.04
+            runner: ubuntu-22.04
             bundles: appimage-deb
-            tauri_args: '--bundles appimage,deb'
+            tauri_args: '-vv --bundles appimage,deb'
     steps:
       - uses: actions/checkout@v4
       - name: Install Linux desktop dependencies
         if: runner.os == 'Linux'
         run: >-
           sudo apt-get update && sudo apt-get install -y
-          libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+          libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf libfuse2
       - uses: pnpm/action-setup@v4
         with:
           version: 11.7.0
