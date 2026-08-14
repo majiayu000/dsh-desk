@@ -1,5 +1,7 @@
 node_modules/
 dist/
 src-tauri/target/
+resources/runtime/*
+!resources/runtime/.gitkeep
 .DS_Store
 *.log

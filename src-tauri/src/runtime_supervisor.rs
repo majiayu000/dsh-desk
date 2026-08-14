@@ -384,12 +384,14 @@ fn resolve_runtime(app: &tauri::AppHandle) -> Result<(PathBuf, PathBuf), Runtime
         }
     }
 
-    let project_root = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .expect("src-tauri must have a parent");
-    let development_entry = project_root.join("node_modules/@deepseek-ai/dsh/lib/bin.js");
-    if development_entry.is_file() {
-        return Ok((resolve_node(app)?, development_entry));
+    if cfg!(debug_assertions) {
+        let project_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .expect("src-tauri must have a parent");
+        let development_entry = project_root.join("node_modules/@deepseek-ai/dsh/lib/bin.js");
+        if development_entry.is_file() {
+            return Ok((resolve_node(app)?, development_entry));
+        }
     }
 
     Err(RuntimeFailure {

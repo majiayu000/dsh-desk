@@ -1,7 +1,7 @@
 {
   "name": "dsh-desk",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.0-alpha.1",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -14,7 +14,9 @@
     "build": "tsc --noEmit && vite build",
     "tauri": "tauri",
     "check": "pnpm build && cargo check --manifest-path src-tauri/Cargo.toml",
-    "test:rust": "cargo test --manifest-path src-tauri/Cargo.toml"
+    "test:rust": "cargo test --manifest-path src-tauri/Cargo.toml",
+    "prepare:runtime": "node scripts/prepare-runtime.mjs",
+    "release:macos": "pnpm prepare:runtime && tauri build --bundles app && node scripts/package-macos.mjs"
   },
   "dependencies": {
     "@deepseek-ai/dsh": "0.1.0-rc.6",

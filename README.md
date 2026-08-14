@@ -27,7 +27,7 @@ DeepSeek Harness 的轻量 Tauri 2 桌面壳。它使用系统 WebView，不携�
 - 默认以用户主目录启动，禁止意外使用 `/` 作为工作目录
 - 单实例保护
 - 退出时先优雅停止 Harness，超时后强制回收
-- macOS 应用图标和 `.app` debug bundle
+- macOS 应用图标、可携带 `.app` 与 `.dmg` 预览包
 
 ## 开发
 
@@ -73,6 +73,18 @@ src-tauri/target/debug/bundle/macos/DSH Desk.app
 - 离线模式：把同一份 Node 与 Harness dependency closure 一并签名打包；体积会显著增加，但无需网络。
 
 当前代码在找不到明确 runtime 时会 fail closed，不会在线安装 `latest` 或回退到未知版本。
+
+### 预览版
+
+`v0.1.0-alpha.1` 首发包面向 macOS Apple Silicon，内置 Node 24 与固定版本 Harness，不要求用户预装 Node。该预览包尚未使用 Apple Developer ID 签名或公证；正式稳定版发布前仍需完成签名、公证、自动更新和按平台 Runtime 下载链路。
+
+普通用户下载 `.dmg` 后，把 `DSH Desk` 拖进“应用程序”即可。首次打开若被 macOS 拦截，请在 Finder 中右键应用并选择“打开”。
+
+发布构建必须在目标平台使用 Node 24：
+
+```sh
+pnpm release:macos
+```
 
 架构和后续路线见 [docs/desktop-architecture.md](docs/desktop-architecture.md)。
 多用户、多平台与 runtime 安装/回滚契约见 [docs/runtime-distribution.md](docs/runtime-distribution.md)。
