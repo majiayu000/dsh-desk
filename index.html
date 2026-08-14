@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0c0d10" />
+    <title>DSH Desk</title>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="brand" aria-label="DSH Desk">
+        <div class="mark" aria-hidden="true"><span></span><span></span><span></span></div>
+        <div>
+          <p class="eyebrow">DEEPSEEK HARNESS</p>
+          <h1>DSH Desk</h1>
+        </div>
+      </section>
+
+      <section class="status-card" aria-live="polite">
+        <div class="status-row">
+          <span id="status-dot" class="status-dot"></span>
+          <div>
+            <p id="status-label" class="status-label">正在准备运行环境</p>
+            <p id="status-detail" class="status-detail">桌面壳正在启动 DeepSeek Harness…</p>
+          </div>
+        </div>
+        <div id="progress" class="progress"><span></span></div>
+        <div id="actions" class="actions" hidden>
+          <button id="retry" class="primary" type="button">重新启动</button>
+          <button id="logs" class="secondary" type="button">打开诊断目录</button>
+        </div>
+      </section>
+
+      <p class="footnote">本地运行 · 数据保存在这台设备上</p>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,22 @@
+[package]
+name = "dsh-desk"
+version = "0.1.0"
+description = "A lightweight desktop shell for DeepSeek Harness"
+authors = ["DSH Desk contributors"]
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/majiayu000/dsh-desk"
+
+[lib]
+name = "dsh_desk_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+libc = "0.2"
+serde = { version = "1", features = ["derive"] }
+tauri = { version = "2.11.5", features = [] }
+tauri-plugin-single-instance = "2"
+url = "2"
