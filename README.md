@@ -2,9 +2,11 @@
   <img src="assets/dsh-desk-logo-anime-v1.png" width="132" alt="DSH Desk 小鲸鱼图标">
 </p>
 
-<h1 align="center">DSH Desk</h1>
+<h1 align="center">DSH Desk — DeepSeek Harness 桌面版</h1>
 
-<p align="center"><strong>固定 runtime、权限边界清晰、专注官方兼容的 DeepSeek Harness 桌面发行版。</strong></p>
+<p align="center"><strong>无需安装 Node.js、无需使用终端，即可运行 DeepSeek Harness。</strong></p>
+
+<p align="center">面向希望获得可安装应用、固定 runtime、可信插件审查和持续兼容验证的 DeepSeek Harness 用户。</p>
 
 <p align="center">
   <a href="https://github.com/majiayu000/dsh-desk/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/majiayu000/dsh-desk/actions/workflows/ci.yml/badge.svg"></a>
@@ -13,8 +15,9 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/majiayu000/dsh-desk/releases">下载预览版</a> ·
+  <a href="https://github.com/majiayu000/dsh-desk/releases/tag/v0.1.0-alpha.1">下载 macOS 预览版</a> ·
   <a href="#快速开始">快速开始</a> ·
+  <a href="docs/compatibility.md">兼容状态</a> ·
   <a href="templates/dsh-plugin/README.md">插件开发</a>
 </p>
 
@@ -23,6 +26,14 @@
 
 > [!NOTE]
 > 产品目标是“DeepSeek Harness 最稳定、最省事、始终兼容官方的桌面发行版”。“始终兼容”由每日自动测试和公开矩阵约束，不是未经验证的宣传承诺。
+
+## 适合谁
+
+- 想使用 DeepSeek Harness，但不想先安装 Node.js、配置 npm 或从终端启动服务的用户；
+- 需要固定 Harness 版本、独立数据目录、崩溃恢复和可诊断桌面生命周期的用户；
+- 希望在安装 DSH 插件前查看来源、integrity、生命周期脚本和回滚边界的用户。
+
+如果你已经稳定使用官方 CLI，并且不需要安装包、桌面生命周期或插件审查，继续使用官方 Harness 会更直接。
 
 ## 为什么做 DSH Desk
 
@@ -47,13 +58,21 @@ Release 工作流缺少生产证书时会直接失败，不会把未签名资产
 
 ## 快速开始
 
-1. 从 [Releases](https://github.com/majiayu000/dsh-desk/releases) 下载与你平台匹配的安装包。
+1. 从 [`v0.1.0-alpha.1` Release](https://github.com/majiayu000/dsh-desk/releases/tag/v0.1.0-alpha.1) 下载 macOS Apple Silicon 安装包。
 2. 安装并启动 DSH Desk；应用自动验证并启动内置 Harness。
 3. 在官方 Harness 首次配置中选择模型、填写凭证，然后发送第一条任务。
 
 预览版 macOS 用户若遇到 Gatekeeper 拦截，可在 Finder 中右键应用并选择“打开”。正式签名版发布后会删除这一步。
 
 DSH Desk 不读取模型 API Key；当前凭据继续由上游 Harness provider 管理。其安全边界见[桌面架构](docs/desktop-architecture.md)。
+
+## 当前限制
+
+- 公开下载目前只有 macOS Apple Silicon alpha，尚未发布 Windows、Linux 或 Intel Mac 安装包；
+- 当前 DMG 尚未使用 Apple Developer ID 签名和公证，不能视为正式发行版；
+- 离线包包含固定 Node.js 与完整 Harness runtime，当前 DMG 约 215 MB；
+- DeepSeek Harness 仍处于快速变化阶段，每日兼容测试只能发现漂移，不能保证未来永不发生破坏性变更；
+- 跨设备查看仍是实验协议，尚未连接真实 Harness 会话或生产云中继，远程审批未开放。
 
 ## 和其他方案有什么不同
 
