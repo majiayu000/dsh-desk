@@ -92,7 +92,7 @@ jobs:
           $config = @{ bundle = @{ windows = @{ certificateThumbprint = $certificate.Thumbprint; digestAlgorithm = 'sha256'; timestampUrl = 'http://timestamp.digicert.com' } } }
           $config | ConvertTo-Json -Depth 5 | Set-Content -Encoding utf8 'src-tauri/tauri.windows-signing.json'
       - name: Build and test fixed runtime
-        run: pnpm check && pnpm test:rust && pnpm prepare:runtime && pnpm test:packaged-runtime && pnpm test:plugin-parity
+        run: pnpm check && pnpm test:rust && pnpm test:updater-contract && pnpm prepare:runtime && pnpm test:packaged-runtime && pnpm test:plugin-parity
       - name: Build and upload signed platform bundle
         uses: tauri-apps/tauri-action@v1
         env:

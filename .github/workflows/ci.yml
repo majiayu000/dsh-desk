@@ -43,6 +43,8 @@ jobs:
         run: pnpm check
       - name: Run Rust tests
         run: pnpm test:rust
+      - name: Verify signed updater contract
+        run: pnpm test:updater-contract
       - name: Verify cross-device Phase A security contract
         run: pnpm test:cross-device
       - name: Verify development Harness contract
