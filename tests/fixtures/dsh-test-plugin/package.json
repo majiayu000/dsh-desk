@@ -1,0 +1,14 @@
+{
+  "name": "@dsh-desk/test-plugin",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "files": [
+    "cordis.patch.yml"
+  ]
+}

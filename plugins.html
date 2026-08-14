@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0c0d10" />
+    <title>插件管理 · DSH Desk</title>
+  </head>
+  <body>
+    <main class="plugin-shell">
+      <header class="plugin-header">
+        <div>
+          <p class="plugin-eyebrow">DEEPSEEK HARNESS</p>
+          <h1>插件管理</h1>
+          <p class="plugin-subtitle">原版 <code>dsh plugin --profile web</code> 的桌面界面</p>
+        </div>
+        <button id="refresh" class="quiet-button" type="button">刷新</button>
+      </header>
+
+      <section class="install-card">
+        <label for="plugin-source">插件包名、GitHub 地址、TGZ 或本地路径</label>
+        <div class="install-row">
+          <input
+            id="plugin-source"
+            type="text"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="例如 @scope/dsh-plugin 或 github:owner/repo"
+          />
+          <button id="install" class="primary-button" type="button">安装</button>
+        </div>
+        <div class="source-actions">
+          <button id="choose-package" type="button">选择 TGZ</button>
+          <button id="choose-directory" type="button">选择本地目录</button>
+        </div>
+      </section>
+
+      <section class="library-section">
+        <div class="section-heading">
+          <div>
+            <h2>已安装插件</h2>
+            <p id="plugin-count">正在读取 Profile…</p>
+          </div>
+        </div>
+        <div id="plugin-list" class="plugin-list" aria-live="polite"></div>
+      </section>
+
+      <section id="operation-panel" class="operation-panel" hidden>
+        <div class="operation-heading">
+          <strong id="operation-title">正在执行</strong>
+          <span id="operation-state"></span>
+        </div>
+        <pre id="operation-output"></pre>
+      </section>
+    </main>
+    <script type="module" src="/src/plugins.ts"></script>
+  </body>
+</html>

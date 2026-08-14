@@ -15,12 +15,15 @@
     "tauri": "tauri",
     "check": "pnpm build && cargo check --manifest-path src-tauri/Cargo.toml",
     "test:rust": "cargo test --manifest-path src-tauri/Cargo.toml",
+    "test:plugin-parity": "node scripts/test-plugin-parity.mjs",
     "prepare:runtime": "node scripts/prepare-runtime.mjs",
     "release:macos": "pnpm prepare:runtime && tauri build --bundles app && node scripts/package-macos.mjs"
   },
   "dependencies": {
     "@deepseek-ai/dsh": "0.1.0-rc.6",
-    "@tauri-apps/api": "2.11.1"
+    "@tauri-apps/api": "2.11.1",
+    "@tauri-apps/plugin-dialog": "2.7.2",
+    "pnpm": "11.7.0"
   },
   "devDependencies": {
     "@tauri-apps/cli": "2.11.4",

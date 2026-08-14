@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "plugins",
+  "description": "Permissions for the local DSH plugin manager window.",
+  "windows": ["plugins"],
+  "permissions": ["core:default", "dialog:allow-open"]
+}

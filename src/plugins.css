@@ -1,0 +1,103 @@
+:root {
+  color: #eff2f7;
+  background: #0d0f13;
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-width: 580px;
+  min-height: 500px;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(77, 121, 255, .16), transparent 34%),
+    #0d0f13;
+}
+
+button, input { font: inherit; }
+
+button {
+  cursor: pointer;
+  color: #cbd1dc;
+  border: 1px solid rgba(255, 255, 255, .11);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, .055);
+}
+
+button:hover { background: rgba(255, 255, 255, .09); }
+button:disabled { cursor: wait; opacity: .48; }
+
+.plugin-shell {
+  width: min(920px, 100%);
+  margin: 0 auto;
+  padding: 40px;
+}
+
+.plugin-header, .section-heading, .plugin-card, .operation-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.plugin-header { margin-bottom: 30px; }
+.plugin-eyebrow { margin: 0 0 5px; color: #7184ba; font-size: 10px; font-weight: 750; letter-spacing: .16em; }
+h1 { margin: 0; font-size: 28px; letter-spacing: -.035em; }
+.plugin-subtitle { margin: 7px 0 0; color: #737b8a; font-size: 12px; }
+code { color: #9badde; }
+
+.quiet-button { padding: 9px 14px; }
+
+.install-card, .operation-panel {
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, .1);
+  border-radius: 17px;
+  background: rgba(23, 26, 33, .86);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, .22);
+}
+
+.install-card label { display: block; margin-bottom: 11px; color: #aeb5c2; font-size: 12px; font-weight: 620; }
+.install-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; }
+input {
+  width: 100%;
+  padding: 12px 13px;
+  color: #f3f5f9;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 10px;
+  outline: none;
+  background: rgba(4, 6, 10, .55);
+}
+input:focus { border-color: #617fe2; box-shadow: 0 0 0 3px rgba(76, 111, 220, .14); }
+.primary-button { padding: 0 20px; color: white; border-color: #6788f3; background: #4e70dc; font-weight: 650; }
+.primary-button:hover { background: #5a7ce5; }
+.source-actions { display: flex; gap: 8px; margin-top: 11px; }
+.source-actions button { padding: 7px 10px; color: #858e9f; font-size: 10px; }
+
+.library-section { margin-top: 31px; }
+.section-heading { margin-bottom: 13px; }
+h2 { margin: 0; font-size: 16px; }
+.section-heading p { margin: 5px 0 0; color: #686f7c; font-size: 11px; }
+.plugin-list { display: grid; gap: 9px; }
+.plugin-card { min-height: 72px; padding: 14px 16px; border: 1px solid rgba(255, 255, 255, .075); border-radius: 13px; background: rgba(20, 22, 28, .72); }
+.plugin-identity { min-width: 0; }
+.plugin-identity h3 { overflow: hidden; margin: 0; font-size: 13px; font-weight: 620; text-overflow: ellipsis; white-space: nowrap; }
+.plugin-identity p { margin: 5px 0 0; color: #707887; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; }
+.plugin-actions { display: flex; flex: none; gap: 7px; }
+.plugin-actions button { padding: 7px 10px; font-size: 11px; }
+.plugin-actions .danger-button { color: #e89b9b; }
+.empty-state { padding: 38px; color: #666e7c; border: 1px dashed rgba(255, 255, 255, .09); border-radius: 13px; text-align: center; font-size: 12px; }
+
+.operation-panel { margin-top: 24px; }
+.operation-heading strong { font-size: 12px; }
+.operation-heading span { color: #8595c4; font-size: 11px; }
+pre { max-height: 210px; margin: 15px 0 0; overflow: auto; color: #aeb6c5; font: 10px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; }
+
+[hidden] { display: none !important; }
+
+@media (max-width: 680px) {
+  .plugin-shell { padding: 28px 24px; }
+  .plugin-card { align-items: flex-start; flex-direction: column; }
+}

@@ -1,5 +1,6 @@
 import {
   cpSync,
+  chmodSync,
   existsSync,
   lstatSync,
   mkdirSync,
@@ -85,7 +86,7 @@ try {
   }
 
   mkdirSync(runtimeRoot, { recursive: true });
-  for (const name of ["node_modules", "node", "runtime-manifest.json"]) {
+  for (const name of ["node_modules", "node", "tools", "runtime-manifest.json"]) {
     rmSync(join(runtimeRoot, name), { recursive: true, force: true });
   }
   const bundledModules = join(runtimeRoot, "node_modules");
@@ -103,6 +104,22 @@ try {
   const nodeLicense = resolve(nodeBinDir, "..", "LICENSE");
   if (existsSync(nodeLicense)) {
     cpSync(nodeLicense, join(runtimeRoot, "node", "LICENSE"));
+  }
+
+  const toolsBin = join(runtimeRoot, "tools", "bin");
+  mkdirSync(toolsBin, { recursive: true });
+  if (process.platform === "win32") {
+    writeFileSync(
+      join(toolsBin, "pnpm.cmd"),
+      '@echo off\r\n"%~dp0\\..\\..\\node\\node.exe" "%~dp0\\..\\..\\node_modules\\pnpm\\bin\\pnpm.cjs" %*\r\n',
+    );
+  } else {
+    const pnpmLauncher = join(toolsBin, "pnpm");
+    writeFileSync(
+      pnpmLauncher,
+      '#!/bin/sh\nSCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)\nexec "$SCRIPT_DIR/../../node/bin/node" "$SCRIPT_DIR/../../node_modules/pnpm/bin/pnpm.cjs" "$@"\n',
+    );
+    chmodSync(pnpmLauncher, 0o755);
   }
 
   const packageJson = JSON.parse(readFileSync(join(projectRoot, "package.json"), "utf8"));

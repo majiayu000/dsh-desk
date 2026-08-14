@@ -27,7 +27,14 @@ DeepSeek Harness 的轻量 Tauri 2 桌面壳。它使用系统 WebView，不携�
 - 默认以用户主目录启动，禁止意外使用 `/` 作为工作目录
 - 单实例保护
 - 退出时先优雅停止 Harness，超时后强制回收
+- 原版 `dsh plugin --profile web` 的桌面插件管理界面
 - macOS 应用图标、可携带 `.app` 与 `.dmg` 预览包
+
+## 插件管理
+
+从系统菜单选择 `DSH Desk → 插件管理…`。插件来源可以是 npm 包名、GitHub spec、`.tgz` 或本地目录；Desk 内置固定版本 pnpm，并把安装、升级、依赖查询和卸载原样交给当前内置版本的 `dsh plugin --profile web`。
+
+Desk 使用自己的 `DSH_HOME`，不会与 `~/.dsh` 共用安装状态；相同版本的 Harness 与 pnpm 对相同来源产生的 Profile、锁文件和组合配置由 parity test 保证一致。
 
 ## 开发
 
@@ -50,6 +57,8 @@ DSH_DESKTOP_WORKSPACE=/path/to/project npx --yes pnpm@11.7.0 exec tauri dev
 npx --yes pnpm@11.7.0 run build
 cargo test --manifest-path src-tauri/Cargo.toml
 cargo check --release --manifest-path src-tauri/Cargo.toml
+npx --yes pnpm@11.7.0 run prepare:runtime
+npx --yes pnpm@11.7.0 run test:plugin-parity
 npx --yes pnpm@11.7.0 exec tauri build --debug --bundles app
 ```
 

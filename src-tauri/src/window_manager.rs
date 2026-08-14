@@ -22,6 +22,23 @@ pub fn create_main_window(app: &tauri::AppHandle, runtime: RuntimeHandle) -> tau
     Ok(())
 }
 
+pub fn open_plugin_window(app: &tauri::AppHandle) -> tauri::Result<()> {
+    if let Some(window) = app.get_webview_window("plugins") {
+        window.show()?;
+        window.set_focus()?;
+        return Ok(());
+    }
+
+    WebviewWindowBuilder::new(app, "plugins", WebviewUrl::App("plugins.html".into()))
+        .title("插件管理 · DSH Desk")
+        .inner_size(820.0, 680.0)
+        .min_inner_size(620.0, 520.0)
+        .center()
+        .build()?;
+
+    Ok(())
+}
+
 pub fn navigate_to_runtime(app: &tauri::AppHandle, value: &str) -> Result<(), String> {
     let url = Url::parse(value).map_err(|error| format!("invalid runtime URL: {error}"))?;
     let window = app
