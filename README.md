@@ -139,6 +139,7 @@ pnpm create:plugin ./my-dsh-plugin @your-scope/my-dsh-plugin
 - [插件信任模型](docs/plugin-trust.md)
 - [真实增长指标](docs/product-metrics.md)
 - [30 天执行计划](docs/30-day-plan.md)
+- [跨设备查看与审批安全协议](docs/cross-device-rfc.md)
 - [贡献指南](CONTRIBUTING.md)
 - [安全报告](SECURITY.md)
 
