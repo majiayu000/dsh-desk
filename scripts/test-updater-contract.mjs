@@ -78,28 +78,29 @@ assert(
 );
 
 const previewWorkflow = read(".github/workflows/preview.yml");
+const normalizedPreviewWorkflow = previewWorkflow.replaceAll("\r\n", "\n");
 for (const token of [
   "macos-15",
   "windows-2022",
   "ubuntu-24.04",
   "--bundles dmg",
   "--bundles nsis",
-  "--bundles appimage,deb",
+  "--bundles deb",
   "--config src-tauri/tauri.unsigned-preview.json",
   "if-no-files-found: error",
 ]) {
-  assert(previewWorkflow.includes(token), `Preview workflow is missing ${token}`);
+  assert(normalizedPreviewWorkflow.includes(token), `Preview workflow is missing ${token}`);
 }
 assert(
-  previewWorkflow.includes("permissions:\n  contents: read"),
+  normalizedPreviewWorkflow.includes("permissions:\n  contents: read"),
   "Preview workflow permissions must remain read-only",
 );
 assert(
-  !previewWorkflow.includes("secrets."),
+  !normalizedPreviewWorkflow.includes("secrets."),
   "Unsigned preview builds must not consume repository secrets",
 );
 assert(
-  !previewWorkflow.includes("actions/upload-artifact@v4"),
+  !normalizedPreviewWorkflow.includes("actions/upload-artifact@v4"),
   "Preview artifact upload action must be pinned to a reviewed commit",
 );
 

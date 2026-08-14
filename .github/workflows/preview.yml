@@ -32,7 +32,7 @@ jobs:
             tauri_args: --bundles nsis
           - platform: linux-x64
             runner: ubuntu-24.04
-            tauri_args: --bundles appimage,deb
+            tauri_args: --bundles deb
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Install Linux desktop dependencies
