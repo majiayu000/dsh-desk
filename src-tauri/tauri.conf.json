@@ -35,7 +35,7 @@
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDVBN0MxODExMzIyRkI5NEIKUldSTHVTOHlFUmg4V2dZUFVRODhHaFB0ZEVpR09SaWEwbWxaVEpTcXZHY05xaElMblhLSXV1WDEK",
       "endpoints": [
-        "https://github.com/majiayu000/dsh-desk/releases/latest/download/latest.json"
+        "https://raw.githubusercontent.com/majiayu000/dsh-desk/update-channel-alpha/latest.json"
       ],
       "windows": {
         "installMode": "passive"

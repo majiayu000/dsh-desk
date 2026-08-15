@@ -21,6 +21,26 @@ fn configured_public_key_verifies_the_release_signing_key() {
     let signature_path = env::var("DSH_UPDATER_TEST_SIGNATURE")
         .expect("DSH_UPDATER_TEST_SIGNATURE must accompany the updater test payload");
 
+    let encoded_signature = fs::read_to_string(signature_path).expect("signature must be readable");
+    let payload = fs::read(payload_path).expect("signed updater test payload must be readable");
+
+    verify(&payload, encoded_signature.trim());
+}
+
+#[test]
+#[ignore = "requires a downloaded release artifact and is run by the channel publisher"]
+fn provided_update_artifact_has_valid_signature() {
+    let artifact = fs::read(
+        env::var("DSH_UPDATER_ARTIFACT").expect("DSH_UPDATER_ARTIFACT must identify the artifact"),
+    )
+    .expect("updater artifact must be readable");
+    let signature = env::var("DSH_UPDATER_ARTIFACT_SIGNATURE")
+        .expect("DSH_UPDATER_ARTIFACT_SIGNATURE must accompany the artifact");
+
+    verify(&artifact, &signature);
+}
+
+fn verify(payload: &[u8], encoded_signature: &str) {
     let config: serde_json::Value = serde_json::from_str(include_str!("../tauri.conf.json"))
         .expect("tauri.conf.json must be valid JSON");
     let encoded_public_key = config
@@ -34,7 +54,6 @@ fn configured_public_key_verifies_the_release_signing_key() {
         std::str::from_utf8(&public_key_text).expect("decoded updater public key must be UTF-8"),
     )
     .expect("decoded updater public key must be valid minisign data");
-    let encoded_signature = fs::read_to_string(signature_path).expect("signature must be readable");
     let signature_text = STANDARD
         .decode(encoded_signature.trim())
         .expect("updater signature must use valid base64");
@@ -42,9 +61,8 @@ fn configured_public_key_verifies_the_release_signing_key() {
         std::str::from_utf8(&signature_text).expect("decoded updater signature must be UTF-8"),
     )
     .expect("signature must be valid minisign data");
-    let payload = fs::read(payload_path).expect("signed updater test payload must be readable");
 
     public_key
-        .verify(&payload, &signature, false)
-        .expect("release private key does not match the updater public key");
+        .verify(payload, &signature, false)
+        .expect("artifact signature does not match the updater public key");
 }

@@ -24,9 +24,12 @@ assert(tauriConfig.bundle?.createUpdaterArtifacts === true, "Tauri updater artif
 const updater = tauriConfig.plugins?.updater;
 assert(updater, "Tauri updater configuration is missing");
 assert(updater.endpoints?.length === 1, "The stable channel must have exactly one updater endpoint");
+const expectedUpdaterEndpoint = packageJson.version.includes("-")
+  ? "https://raw.githubusercontent.com/majiayu000/dsh-desk/update-channel-alpha/latest.json"
+  : "https://raw.githubusercontent.com/majiayu000/dsh-desk/update-channel-stable/latest.json";
 assert(
-  updater.endpoints[0] === "https://github.com/majiayu000/dsh-desk/releases/latest/download/latest.json",
-  "The stable updater endpoint must use the public GitHub latest release",
+  updater.endpoints[0] === expectedUpdaterEndpoint,
+  "The updater endpoint must match the package release channel",
 );
 assert(updater.windows?.installMode === "passive", "Windows updates must use passive NSIS mode");
 
@@ -69,6 +72,31 @@ assert(!workflow.includes("workflow_dispatch:"), "Production releases must be tr
 assert(
   !workflow.includes("uses: tauri-apps/tauri-action@v1"),
   "The updater publishing action must be pinned to a reviewed commit",
+);
+assert(
+  workflow
+    .split(/\r?\n/)
+    .filter((line) => line.trim().startsWith("uses:"))
+    .every((line) => /@[0-9a-f]{40}(?:\s|$)/.test(line)),
+  "Every action in the signed release workflow must be pinned to a full commit",
+);
+
+const channelWorkflow = read(".github/workflows/publish-update-channel.yml");
+for (const token of [
+  "types: [published]",
+  "steps.channel.outputs.branch",
+  "validate:update-manifest",
+  "update-channel-alpha",
+  "contents/latest.json",
+]) {
+  assert(channelWorkflow.includes(token), `Prerelease channel workflow is missing ${token}`);
+}
+assert(
+  channelWorkflow
+    .split(/\r?\n/)
+    .filter((line) => line.trim().startsWith("uses:"))
+    .every((line) => /@[0-9a-f]{40}(?:\s|$)/.test(line)),
+  "Every action in the update channel workflow must be pinned to a full commit",
 );
 
 console.log("Updater configuration, signing, release, and capability contracts passed.");

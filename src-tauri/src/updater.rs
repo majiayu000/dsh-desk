@@ -105,7 +105,7 @@ async fn check_and_maybe_install(app: &AppHandle, interactive: bool) -> Result<(
     }) {
         Ok(()) => app.restart(),
         Err(InstallAfterShutdownError::Shutdown(error)) => {
-            return Err(format!("无法安全停止 DeepSeek Harness：{error}"));
+            Err(format!("无法安全停止 DeepSeek Harness：{error}"))
         }
         Err(InstallAfterShutdownError::Install(error)) => {
             show_error(
