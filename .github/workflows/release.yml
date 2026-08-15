@@ -96,7 +96,7 @@ jobs:
       - name: Write SHA-256 checksums
         run: pnpm release:checksums
       - name: Attest release provenance
-        uses: actions/attest-build-provenance@v3
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: |
             src-tauri/target/release/bundle/**/*.dmg
