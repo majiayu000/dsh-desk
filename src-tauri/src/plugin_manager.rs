@@ -11,6 +11,8 @@ use flate2::read::GzDecoder;
 use serde::{Deserialize, Serialize};
 use tauri::Manager;
 
+use crate::harness_command::harness_command;
+
 const MAX_PLUGIN_ARCHIVE_BYTES: u64 = 50 * 1024 * 1024;
 const MAX_MANIFEST_BYTES: u64 = 1024 * 1024;
 const PROFILE_STATE_FILES: [&str; 3] = ["package.json", "pnpm-lock.yaml", "cordis.patch.yml"];
@@ -257,8 +259,7 @@ pub(crate) fn execute_plugin_command(
         .then(|| ProfileBackup::capture(profile_dir.clone()))
         .transpose()?;
 
-    let output = Command::new(node)
-        .arg(entry)
+    let output = harness_command(node, entry)
         .args(["plugin", "--profile", "web", request.action.as_str()])
         .arg(&request.operand)
         .current_dir(&workspace)
@@ -272,8 +273,7 @@ pub(crate) fn execute_plugin_command(
     let mut exit_code = output.status.code();
     let mut stderr = String::from_utf8_lossy(&output.stderr).into_owned();
     if success && request.is_mutating() {
-        let validation = Command::new(node)
-            .arg(entry)
+        let validation = harness_command(node, entry)
             .args(["--profile", "web", "--dump-config"])
             .current_dir(&workspace)
             .env("DSH_HOME", &home)

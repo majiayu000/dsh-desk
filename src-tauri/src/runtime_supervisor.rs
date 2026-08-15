@@ -19,6 +19,7 @@ use serde::Serialize;
 use tauri::{Emitter, Manager};
 use url::Url;
 
+use crate::harness_command::harness_command;
 use crate::plugin_manager::{
     PluginCommandRequest, PluginCommandResult, PluginInspection, execute_plugin_command,
     inspect_plugin_source,
@@ -443,9 +444,8 @@ fn start_runtime(app: &tauri::AppHandle) -> Result<RunningRuntime, RuntimeFailur
         &format!("starting runtime in {}", workspace.display()),
     );
 
-    let mut command = Command::new(&node);
+    let mut command = harness_command(&node, &entry);
     command
-        .arg(&entry)
         .args(["web", "--host", "127.0.0.1", "--port", "0"])
         .current_dir(workspace)
         .env("DSH_HOME", dsh_home)
