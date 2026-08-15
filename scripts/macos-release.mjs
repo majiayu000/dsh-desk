@@ -1,4 +1,14 @@
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import {
+  closeSync,
+  existsSync,
+  mkdtempSync,
+  openSync,
+  readdirSync,
+  readFileSync,
+  readSync,
+  rmSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 
@@ -10,6 +20,16 @@ const bundleRoot = join(projectRoot, "src-tauri", "target", "release", "bundle")
 const appPath = join(bundleRoot, "macos", "DSH Desk.app");
 const architecture = process.arch === "arm64" ? "aarch64" : process.arch;
 const dmgPath = join(bundleRoot, "dmg", `DSH Desk_${packageJson.version}_${architecture}.dmg`);
+const machOMagicValues = new Set([
+  0xfeedface,
+  0xfeedfacf,
+  0xcefaedfe,
+  0xcffaedfe,
+  0xcafebabe,
+  0xcafebabf,
+  0xbebafeca,
+  0xbfbafeca,
+]);
 
 if (process.platform !== "darwin") {
   throw new Error("macOS release signing and verification must run on macOS");
@@ -45,14 +65,20 @@ function collectNativeCodeCandidates(root) {
       candidates.push(...collectNativeCodeCandidates(entryPath));
       continue;
     }
-    if (!entry.isFile()) continue;
-
-    const stat = statSync(entryPath);
-    if ((stat.mode & 0o111) !== 0 || entry.name.endsWith(".node") || entry.name.endsWith(".dylib")) {
-      candidates.push(entryPath);
-    }
+    if (entry.isFile()) candidates.push(entryPath);
   }
   return candidates;
+}
+
+function isMachO(filePath) {
+  const descriptor = openSync(filePath, "r");
+  try {
+    const magic = Buffer.allocUnsafe(4);
+    if (readSync(descriptor, magic, 0, magic.length, 0) !== magic.length) return false;
+    return machOMagicValues.has(magic.readUInt32BE(0));
+  } finally {
+    closeSync(descriptor);
+  }
 }
 
 function codeSigningAuthority(filePath) {
@@ -96,7 +122,7 @@ function signPreparedRuntime() {
   let machOCount = 0;
   let signedCount = 0;
   for (const candidate of collectNativeCodeCandidates(runtimePath)) {
-    if (!capture("/usr/bin/file", ["-b", candidate]).startsWith("Mach-O")) continue;
+    if (!isMachO(candidate)) continue;
     machOCount += 1;
 
     if (!hasDeveloperIdAuthority(candidate)) {
@@ -124,43 +150,91 @@ function signPreparedRuntime() {
   console.log(`Verified ${machOCount} bundled Mach-O binaries; signed ${signedCount}`);
 }
 
-function verifyDistribution() {
-  for (const artifact of [appPath, dmgPath]) {
-    if (!existsSync(artifact)) throw new Error(`Release artifact is missing: ${artifact}`);
+function notarizeDmg() {
+  if (!existsSync(dmgPath)) throw new Error(`Release artifact is missing: ${dmgPath}`);
+
+  const required = ["APPLE_API_KEY_PATH", "APPLE_API_KEY", "APPLE_API_ISSUER"];
+  const missing = required.filter((name) => !process.env[name]);
+  if (missing.length > 0) {
+    throw new Error(`DMG notarization is blocked: missing ${missing.join(", ")}`);
   }
 
-  run("codesign", ["--verify", "--deep", "--strict", "--verbose=4", appPath]);
-  run("xcrun", ["stapler", "validate", appPath]);
+  run("xcrun", [
+    "notarytool",
+    "submit",
+    dmgPath,
+    "--wait",
+    "--key",
+    process.env.APPLE_API_KEY_PATH,
+    "--key-id",
+    process.env.APPLE_API_KEY,
+    "--issuer",
+    process.env.APPLE_API_ISSUER,
+  ]);
+  run("xcrun", ["stapler", "staple", dmgPath]);
+  run("xcrun", ["stapler", "validate", dmgPath]);
+}
 
-  let machOCount = 0;
-  for (const candidate of collectNativeCodeCandidates(join(appPath, "Contents"))) {
-    if (!capture("/usr/bin/file", ["-b", candidate]).startsWith("Mach-O")) continue;
-    machOCount += 1;
-    run("codesign", ["--verify", "--strict", "--verbose=2", candidate]);
-    if (!hasDeveloperIdAuthority(candidate)) {
-      throw new Error(`Packaged native code lacks a Developer ID Application authority: ${candidate}`);
+function verifyDistribution() {
+  if (!existsSync(dmgPath)) throw new Error(`Release artifact is missing: ${dmgPath}`);
+
+  let verifiedAppPath = appPath;
+  let mountPath;
+  try {
+    if (!existsSync(verifiedAppPath)) {
+      mountPath = mkdtempSync(join(tmpdir(), "dsh-desk-verify-"));
+      run("hdiutil", ["attach", "-nobrowse", "-readonly", "-mountpoint", mountPath, dmgPath]);
+      verifiedAppPath = join(mountPath, "DSH Desk.app");
+      if (!existsSync(verifiedAppPath)) {
+        throw new Error(`Release application is missing from mounted DMG: ${verifiedAppPath}`);
+      }
+    }
+
+    run("codesign", ["--verify", "--deep", "--strict", "--verbose=4", verifiedAppPath]);
+    run("xcrun", ["stapler", "validate", verifiedAppPath]);
+
+    let machOCount = 0;
+    for (const candidate of collectNativeCodeCandidates(join(verifiedAppPath, "Contents"))) {
+      if (!isMachO(candidate)) continue;
+      machOCount += 1;
+      run("codesign", ["--verify", "--strict", "--verbose=2", candidate]);
+      if (!hasDeveloperIdAuthority(candidate)) {
+        throw new Error(`Packaged native code lacks a Developer ID Application authority: ${candidate}`);
+      }
+    }
+    if (machOCount === 0) throw new Error(`No Mach-O binaries were found in ${verifiedAppPath}`);
+
+    run("codesign", ["--verify", "--strict", "--verbose=4", dmgPath]);
+    run("spctl", ["--assess", "--type", "execute", "--verbose=4", verifiedAppPath]);
+    run("spctl", [
+      "--assess",
+      "--type",
+      "open",
+      "--context",
+      "context:primary-signature",
+      "--verbose=4",
+      dmgPath,
+    ]);
+    console.log(`Verified notarized macOS distribution with ${machOCount} Mach-O binaries`);
+  } finally {
+    if (mountPath) {
+      try {
+        run("hdiutil", ["detach", mountPath]);
+      } finally {
+        rmSync(mountPath, { recursive: true, force: true });
+      }
     }
   }
-  if (machOCount === 0) throw new Error(`No Mach-O binaries were found in ${appPath}`);
-
-  run("codesign", ["--verify", "--strict", "--verbose=4", dmgPath]);
-  run("spctl", ["--assess", "--type", "execute", "--verbose=4", appPath]);
-  run("spctl", [
-    "--assess",
-    "--type",
-    "open",
-    "--context",
-    "context:primary-signature",
-    "--verbose=4",
-    dmgPath,
-  ]);
-  console.log(`Verified notarized macOS distribution with ${machOCount} Mach-O binaries`);
 }
 
 if (command === "sign-runtime") {
   signPreparedRuntime();
+} else if (command === "notarize-dmg") {
+  notarizeDmg();
 } else if (command === "verify-bundle") {
   verifyDistribution();
 } else {
-  throw new Error("Usage: node scripts/macos-release.mjs <sign-runtime|verify-bundle>");
+  throw new Error(
+    "Usage: node scripts/macos-release.mjs <sign-runtime|notarize-dmg|verify-bundle>",
+  );
 }

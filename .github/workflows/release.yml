@@ -90,6 +90,7 @@ jobs:
         shell: bash
         run: |
           printf '%s' "$APPLE_API_KEY_CONTENT" | base64 --decode > "$RUNNER_TEMP/AuthKey.p8"
+          chmod 600 "$RUNNER_TEMP/AuthKey.p8"
           echo "APPLE_API_KEY_PATH=$RUNNER_TEMP/AuthKey.p8" >> "$GITHUB_ENV"
       - name: Import Apple Developer ID certificate
         if: runner.os == 'macOS'
@@ -148,6 +149,20 @@ jobs:
           generateReleaseNotes: true
           updaterJsonPreferNsis: true
           args: ${{ matrix.tauri_args }}
+      - name: Notarize and staple macOS DMG
+        if: runner.os == 'macOS'
+        env:
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+        run: pnpm release:macos:notarize-dmg
+      - name: Replace draft macOS DMG with stapled artifact
+        if: runner.os == 'macOS'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: >-
+          gh release upload "$GITHUB_REF_NAME"
+          "src-tauri/target/release/bundle/dmg/DSH Desk_"*.dmg --clobber
       - name: Verify notarized macOS distribution
         if: runner.os == 'macOS'
         run: pnpm release:macos:verify
