@@ -21,7 +21,9 @@ fn bootstrap_harness_command(node: &Path, entry: &Path) -> Command {
 
 #[cfg(windows)]
 pub(crate) fn harness_command(node: &Path, entry: &Path) -> Command {
-    bootstrap_harness_command(node, entry)
+    let mut command = bootstrap_harness_command(node, entry);
+    crate::process_termination::configure_windowless_command(&mut command);
+    command
 }
 
 #[cfg(not(windows))]

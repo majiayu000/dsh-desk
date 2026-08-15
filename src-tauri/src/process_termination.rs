@@ -24,15 +24,22 @@ use windows_sys::Win32::{
             JobObjectBasicAccountingInformation, JobObjectExtendedLimitInformation,
             QueryInformationJobObject, SetInformationJobObject, TerminateJobObject,
         },
-        Threading::{CREATE_SUSPENDED, OpenThread, ResumeThread, THREAD_SUSPEND_RESUME},
+        Threading::{
+            CREATE_NO_WINDOW, CREATE_SUSPENDED, OpenThread, ResumeThread, THREAD_SUSPEND_RESUME,
+        },
     },
 };
 
 const FORCE_STOP_TIMEOUT: Duration = Duration::from_secs(2);
 
 #[cfg(windows)]
+pub(crate) fn configure_windowless_command(command: &mut Command) {
+    command.creation_flags(CREATE_NO_WINDOW);
+}
+
+#[cfg(windows)]
 pub(crate) fn configure_process_tree_command(command: &mut Command) {
-    command.creation_flags(CREATE_SUSPENDED);
+    command.creation_flags(CREATE_SUSPENDED | CREATE_NO_WINDOW);
 }
 
 pub(crate) struct ProcessTree {
@@ -373,8 +380,54 @@ mod windows_tests {
 
     use super::{
         ProcessTree, active_job_processes, configure_process_tree_command,
-        stop_process_tree_with_timeout,
+        configure_windowless_command, stop_process_tree_with_timeout,
     };
+
+    const NO_CONSOLE_CHECK: &str = r#"Add-Type -Namespace Win32 -Name NativeMethods -MemberDefinition '[System.Runtime.InteropServices.DllImport("Kernel32.dll")] public static extern System.IntPtr GetConsoleWindow();'; if ([Win32.NativeMethods]::GetConsoleWindow() -ne [System.IntPtr]::Zero) { exit 1 }"#;
+
+    #[test]
+    fn windowless_helper_process_has_no_console() {
+        let mut command = Command::new("powershell.exe");
+        command.args([
+            "-NoProfile",
+            "-NonInteractive",
+            "-Command",
+            NO_CONSOLE_CHECK,
+        ]);
+        configure_windowless_command(&mut command);
+
+        let output = command
+            .output()
+            .expect("windowless PowerShell helper must start");
+        assert!(
+            output.status.success(),
+            "windowless helper unexpectedly owned a console: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+
+    #[test]
+    fn suspended_runtime_process_has_no_console() {
+        let mut command = Command::new("powershell.exe");
+        command.args([
+            "-NoProfile",
+            "-NonInteractive",
+            "-Command",
+            NO_CONSOLE_CHECK,
+        ]);
+        configure_process_tree_command(&mut command);
+        let child = command
+            .spawn()
+            .expect("suspended windowless runtime must start");
+        let mut process =
+            ProcessTree::attach(child).expect("suspended windowless runtime must enter the job");
+        let status = process
+            .child
+            .wait()
+            .expect("windowless runtime status must be readable");
+
+        assert!(status.success(), "runtime unexpectedly owned a console");
+    }
 
     #[test]
     fn suspended_parent_cannot_spawn_outside_the_job() {
