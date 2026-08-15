@@ -94,7 +94,7 @@ A scheduled workflow also installs the newest npm candidate in an isolated CI wo
 
 ## Development
 
-The development toolchain uses pnpm 11.7.0:
+The development toolchain uses pnpm 11.21.0:
 
 ```sh
 npx --yes pnpm@11.21.0 install

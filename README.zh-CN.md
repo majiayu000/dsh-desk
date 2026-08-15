@@ -115,17 +115,17 @@ DSH Desk 当前不宣称安装包最小：完整离线 runtime 会显著增加�
 
 ## 开发
 
-开发环境固定使用 pnpm 11.7.0：
+开发环境固定使用 pnpm 11.21.0：
 
 ```sh
-npx --yes pnpm@11.7.0 install
-npx --yes pnpm@11.7.0 exec tauri dev
+npx --yes pnpm@11.21.0 install
+npx --yes pnpm@11.21.0 exec tauri dev
 ```
 
 可用 `DSH_DESKTOP_WORKSPACE` 指定 Harness 初始工作目录：
 
 ```sh
-DSH_DESKTOP_WORKSPACE=/path/to/project npx --yes pnpm@11.7.0 exec tauri dev
+DSH_DESKTOP_WORKSPACE=/path/to/project npx --yes pnpm@11.21.0 exec tauri dev
 ```
 
 完整验证：

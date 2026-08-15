@@ -17,10 +17,11 @@ assert(tauriConfig.bundle?.createUpdaterArtifacts === true, "Tauri updater artif
 
 const updater = tauriConfig.plugins?.updater;
 assert(updater, "Tauri updater configuration is missing");
-assert(updater.endpoints?.length === 1, "The stable channel must have exactly one updater endpoint");
+assert(updater.endpoints?.length === 1, "The production build must have exactly one updater endpoint");
 assert(
-  updater.endpoints[0] === "https://github.com/majiayu000/dsh-desk/releases/latest/download/latest.json",
-  "The stable updater endpoint must use the public GitHub latest release",
+  updater.endpoints[0] ===
+    "https://raw.githubusercontent.com/majiayu000/dsh-desk/update-channel-alpha/latest.json",
+  "The alpha updater endpoint must use the independently verified channel branch",
 );
 assert(updater.windows?.installMode === "passive", "Windows updates must use passive NSIS mode");
 

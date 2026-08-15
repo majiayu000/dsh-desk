@@ -14,10 +14,10 @@ Tauri updater 使用一套独立于 Apple Developer ID 和 Windows Authenticode 
 正式构建会先用私钥签署测试载荷，并以配置中的公钥验证，密钥不匹配会在打包前失败。之后生成平台更新包和 `.sig`，`tauri-apps/tauri-action` 将它们连同 `latest.json` 上传到同一个草稿 Release。三个矩阵任务串行发布，避免并发覆盖 `latest.json` 中其他平台的记录。客户端只访问 HTTPS 地址：
 
 ```text
-https://github.com/majiayu000/dsh-desk/releases/latest/download/latest.json
+https://raw.githubusercontent.com/majiayu000/dsh-desk/update-channel-alpha/latest.json
 ```
 
-因此只有发布后的稳定 GitHub Release 会进入自动更新通道；draft 和 prerelease 不会被 `releases/latest` 选中。alpha/beta 通道必须使用单独的更新元数据地址，不能覆盖稳定通道。
+发布 Release 后，独立工作流会验证所有平台资产、安装器类型和 minisign 签名，再以带旧 SHA 的 GitHub Contents API 请求更新 channel 分支。alpha/beta 使用 `update-channel-alpha`，稳定版使用 `update-channel-stable`；draft 不会进入任何客户端通道，旧版本也不能覆盖新版本。
 
 在取得 Apple Developer ID 和 Windows Authenticode 证书前，可手动运行 `Update-capable unsigned preview` 工作流验证完整更新链路。它生成三平台未做系统身份签名的安装包，但 updater 包仍使用同一套 minisign 私钥签名；版本化资产发布到 `preview-v<version>`，通过校验的 `latest.json` 才会替换 `preview-channel`。该通道与正式 `releases/latest` 完全隔离。首次运行只建立当前版本基线；将三个版本文件同步递增后再次运行，旧预览版才能实际收到升级。
 
