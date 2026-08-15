@@ -34,7 +34,7 @@ https://raw.githubusercontent.com/majiayu000/dsh-desk/update-channel-alpha/lates
 - `APPLE_API_KEY`
 - `APPLE_API_ISSUER`
 
-Tauri 使用 Hardened Runtime 完成签名并提交 Apple 公证。发布前还必须在干净 Mac 上人工验证 Gatekeeper、签名链、公证 ticket 与内置 Node runtime；CI 成功不能替代首次实机门禁。
+Tauri 使用 Hardened Runtime 完成签名并先提交 `.app` 公证。DMG 生成后，发布链会再次提交 DMG 公证、staple ticket，并用公证后的同名文件覆盖草稿 Release 中的初版资产。发布前还必须在干净 Mac 上人工验证 Gatekeeper、签名链、公证 ticket 与内置 Node runtime；CI 成功不能替代首次实机门禁。
 
 离线 runtime 中的 Node、ripgrep、原生 `.node` 模块和动态库都属于 Apple 公证检查范围。正式构建在 Tauri 封装前扫描所有 Mach-O：保留已有 Developer ID Application 签名，并用当前发行身份补签其余原生代码。封装后再次验证每个 Mach-O 的签名 Authority、应用公证 ticket、DMG 签名和 Gatekeeper；任一项缺失都会阻止 Release。
 

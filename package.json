@@ -46,9 +46,10 @@
     "check:updater-key": "node scripts/check-updater-key.mjs",
     "release:checksums": "node scripts/write-release-checksums.mjs",
     "release:macos:sign-runtime": "node scripts/macos-release.mjs sign-runtime",
+    "release:macos:notarize-dmg": "node scripts/macos-release.mjs notarize-dmg",
     "release:macos:verify": "node scripts/macos-release.mjs verify-bundle",
     "prepare:runtime": "node scripts/prepare-runtime.mjs",
-    "release:macos": "pnpm check:release-env macos && pnpm prepare:runtime && pnpm release:macos:sign-runtime && tauri build --bundles dmg && pnpm release:macos:verify && pnpm release:checksums",
+    "release:macos": "pnpm check:release-env macos && pnpm prepare:runtime && pnpm release:macos:sign-runtime && tauri build --bundles dmg && pnpm release:macos:notarize-dmg && pnpm release:macos:verify && pnpm release:checksums",
     "release:macos:preview": "pnpm prepare:runtime && tauri build --bundles app && DSH_ALLOW_ADHOC=1 node scripts/package-macos.mjs"
   },
   "dependencies": {

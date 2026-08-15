@@ -13,7 +13,9 @@ function walk(directory) {
   });
 }
 
-const artifacts = walk(bundleRoot).filter((path) => releaseExtensions.has(extname(path).toLowerCase()));
+const artifacts = walk(bundleRoot).filter(
+  (path) => releaseExtensions.has(extname(path).toLowerCase()) && !basename(path).startsWith("rw."),
+);
 if (artifacts.length === 0) throw new Error(`No release artifacts found under ${bundleRoot}`);
 
 for (const artifact of artifacts) {
