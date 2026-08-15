@@ -69,6 +69,12 @@ for (const token of [
   "tauri_args: '--bundles app'",
   "DSH_PRESERVE_SIGNATURE: '1'",
   "run: node scripts/package-macos.mjs",
+  "id: windows-signing",
+  "steps.windows-signing.outputs.enabled == 'true'",
+  "steps.windows-signing.outputs.config_args",
+  "Verify Windows Authenticode state",
+  "windows-release-metadata.json",
+  "Windows Alpha signing notice",
   "needs: preflight",
   "uploadUpdaterJson: false",
   "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
@@ -84,6 +90,10 @@ for (const token of [
 assert(!workflow.includes("workflow_dispatch:"), "Production releases must be triggered by tags only");
 assert(!workflow.includes("max-parallel: 1"), "Signed platform builds must run in parallel");
 assert(!workflow.includes("tagName:"), "Platform builders must not mutate a shared GitHub Release");
+assert(
+  !workflow.includes("tauri_args: '--bundles nsis --config"),
+  "The Windows matrix must not require an Authenticode config in unsigned mode",
+);
 assert(
   workflow.match(/pnpm check &&/g)?.length === 1,
   "The full release verification suite must run exactly once",

@@ -40,9 +40,7 @@ const required = platform === "macos"
       "APPLE_API_KEY",
       "APPLE_API_ISSUER",
     ]
-    : platform === "windows"
-      ? ["WINDOWS_CERTIFICATE", "WINDOWS_CERTIFICATE_PASSWORD"]
-      : [];
+    : [];
 required.push("TAURI_SIGNING_PRIVATE_KEY", "TAURI_SIGNING_PRIVATE_KEY_PASSWORD");
 const missing = required.filter((name) => !process.env[name]);
 if (platform === "macos" && !process.env.APPLE_API_KEY_CONTENT && !process.env.APPLE_API_KEY_PATH) {
@@ -51,4 +49,18 @@ if (platform === "macos" && !process.env.APPLE_API_KEY_CONTENT && !process.env.A
 if (missing.length > 0) {
   throw new Error(`${platform} release is blocked: missing ${missing.join(", ")}`);
 }
-console.log(`${platform} release credentials and version gate passed.`);
+
+if (platform === "windows") {
+  const hasCertificate = Boolean(process.env.WINDOWS_CERTIFICATE);
+  const hasPassword = Boolean(process.env.WINDOWS_CERTIFICATE_PASSWORD);
+  if (hasCertificate !== hasPassword) {
+    throw new Error(
+      "windows release is blocked: WINDOWS_CERTIFICATE and WINDOWS_CERTIFICATE_PASSWORD must be provided together",
+    );
+  }
+  console.log(
+    `windows release credentials and version gate passed (${hasCertificate ? "Authenticode enabled" : "unsigned Authenticode mode"}).`,
+  );
+} else {
+  console.log(`${platform} release credentials and version gate passed.`);
+}
