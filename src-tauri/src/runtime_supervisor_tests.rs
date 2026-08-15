@@ -36,27 +36,21 @@ fn shutdown_fails_without_a_positive_acknowledgement() {
 #[test]
 fn expired_shutdown_cannot_be_accepted_later() {
     let (handle, command_rx) = RuntimeHandle::new();
-    let delayed_supervisor = thread::spawn(move || {
-        thread::sleep(Duration::from_millis(30));
-        let command = command_rx
-            .recv()
-            .expect("shutdown command must remain queued");
-        let RuntimeCommand::Shutdown(accepted, _) = command else {
-            panic!("queued command must be shutdown");
-        };
-        assert!(
-            accepted.send(()).is_err(),
-            "a shutdown whose caller timed out must not be accepted later"
-        );
-    });
 
     assert_eq!(
-        handle.shutdown_blocking_with_timeout(Duration::from_millis(10)),
+        handle.shutdown_blocking_with_timeout(Duration::ZERO),
         Err("runtime supervisor did not accept shutdown before the deadline".to_string())
     );
-    delayed_supervisor
-        .join()
-        .expect("delayed supervisor must finish");
+    let command = command_rx
+        .recv()
+        .expect("shutdown command must remain queued");
+    let RuntimeCommand::Shutdown(accepted, _) = command else {
+        panic!("queued command must be shutdown");
+    };
+    assert!(
+        accepted.send(()).is_err(),
+        "a shutdown whose caller timed out must not be accepted later"
+    );
 }
 
 #[test]
