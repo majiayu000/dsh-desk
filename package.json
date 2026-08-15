@@ -36,6 +36,7 @@
     "test:cross-device": "node --experimental-strip-types --test tests/cross-device-protocol.test.ts tests/relay.test.mjs",
     "test:updater-contract": "node scripts/test-updater-contract.mjs",
     "test:doc-links": "node scripts/check-doc-links.mjs",
+    "test:status-page": "node scripts/test-status-page.mjs",
     "relay:dev": "node relay/server.mjs",
     "companion:demo": "node --experimental-strip-types scripts/cross-device-demo.ts",
     "create:plugin": "node scripts/create-plugin.mjs",
