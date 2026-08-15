@@ -1,0 +1,113 @@
+name: Publish verified update channel
+
+on:
+  release:
+    types: [published]
+
+concurrency:
+  group: release-update-channel
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    if: startsWith(github.event.release.tag_name, 'v')
+    runs-on: ubuntu-24.04
+    outputs:
+      channel-branch: ${{ steps.channel.outputs.branch }}
+    permissions:
+      contents: read
+    env:
+      RELEASE_TAG: ${{ github.event.release.tag_name }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          persist-credentials: false
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+        with:
+          version: 11.21.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
+      - run: pnpm install --frozen-lockfile
+      - name: Select channel from package SemVer
+        id: channel
+        shell: bash
+        run: >-
+          node -e "const fs=require('node:fs');const semver=require('semver');
+          const version=require('./package.json').version;
+          const branch=semver.prerelease(version) ? 'update-channel-alpha' : 'update-channel-stable';
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, 'branch=' + branch + '\n')"
+      - name: Download channel and published release metadata
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CHANNEL_BRANCH: ${{ steps.channel.outputs.branch }}
+        shell: bash
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          test "$RELEASE_TAG" = "v${version}"
+          mkdir -p update-channel
+          : > update-channel/current-sha
+          git rev-parse HEAD > update-channel/release-sha
+          gh release download "$RELEASE_TAG" --pattern latest.json --dir update-channel
+          gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}" > update-channel/release.json
+          if gh api "repos/${GITHUB_REPOSITORY}/contents/latest.json?ref=${CHANNEL_BRANCH}" \
+            > update-channel/current-file.json 2>/dev/null; then
+            jq -r .content update-channel/current-file.json | tr -d '\n' | base64 --decode \
+              > update-channel/current-latest.json
+            jq -r .sha update-channel/current-file.json > update-channel/current-sha
+          fi
+      - name: Validate assets, signatures, and monotonic version
+        env:
+          DSH_VERIFY_UPDATE_ARTIFACTS: '1'
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          pnpm validate:update-manifest \
+            update-channel/latest.json "$version" "$RELEASE_TAG" \
+            update-channel/release.json update-channel/current-latest.json
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: verified-update-channel-${{ github.run_id }}
+          path: |
+            update-channel/latest.json
+            update-channel/current-sha
+            update-channel/release-sha
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    needs: validate
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      CHANNEL_BRANCH: ${{ needs.validate.outputs.channel-branch }}
+      RELEASE_TAG: ${{ github.event.release.tag_name }}
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: verified-update-channel-${{ github.run_id }}
+          path: update-channel
+      - name: Atomically update channel branch
+        shell: bash
+        run: |
+          if ! gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/${CHANNEL_BRANCH}" >/dev/null 2>&1; then
+            gh api --method POST "repos/${GITHUB_REPOSITORY}/git/refs" \
+              -f ref="refs/heads/${CHANNEL_BRANCH}" \
+              -f sha="$(cat update-channel/release-sha)"
+          fi
+          content="$(base64 < update-channel/latest.json | tr -d '\n')"
+          arguments=(
+            --method PUT
+            "repos/${GITHUB_REPOSITORY}/contents/latest.json"
+            -f message="chore: publish ${RELEASE_TAG} update metadata"
+            -f content="$content"
+            -f branch="$CHANNEL_BRANCH"
+          )
+          if test -s update-channel/current-sha; then
+            arguments+=(-f sha="$(cat update-channel/current-sha)")
+          fi
+          gh api "${arguments[@]}"

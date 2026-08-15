@@ -153,8 +153,11 @@ pub fn run() {
         tauri::RunEvent::Ready if !cfg!(debug_assertions) => {
             updater::request_check(app.clone(), false);
         }
-        tauri::RunEvent::ExitRequested { .. } => {
-            let _ = app.state::<RuntimeHandle>().shutdown_blocking();
+        tauri::RunEvent::ExitRequested { api, .. } => {
+            if let Err(error) = app.state::<RuntimeHandle>().shutdown_blocking() {
+                eprintln!("refusing to exit while the Harness process tree may be alive: {error}");
+                api.prevent_exit();
+            }
         }
         _ => {}
     });

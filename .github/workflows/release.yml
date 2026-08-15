@@ -29,31 +29,34 @@ jobs:
             bundles: nsis
             tauri_args: '--bundles nsis --config src-tauri/tauri.windows-signing.json'
           - platform: linux
-            runner: ubuntu-22.04
+            runner: ubuntu-24.04
             bundles: appimage-deb
-            tauri_args: '-vv --bundles appimage,deb'
+            tauri_args: '--bundles appimage,deb'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
       - name: Install Linux desktop dependencies
         if: runner.os == 'Linux'
         run: >-
           sudo apt-get update && sudo apt-get install -y
-          libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf libfuse2
-      - uses: pnpm/action-setup@v4
+          libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
         with:
-          version: 11.7.0
-      - uses: actions/setup-node@v6
+          version: 11.21.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: 24
           cache: pnpm
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
       - run: pnpm install --frozen-lockfile
       - name: Read release metadata
         id: release
         shell: bash
         run: >-
-          node -e "const fs=require('node:fs');const v=require('./package.json').version;
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, 'prerelease=' + String(v.includes('-')) + '\n')"
+          node -e "const fs=require('node:fs');const semver=require('semver');
+          const v=require('./package.json').version;
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, 'prerelease=' + String(semver.prerelease(v) !== null) + '\n')"
       - name: Require macOS production signing credentials
         if: matrix.platform == 'macos'
         env:
@@ -123,6 +126,11 @@ jobs:
           $config | ConvertTo-Json -Depth 5 | Set-Content -Encoding utf8 'src-tauri/tauri.windows-signing.json'
       - name: Build and test fixed runtime
         run: pnpm check && pnpm test:rust && pnpm test:updater-contract && pnpm prepare:runtime && pnpm test:packaged-runtime && pnpm test:plugin-parity
+      - name: Sign bundled macOS native runtime
+        if: runner.os == 'macOS'
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+        run: pnpm release:macos:sign-runtime
       - name: Build and upload signed platform bundle
         uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f # v1
         env:
@@ -140,10 +148,13 @@ jobs:
           generateReleaseNotes: true
           updaterJsonPreferNsis: true
           args: ${{ matrix.tauri_args }}
+      - name: Verify notarized macOS distribution
+        if: runner.os == 'macOS'
+        run: pnpm release:macos:verify
       - name: Write SHA-256 checksums
         run: pnpm release:checksums
       - name: Attest release provenance
-        uses: actions/attest-build-provenance@v3
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
         with:
           subject-path: |
             src-tauri/target/release/bundle/**/*.dmg
@@ -154,7 +165,7 @@ jobs:
             src-tauri/target/release/bundle/**/*.tar.gz
             src-tauri/target/release/bundle/**/*.zip
       - name: Upload draft release checksums
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3
         with:
           draft: true
           fail_on_unmatched_files: false

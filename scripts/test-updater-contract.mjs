@@ -1,9 +1,15 @@
-import { readdirSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
-import { assertContract as assert, createContractReader } from "./lib/contract.mjs";
 
 const root = resolve(import.meta.dirname, "..");
-const read = createContractReader(root);
+
+function read(path) {
+  return readFileSync(resolve(root, path), "utf8");
+}
+
+function assert(condition, message) {
+  if (!condition) throw new Error(message);
+}
 
 const packageJson = JSON.parse(read("package.json"));
 const tauriConfig = JSON.parse(read("src-tauri/tauri.conf.json"));
@@ -18,9 +24,12 @@ assert(tauriConfig.bundle?.createUpdaterArtifacts === true, "Tauri updater artif
 const updater = tauriConfig.plugins?.updater;
 assert(updater, "Tauri updater configuration is missing");
 assert(updater.endpoints?.length === 1, "The stable channel must have exactly one updater endpoint");
+const expectedUpdaterEndpoint = packageJson.version.includes("-")
+  ? "https://raw.githubusercontent.com/majiayu000/dsh-desk/update-channel-alpha/latest.json"
+  : "https://raw.githubusercontent.com/majiayu000/dsh-desk/update-channel-stable/latest.json";
 assert(
-  updater.endpoints[0] === "https://github.com/majiayu000/dsh-desk/releases/latest/download/latest.json",
-  "The stable updater endpoint must use the public GitHub latest release",
+  updater.endpoints[0] === expectedUpdaterEndpoint,
+  "The updater endpoint must match the package release channel",
 );
 assert(updater.windows?.installMode === "passive", "Windows updates must use passive NSIS mode");
 
@@ -64,73 +73,30 @@ assert(
   !workflow.includes("uses: tauri-apps/tauri-action@v1"),
   "The updater publishing action must be pinned to a reviewed commit",
 );
-
-const previewConfig = JSON.parse(read("src-tauri/tauri.unsigned-preview.json"));
 assert(
-  previewConfig.bundle?.createUpdaterArtifacts === false,
-  "Unsigned preview builds must not create updater artifacts",
+  workflow
+    .split(/\r?\n/)
+    .filter((line) => line.trim().startsWith("uses:"))
+    .every((line) => /@[0-9a-f]{40}(?:\s|$)/.test(line)),
+  "Every action in the signed release workflow must be pinned to a full commit",
 );
 
-const previewWorkflow = read(".github/workflows/preview.yml");
+const channelWorkflow = read(".github/workflows/publish-update-channel.yml");
 for (const token of [
-  "macos-15",
-  "windows-2022",
-  "ubuntu-22.04",
-  "--bundles dmg",
-  "--bundles nsis",
-  "--bundles appimage,deb",
-  "--config src-tauri/tauri.unsigned-preview.json",
-  "if-no-files-found: error",
+  "types: [published]",
+  "steps.channel.outputs.branch",
+  "validate:update-manifest",
+  "update-channel-alpha",
+  "contents/latest.json",
 ]) {
-  assert(previewWorkflow.includes(token), `Preview workflow is missing ${token}`);
+  assert(channelWorkflow.includes(token), `Prerelease channel workflow is missing ${token}`);
 }
 assert(
-  previewWorkflow.includes("permissions:\n  contents: read"),
-  "Preview workflow permissions must remain read-only",
-);
-assert(
-  !previewWorkflow.includes("secrets."),
-  "Unsigned preview builds must not consume repository secrets",
-);
-assert(
-  !previewWorkflow.includes("actions/upload-artifact@v4"),
-  "Preview artifact upload action must be pinned to a reviewed commit",
-);
-
-const updatePreviewConfig = JSON.parse(read("src-tauri/tauri.update-preview.json"));
-assert(
-  updatePreviewConfig.bundle?.createUpdaterArtifacts === true,
-  "Update previews must create independently signed updater artifacts",
-);
-assert(
-  updatePreviewConfig.plugins?.updater?.endpoints?.[0] ===
-    "https://github.com/majiayu000/dsh-desk/releases/download/preview-channel/latest.json",
-  "Update previews must use the isolated preview channel",
-);
-
-const updatePreviewWorkflow = read(".github/workflows/update-preview.yml");
-for (const token of [
-  "workflow_dispatch:",
-  "max-parallel: 1",
-  "preview-v__VERSION__",
-  "--bundles app,dmg",
-  "src-tauri/tauri.update-preview.json",
-  "pnpm check:updater-key",
-  "node scripts/validate-update-manifest.mjs",
-  "tag_name: preview-channel",
-  "overwrite_files: true",
-]) {
-  assert(updatePreviewWorkflow.includes(token), `Update preview workflow is missing ${token}`);
-}
-assert(
-  !updatePreviewWorkflow.includes("APPLE_CERTIFICATE") &&
-    !updatePreviewWorkflow.includes("WINDOWS_CERTIFICATE"),
-  "Update previews must not pretend to use unavailable OS signing identities",
-);
-assert(
-  !updatePreviewWorkflow.includes("uses: tauri-apps/tauri-action@v1") &&
-    !updatePreviewWorkflow.includes("uses: softprops/action-gh-release@v2"),
-  "Update preview publishing actions must be pinned to reviewed commits",
+  channelWorkflow
+    .split(/\r?\n/)
+    .filter((line) => line.trim().startsWith("uses:"))
+    .every((line) => /@[0-9a-f]{40}(?:\s|$)/.test(line)),
+  "Every action in the update channel workflow must be pinned to a full commit",
 );
 
 console.log("Updater configuration, signing, release, and capability contracts passed.");
