@@ -66,16 +66,33 @@ for (const token of [
   "tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f",
   "TAURI_SIGNING_PRIVATE_KEY",
   "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
-  "updaterJsonPreferNsis: true",
-  "max-parallel: 1",
-  "prerelease: ${{ steps.release.outputs.prerelease }}",
+  "needs: preflight",
+  "uploadUpdaterJson: false",
+  "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+  "actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c",
+  "merge-multiple: true",
+  "environment:\n      name: production",
+  "pnpm release:artifacts manifest",
+  "DSH_ALLOW_DRAFT_RELEASE: '1'",
+  'gh release edit "$GITHUB_REF_NAME" --draft=false',
 ]) {
   assert(workflow.includes(token), `Release workflow is missing ${token}`);
 }
 assert(!workflow.includes("workflow_dispatch:"), "Production releases must be triggered by tags only");
+assert(!workflow.includes("max-parallel: 1"), "Signed platform builds must run in parallel");
+assert(!workflow.includes("tagName:"), "Platform builders must not mutate a shared GitHub Release");
+assert(
+  workflow.match(/pnpm check &&/g)?.length === 1,
+  "The full release verification suite must run exactly once",
+);
 assert(
   !workflow.includes("uses: tauri-apps/tauri-action@v1"),
   "The updater publishing action must be pinned to a reviewed commit",
+);
+assert(
+  !workflow.includes("actions/upload-artifact@v4") &&
+    !workflow.includes("actions/download-artifact@v8"),
+  "Release artifact actions must be pinned to reviewed commits",
 );
 
 const previewConfig = JSON.parse(read("src-tauri/tauri.unsigned-preview.json"));
