@@ -31,7 +31,7 @@ jobs:
           libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
       - uses: pnpm/action-setup@v6
         with:
-          version: 11.7.0
+          version: 11.21.0
       - uses: actions/setup-node@v7
         with:
           node-version: 24
@@ -43,6 +43,8 @@ jobs:
         run: pnpm check
       - name: Run Rust tests
         run: pnpm test:rust
+      - name: Verify signed updater contract
+        run: pnpm test:updater-contract
       - name: Verify cross-device Phase A security contract
         run: pnpm test:cross-device
       - name: Verify development Harness contract

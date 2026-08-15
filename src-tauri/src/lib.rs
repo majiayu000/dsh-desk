@@ -1,6 +1,8 @@
 mod plugin_manager;
+mod process_termination;
 mod runtime_supervisor;
 mod security_policy;
+mod updater;
 mod window_manager;
 
 use std::{process::Command, sync::Mutex};
@@ -98,6 +100,7 @@ pub fn run() {
 
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.show();
@@ -109,6 +112,7 @@ pub fn run() {
                 .about(None)
                 .separator()
                 .text("open-plugins", "插件管理…")
+                .text("check-updates", "检查更新…")
                 .separator()
                 .quit()
                 .build()?;
@@ -117,9 +121,12 @@ pub fn run() {
         .on_menu_event(|app, event| {
             if event.id() == "open-plugins" {
                 let _ = window_manager::open_plugin_window(app);
+            } else if event.id() == "check-updates" {
+                updater::request_check(app.clone(), true);
             }
         })
         .manage(runtime.clone())
+        .manage(updater::UpdateCoordinator::default())
         .invoke_handler(tauri::generate_handler![
             get_runtime_status,
             restart_runtime,
@@ -142,9 +149,16 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("failed to build DSH Desk");
 
-    app.run(|app, event| {
-        if let tauri::RunEvent::ExitRequested { .. } = event {
-            app.state::<RuntimeHandle>().shutdown_blocking();
+    app.run(|app, event| match event {
+        tauri::RunEvent::Ready if !cfg!(debug_assertions) => {
+            updater::request_check(app.clone(), false);
         }
+        tauri::RunEvent::ExitRequested { api, .. } => {
+            if let Err(error) = app.state::<RuntimeHandle>().shutdown_blocking() {
+                eprintln!("refusing to exit while the Harness process tree may be alive: {error}");
+                api.prevent_exit();
+            }
+        }
+        _ => {}
     });
 }

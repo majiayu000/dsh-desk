@@ -19,6 +19,7 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "createUpdaterArtifacts": true,
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -28,6 +29,17 @@
     ],
     "resources": {
       "../resources/runtime/": "runtime/"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDVBN0MxODExMzIyRkI5NEIKUldSTHVTOHlFUmg4V2dZUFVRODhHaFB0ZEVpR09SaWEwbWxaVEpTcXZHY05xaElMblhLSXV1WDEK",
+      "endpoints": [
+        "https://raw.githubusercontent.com/majiayu000/dsh-desk/update-channel-alpha/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
     }
   }
 }

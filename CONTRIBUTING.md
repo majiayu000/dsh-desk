@@ -14,7 +14,7 @@ DSH Desk 的边界是桌面生命周期、runtime 分发、更新、诊断、安
 ## 本地验证
 
 ```sh
-npx --yes pnpm@11.7.0 install
+npx --yes pnpm@11.21.0 install
 pnpm check
 pnpm test:rust
 pnpm test:harness-contract

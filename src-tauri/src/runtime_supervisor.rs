@@ -5,10 +5,11 @@ use std::{
     io::{BufRead, BufReader, Read, Write},
     net::{SocketAddr, TcpStream},
     path::{Path, PathBuf},
-    process::{Child, Command, Stdio},
+    process::{Command, Stdio},
     sync::{
         Arc, Mutex,
-        mpsc::{self, Receiver, RecvTimeoutError, Sender},
+        atomic::{AtomicBool, Ordering},
+        mpsc::{self, Receiver, RecvTimeoutError, Sender, SyncSender},
     },
     thread,
     time::{Duration, Instant},
@@ -22,6 +23,9 @@ use crate::plugin_manager::{
     PluginCommandRequest, PluginCommandResult, PluginInspection, execute_plugin_command,
     inspect_plugin_source,
 };
+#[cfg(windows)]
+use crate::process_termination::configure_process_tree_command;
+use crate::process_termination::{ProcessTree, stop_process_tree};
 use crate::window_manager::{navigate_to_runtime, restore_bootstrap};
 
 const START_TIMEOUT: Duration = Duration::from_secs(20);
@@ -65,13 +69,14 @@ pub(crate) enum RuntimeCommand {
         Sender<Result<PluginCommandResult, String>>,
     ),
     InspectPlugin(String, Sender<Result<PluginInspection, String>>),
-    Shutdown(Sender<()>),
+    Shutdown(SyncSender<()>, Sender<Result<(), String>>),
 }
 
 #[derive(Clone)]
 pub struct RuntimeHandle {
     status: Arc<Mutex<RuntimeStatus>>,
     command_tx: Sender<RuntimeCommand>,
+    shutdown_confirmed: Arc<AtomicBool>,
 }
 
 impl RuntimeHandle {
@@ -81,6 +86,7 @@ impl RuntimeHandle {
             Self {
                 status: Arc::new(Mutex::new(RuntimeStatus::default())),
                 command_tx,
+                shutdown_confirmed: Arc::new(AtomicBool::new(false)),
             },
             command_rx,
         )
@@ -119,15 +125,40 @@ impl RuntimeHandle {
             .map_err(|_| "plugin inspection stopped before completion".to_string())?
     }
 
-    pub fn shutdown_blocking(&self) {
-        let (ack_tx, ack_rx) = mpsc::channel();
-        if self
-            .command_tx
-            .send(RuntimeCommand::Shutdown(ack_tx))
-            .is_ok()
-        {
-            let _ = ack_rx.recv_timeout(STOP_TIMEOUT + Duration::from_secs(2));
+    pub fn shutdown_blocking(&self) -> Result<(), String> {
+        if self.shutdown_confirmed.load(Ordering::Acquire) {
+            return Ok(());
         }
+        self.shutdown_blocking_with_timeout(STOP_TIMEOUT + Duration::from_secs(3))
+    }
+
+    fn shutdown_blocking_with_timeout(&self, timeout: Duration) -> Result<(), String> {
+        let (accepted_tx, accepted_rx) = mpsc::sync_channel(0);
+        let (ack_tx, ack_rx) = mpsc::channel();
+        self.command_tx
+            .send(RuntimeCommand::Shutdown(accepted_tx, ack_tx))
+            .map_err(|_| "runtime supervisor is not running".to_string())?;
+        accepted_rx
+            .recv_timeout(timeout)
+            .map_err(|error| match error {
+                RecvTimeoutError::Timeout => {
+                    "runtime supervisor did not accept shutdown before the deadline".to_string()
+                }
+                RecvTimeoutError::Disconnected => {
+                    "runtime supervisor stopped without accepting shutdown".to_string()
+                }
+            })?;
+        ack_rx
+            .recv_timeout(STOP_TIMEOUT + Duration::from_secs(3))
+            .map_err(|error| match error {
+                RecvTimeoutError::Timeout => {
+                    "runtime supervisor did not finish an accepted shutdown before the deadline"
+                        .to_string()
+                }
+                RecvTimeoutError::Disconnected => {
+                    "runtime supervisor stopped without confirming shutdown".to_string()
+                }
+            })?
     }
 
     fn update(&self, app: &tauri::AppHandle, status: RuntimeStatus) {
@@ -147,7 +178,7 @@ enum RuntimeOutput {
 }
 
 struct RunningRuntime {
-    child: Child,
+    child: ProcessTree,
     url: String,
 }
 
@@ -162,20 +193,22 @@ pub fn spawn_worker(
         loop {
             match command_rx.recv_timeout(Duration::from_millis(250)) {
                 Ok(RuntimeCommand::Restart) => {
-                    if let Some(mut process) = running.take() {
-                        publish_stopping(&app, &handle);
-                        stop_child(&mut process.child);
+                    if let Err(error) = stop_running(&app, &handle, &mut running) {
+                        publish_shutdown_failed(&app, &handle, error);
+                        continue;
                     }
                     let _ = restore_bootstrap(&app, handle.clone());
                     running = start_and_publish(&app, &handle);
                 }
                 Ok(RuntimeCommand::Plugin(request, reply)) => {
                     let should_restart = request.is_mutating();
+                    if should_restart && let Err(error) = stop_running(&app, &handle, &mut running)
+                    {
+                        publish_shutdown_failed(&app, &handle, error.clone());
+                        let _ = reply.send(Err(error));
+                        continue;
+                    }
                     if should_restart {
-                        if let Some(mut process) = running.take() {
-                            publish_stopping(&app, &handle);
-                            stop_child(&mut process.child);
-                        }
                         let _ = restore_bootstrap(&app, handle.clone());
                     }
                     let result = resolve_runtime(&app)
@@ -196,18 +229,28 @@ pub fn spawn_worker(
                         });
                     let _ = reply.send(result);
                 }
-                Ok(RuntimeCommand::Shutdown(ack)) => {
-                    if let Some(mut process) = running.take() {
-                        publish_stopping(&app, &handle);
-                        stop_child(&mut process.child);
+                Ok(RuntimeCommand::Shutdown(accepted, ack)) => {
+                    if accepted.send(()).is_err() {
+                        let _ = ack.send(Err(
+                            "shutdown request expired before the supervisor accepted it"
+                                .to_string(),
+                        ));
+                        continue;
                     }
+                    let result = stop_running(&app, &handle, &mut running);
+                    if let Err(error) = &result {
+                        publish_shutdown_failed(&app, &handle, error.clone());
+                        let _ = ack.send(result);
+                        continue;
+                    }
+                    handle.shutdown_confirmed.store(true, Ordering::Release);
                     handle.update(&app, RuntimeStatus::default());
-                    let _ = ack.send(());
+                    let _ = ack.send(result);
                     break;
                 }
                 Err(RecvTimeoutError::Disconnected) => {
                     if let Some(mut process) = running.take() {
-                        stop_child(&mut process.child);
+                        stop_process_tree_until_dead(&mut process.child);
                     }
                     break;
                 }
@@ -217,6 +260,22 @@ pub fn spawn_worker(
             if let Some(process) = running.as_mut() {
                 match process.child.try_wait() {
                     Ok(Some(exit)) => {
+                        match process.child.is_tree_alive() {
+                            Ok(true) => {
+                                publish_shutdown_failed(
+                                    &app,
+                                    &handle,
+                                    "Harness parent exited but its process tree is still alive"
+                                        .to_string(),
+                                );
+                                continue;
+                            }
+                            Err(error) => {
+                                publish_shutdown_failed(&app, &handle, error);
+                                continue;
+                            }
+                            Ok(false) => {}
+                        }
                         let message = format!("DeepSeek Harness 意外退出（{exit}）。");
                         running = None;
                         handle.update(
@@ -273,7 +332,7 @@ fn start_and_publish(app: &tauri::AppHandle, handle: &RuntimeHandle) -> Option<R
                 },
             );
             if let Err(message) = navigate_to_runtime(app, &process.url) {
-                stop_child(&mut process.child);
+                stop_process_tree_until_dead(&mut process.child);
                 handle.update(
                     app,
                     RuntimeStatus {
@@ -312,6 +371,36 @@ fn publish_stopping(app: &tauri::AppHandle, handle: &RuntimeHandle) {
             message: None,
         },
     );
+}
+
+fn publish_shutdown_failed(app: &tauri::AppHandle, handle: &RuntimeHandle, error: String) {
+    handle.update(
+        app,
+        RuntimeStatus {
+            phase: RuntimePhase::Failed,
+            url: handle.status().url,
+            error_code: Some("runtime-shutdown-failed".to_string()),
+            message: Some(error),
+        },
+    );
+}
+
+fn stop_running(
+    app: &tauri::AppHandle,
+    handle: &RuntimeHandle,
+    running: &mut Option<RunningRuntime>,
+) -> Result<(), String> {
+    let Some(mut process) = running.take() else {
+        return Ok(());
+    };
+    publish_stopping(app, handle);
+    match stop_process_tree(&mut process.child, STOP_TIMEOUT) {
+        Ok(()) => Ok(()),
+        Err(error) => {
+            *running = Some(process);
+            Err(error)
+        }
+    }
 }
 
 fn start_runtime(app: &tauri::AppHandle) -> Result<RunningRuntime, RuntimeFailure> {
@@ -370,6 +459,8 @@ fn start_runtime(app: &tauri::AppHandle) -> Result<RunningRuntime, RuntimeFailur
         use std::os::unix::process::CommandExt;
         command.process_group(0);
     }
+    #[cfg(windows)]
+    configure_process_tree_command(&mut command);
 
     let mut child = command.spawn().map_err(|error| RuntimeFailure {
         code: "runtime-spawn-failed",
@@ -386,6 +477,10 @@ fn start_runtime(app: &tauri::AppHandle) -> Result<RunningRuntime, RuntimeFailur
         log.clone(),
     );
     spawn_output_reader(stderr, RuntimeStream::Stderr, output_tx, log);
+    let mut child = ProcessTree::attach(child).map_err(|message| RuntimeFailure {
+        code: "runtime-process-tree-failed",
+        message,
+    })?;
 
     let started = Instant::now();
     while started.elapsed() < START_TIMEOUT {
@@ -403,7 +498,7 @@ fn start_runtime(app: &tauri::AppHandle) -> Result<RunningRuntime, RuntimeFailur
             Ok(RuntimeOutput::Stdout(line)) => {
                 if let Some(url) = parse_ready_url(&line) {
                     if let Err(error) = wait_for_health(&url) {
-                        stop_child(&mut child);
+                        stop_process_tree_until_dead(&mut child);
                         return Err(error);
                     }
                     return Ok(RunningRuntime { child, url });
@@ -415,7 +510,7 @@ fn start_runtime(app: &tauri::AppHandle) -> Result<RunningRuntime, RuntimeFailur
         }
     }
 
-    stop_child(&mut child);
+    stop_process_tree_until_dead(&mut child);
     Err(RuntimeFailure {
         code: "runtime-timeout",
         message: "DeepSeek Harness 未在 20 秒内完成启动。".to_string(),
@@ -655,42 +750,21 @@ fn write_log(log: &Arc<Mutex<File>>, stream: &str, line: &str) {
     }
 }
 
-fn stop_child(child: &mut Child) {
-    if matches!(child.try_wait(), Ok(Some(_))) {
-        return;
-    }
-
-    #[cfg(unix)]
-    unsafe {
-        libc::kill(-(child.id() as i32), libc::SIGINT);
-    }
-
-    #[cfg(windows)]
-    let _ = child.kill();
-
-    let deadline = Instant::now() + STOP_TIMEOUT;
-    while Instant::now() < deadline {
-        if matches!(child.try_wait(), Ok(Some(_))) {
-            let _ = child.wait();
-            return;
-        }
-        thread::sleep(Duration::from_millis(100));
-    }
-
-    #[cfg(unix)]
-    unsafe {
-        libc::kill(-(child.id() as i32), libc::SIGKILL);
-    }
-    #[cfg(windows)]
-    let _ = child.kill();
-    let _ = child.wait();
-}
-
 pub fn diagnostic_dir(app: &tauri::AppHandle) -> Result<PathBuf, RuntimeFailure> {
     app.path()
         .app_log_dir()
         .or_else(|_| app.path().app_data_dir().map(|path| path.join("logs")))
         .map_err(|error| failure("runtime-log-failed", error))
+}
+
+fn stop_process_tree_until_dead(process: &mut ProcessTree) {
+    loop {
+        match stop_process_tree(process, STOP_TIMEOUT) {
+            Ok(()) => return,
+            Err(error) => eprintln!("failed to stop runtime process tree; retrying: {error}"),
+        }
+        thread::sleep(Duration::from_millis(250));
+    }
 }
 
 fn failure(code: &'static str, error: impl std::fmt::Display) -> RuntimeFailure {
@@ -701,16 +775,5 @@ fn failure(code: &'static str, error: impl std::fmt::Display) -> RuntimeFailure 
 }
 
 #[cfg(test)]
-mod tests {
-    use super::parse_ready_url;
-
-    #[test]
-    fn accepts_only_strict_loopback_ready_lines() {
-        assert_eq!(
-            parse_ready_url("dsh web: http://127.0.0.1:43210/"),
-            Some("http://127.0.0.1:43210/".to_string())
-        );
-        assert_eq!(parse_ready_url("dsh web: http://0.0.0.0:43210/"), None);
-        assert_eq!(parse_ready_url("prefix dsh web: http://127.0.0.1:1/"), None);
-    }
-}
+#[path = "runtime_supervisor_tests.rs"]
+mod tests;

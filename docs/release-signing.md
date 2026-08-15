@@ -2,6 +2,25 @@
 
 生产 Release 只由 `.github/workflows/release.yml` 从版本标签触发。工作流会先检查 `v<package.version>` 一致性和平台凭证，缺少签名材料时直接失败，不生成看起来像正式版的未签名资产。
 
+## 自动更新签名
+
+Tauri updater 使用一套独立于 Apple Developer ID 和 Windows Authenticode 的 minisign 密钥。公钥固定在 `src-tauri/tauri.conf.json`；对应私钥必须同时保留在安全备份和 GitHub Actions Secrets 中。丢失私钥或密码后，已经安装的客户端无法信任使用新密钥签署的更新。
+
+- `TAURI_SIGNING_PRIVATE_KEY`：updater 私钥完整内容
+- `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`：私钥密码
+
+当前维护机的加密私钥位于 `/Users/apple/.tauri/dsh-desk.key`，密码保存在 macOS Keychain 的 `dsh-desk-tauri-updater` service 下。私钥和密码都不得提交到仓库、Release asset、日志或工单。
+
+正式构建会先用私钥签署测试载荷，并以配置中的公钥验证，密钥不匹配会在打包前失败。之后生成平台更新包和 `.sig`，`tauri-apps/tauri-action` 将它们连同 `latest.json` 上传到同一个草稿 Release。三个矩阵任务串行发布，避免并发覆盖 `latest.json` 中其他平台的记录。客户端只访问 HTTPS 地址：
+
+```text
+https://raw.githubusercontent.com/majiayu000/dsh-desk/update-channel-alpha/latest.json
+```
+
+发布 Release 后，独立工作流会验证所有平台资产、安装器类型和 minisign 签名，再以带旧 SHA 的 GitHub Contents API 请求更新 channel 分支。alpha/beta 使用 `update-channel-alpha`，稳定版使用 `update-channel-stable`；draft 不会进入任何客户端通道，旧版本也不能覆盖新版本。
+
+桌面端在生产构建启动后检查一次，也可以从应用菜单选择“检查更新…”。用户确认后才下载；签名验证通过后先停止内置 Harness runtime，再安装完整桌面包并重启。WebView capability 不包含 updater 权限。
+
 ## macOS Secrets
 
 - `APPLE_CERTIFICATE`：Developer ID Application `.p12` 的 Base64 内容
@@ -34,3 +53,5 @@ Linux AppImage 与 deb 会生成 SHA-256，并由 GitHub OIDC artifact attestati
 4. 验证卸载后没有进程与监听端口残留。
 5. 核对 SHA-256、兼容矩阵、许可证清单和已知问题。
 6. 草稿 Release 经人工确认后才能发布。
+7. 从上一个正式版本检查更新，验证提示、签名下载、runtime 停止、安装和重启后的版本。
+8. 将 `latest.json` 中的签名临时替换为无效值，在隔离测试 Release 中确认客户端拒绝安装。
