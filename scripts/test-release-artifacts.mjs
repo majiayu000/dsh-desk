@@ -15,6 +15,7 @@ const signature = Buffer.from(
 ).toString("base64");
 const names = [
   `DSH Desk_${version}_aarch64.app.tar.gz`,
+  `DSH Desk_${version}_x64.app.tar.gz`,
   `DSH Desk_${version}_x64-setup.exe`,
   `DSH Desk_${version}_amd64.AppImage`,
   `DSH Desk_${version}_amd64.deb`,
@@ -63,6 +64,9 @@ try {
   }
   if (manifest.platforms["darwin-aarch64"] !== manifest.platforms["darwin-aarch64-app"]) {
     throw new Error("Generic and app-specific macOS targets must share one artifact");
+  }
+  if (manifest.platforms["darwin-x86_64"] !== manifest.platforms["darwin-x86_64-app"]) {
+    throw new Error("Generic and app-specific Intel macOS targets must share one artifact");
   }
   if (manifest.platforms["windows-x86_64"] !== manifest.platforms["windows-x86_64-nsis"]) {
     throw new Error("Generic and NSIS-specific Windows targets must share one artifact");

@@ -27,6 +27,9 @@ jobs:
           - platform: macos-arm64
             runner: macos-15
             tauri_args: --bundles dmg
+          - platform: macos-x64
+            runner: macos-15-intel
+            tauri_args: --bundles app
           - platform: windows-x64
             runner: windows-2022
             tauri_args: --bundles nsis
@@ -67,6 +70,11 @@ jobs:
         run: >-
           pnpm tauri build ${{ matrix.tauri_args }}
           --config src-tauri/tauri.unsigned-preview.json
+      - name: Package Intel macOS DMG without Finder
+        if: matrix.platform == 'macos-x64'
+        env:
+          DSH_ALLOW_ADHOC: '1'
+        run: node scripts/package-macos.mjs
       - name: Write SHA-256 checksums
         run: pnpm release:checksums
       - name: Upload preview installer

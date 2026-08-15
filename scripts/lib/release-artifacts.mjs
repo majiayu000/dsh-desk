@@ -86,7 +86,8 @@ export function assembleUpdateManifest({
 
   const root = resolve(artifactDirectory);
   const files = walkFiles(root);
-  const macos = signedArtifact(files, ".app.tar.gz");
+  const macosArm64 = signedArtifact(files, "_aarch64.app.tar.gz");
+  const macosX64 = signedArtifact(files, "_x64.app.tar.gz");
   const windows = signedArtifact(files, ".exe");
   const appImage = signedArtifact(files, ".AppImage");
   const deb = signedArtifact(files, ".deb");
@@ -95,7 +96,8 @@ export function assembleUpdateManifest({
     url: releaseAssetUrl(repository, tag, basename(artifact.path)),
   });
 
-  const macosEntry = entry(macos);
+  const macosArm64Entry = entry(macosArm64);
+  const macosX64Entry = entry(macosX64);
   const windowsEntry = entry(windows);
   const appImageEntry = entry(appImage);
   const manifest = {
@@ -103,8 +105,10 @@ export function assembleUpdateManifest({
     notes,
     pub_date: pubDate,
     platforms: {
-      "darwin-aarch64": macosEntry,
-      "darwin-aarch64-app": macosEntry,
+      "darwin-aarch64": macosArm64Entry,
+      "darwin-aarch64-app": macosArm64Entry,
+      "darwin-x86_64": macosX64Entry,
+      "darwin-x86_64-app": macosX64Entry,
       "windows-x86_64": windowsEntry,
       "windows-x86_64-nsis": windowsEntry,
       "linux-x86_64": appImageEntry,

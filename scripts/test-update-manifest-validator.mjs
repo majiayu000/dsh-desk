@@ -13,6 +13,8 @@ const tag = `v${version}`;
 const targets = [
   "darwin-aarch64",
   "darwin-aarch64-app",
+  "darwin-x86_64",
+  "darwin-x86_64-app",
   "windows-x86_64",
   "windows-x86_64-nsis",
   "linux-x86_64",
@@ -25,6 +27,8 @@ const signature = Buffer.from(
 const targetUrls = {
   "darwin-aarch64": `https://github.com/majiayu000/dsh-desk/releases/download/${tag}/DSH.Desk.app.tar.gz`,
   "darwin-aarch64-app": `https://github.com/majiayu000/dsh-desk/releases/download/${tag}/DSH.Desk.app.tar.gz`,
+  "darwin-x86_64": `https://github.com/majiayu000/dsh-desk/releases/download/${tag}/DSH.Desk.x64.app.tar.gz`,
+  "darwin-x86_64-app": `https://github.com/majiayu000/dsh-desk/releases/download/${tag}/DSH.Desk.x64.app.tar.gz`,
   "windows-x86_64": `https://github.com/majiayu000/dsh-desk/releases/download/${tag}/DSH.Desk-setup.exe`,
   "windows-x86_64-nsis": `https://github.com/majiayu000/dsh-desk/releases/download/${tag}/DSH.Desk-setup.exe`,
   "linux-x86_64": `https://github.com/majiayu000/dsh-desk/releases/download/${tag}/DSH.Desk.AppImage`,

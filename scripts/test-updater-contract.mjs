@@ -66,7 +66,9 @@ for (const token of [
   "tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f",
   "TAURI_SIGNING_PRIVATE_KEY",
   "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
-  "--bundles app,dmg",
+  "tauri_args: '--bundles app'",
+  "DSH_PRESERVE_SIGNATURE: '1'",
+  "run: node scripts/package-macos.mjs",
   "needs: preflight",
   "uploadUpdaterJson: false",
   "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
@@ -105,6 +107,7 @@ assert(
 const previewWorkflow = read(".github/workflows/preview.yml");
 for (const token of [
   "macos-15",
+  "macos-15-intel",
   "windows-2022",
   "ubuntu-22.04",
   "--bundles dmg",
@@ -143,8 +146,12 @@ const updatePreviewWorkflow = read(".github/workflows/update-preview.yml");
 for (const token of [
   "workflow_dispatch:",
   "max-parallel: 1",
+  "macos-x64",
+  "macos-15-intel",
   "preview-v__VERSION__",
   "--bundles app,dmg",
+  "DSH_ALLOW_ADHOC: '1'",
+  "gh release upload \"preview-v${version}\"",
   "src-tauri/tauri.update-preview.json",
   "pnpm check:updater-key",
   "node scripts/validate-update-manifest.mjs",

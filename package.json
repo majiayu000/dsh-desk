@@ -1,7 +1,7 @@
 {
   "name": "dsh-desk",
   "private": true,
-  "version": "0.1.0-alpha.5",
+  "version": "0.1.0-alpha.8",
   "description": "Installable Tauri desktop distribution for DeepSeek Harness with a bundled runtime and daily compatibility checks.",
   "license": "MIT",
   "homepage": "https://github.com/majiayu000/dsh-desk/releases",
@@ -51,7 +51,7 @@
     "release:macos:notarize-dmg": "node scripts/macos-release.mjs notarize-dmg",
     "release:macos:verify": "node scripts/macos-release.mjs verify-bundle",
     "prepare:runtime": "node scripts/prepare-runtime.mjs",
-    "release:macos": "pnpm check:release-env macos && pnpm prepare:runtime && pnpm release:macos:sign-runtime && tauri build --bundles dmg && pnpm release:macos:notarize-dmg && pnpm release:macos:verify && pnpm release:checksums",
+    "release:macos": "pnpm check:release-env macos && pnpm prepare:runtime && pnpm release:macos:sign-runtime && tauri build --bundles app && DSH_PRESERVE_SIGNATURE=1 node scripts/package-macos.mjs && pnpm release:macos:notarize-dmg && pnpm release:macos:verify && pnpm release:checksums",
     "release:macos:preview": "pnpm prepare:runtime && tauri build --bundles app && DSH_ALLOW_ADHOC=1 node scripts/package-macos.mjs"
   },
   "dependencies": {
