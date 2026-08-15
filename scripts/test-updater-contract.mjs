@@ -8,6 +8,11 @@ const read = createContractReader(root);
 const packageJson = JSON.parse(read("package.json"));
 const tauriConfig = JSON.parse(read("src-tauri/tauri.conf.json"));
 const cargoToml = read("src-tauri/Cargo.toml");
+const updaterSource = read("src-tauri/src/updater.rs");
+const windowManagerSource = read("src-tauri/src/window_manager.rs");
+const updatePage = read("update.html");
+const updateClient = read("src/update.ts");
+const viteConfig = read("vite.config.ts");
 const cargoPackage = cargoToml.match(/\[package\]\r?\n([\s\S]*?)(?:\r?\n\[|$)/)?.[1];
 const cargoVersion = cargoPackage?.match(/^version\s*=\s*"([^"]+)"\s*$/m)?.[1];
 
@@ -25,16 +30,25 @@ assert(
 );
 assert(updater.windows?.installMode === "passive", "Windows updates must use passive NSIS mode");
 
-const updaterSource = read("src-tauri/src/updater.rs");
+for (const token of [
+  "UpdatePhase",
+  "Downloading",
+  "Ready",
+  "update-status",
+  "record_download",
+  "download_ready",
+  "auto_download",
+]) {
+  assert(updaterSource.includes(token), `Updater state machine is missing ${token}`);
+}
+assert(windowManagerSource.includes('WebviewUrl::App("update.html".into())'), "Update window is missing");
+assert(updatePage.includes('aria-live="polite"'), "Update status must be announced accessibly");
+assert(updateClient.includes("set_update_auto_download"), "Update preference control is missing");
+assert(viteConfig.includes("update: 'update.html'"), "Vite must bundle the update window");
+
 assert(
-  updaterSource.includes(
-    'show_info_nonblocking(&app, "正在检查更新", "另一个更新检查正在进行中。");',
-  ),
-  "A concurrent manual update check must not block the main event loop",
-);
-assert(
-  updaterSource.includes(".show(|_| {});"),
-  "The concurrent-check notice must use the non-blocking dialog API",
+  updaterSource.includes("UpdatePhase::Checking | UpdatePhase::Downloading | UpdatePhase::Installing"),
+  "Concurrent update operations must be ignored without blocking the event loop",
 );
 
 const decodedPublicKey = Buffer.from(updater.pubkey, "base64").toString("utf8");

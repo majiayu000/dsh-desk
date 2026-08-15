@@ -51,6 +51,54 @@ fn get_desktop_version(app: tauri::AppHandle) -> String {
     app.package_info().version.to_string()
 }
 
+fn require_update_window(window: &tauri::WebviewWindow) -> Result<(), String> {
+    if window.label() == "updates" {
+        Ok(())
+    } else {
+        Err("update commands are available only in the software update window".to_string())
+    }
+}
+
+#[tauri::command]
+fn get_update_status(
+    window: tauri::WebviewWindow,
+    app: tauri::AppHandle,
+) -> Result<updater::UpdateStatus, String> {
+    require_update_window(&window)?;
+    updater::status(&app)
+}
+
+#[tauri::command]
+fn check_for_updates(window: tauri::WebviewWindow, app: tauri::AppHandle) -> Result<(), String> {
+    require_update_window(&window)?;
+    updater::request_check(app);
+    Ok(())
+}
+
+#[tauri::command]
+fn download_update(window: tauri::WebviewWindow, app: tauri::AppHandle) -> Result<(), String> {
+    require_update_window(&window)?;
+    updater::request_download(app);
+    Ok(())
+}
+
+#[tauri::command]
+fn install_update(window: tauri::WebviewWindow, app: tauri::AppHandle) -> Result<(), String> {
+    require_update_window(&window)?;
+    updater::request_install(app);
+    Ok(())
+}
+
+#[tauri::command]
+fn set_update_auto_download(
+    window: tauri::WebviewWindow,
+    app: tauri::AppHandle,
+    enabled: bool,
+) -> Result<updater::UpdateStatus, String> {
+    require_update_window(&window)?;
+    updater::set_auto_download(&app, enabled)
+}
+
 fn require_plugin_window(window: &tauri::WebviewWindow) -> Result<(), String> {
     if window.label() == "plugins" {
         Ok(())
@@ -112,7 +160,7 @@ pub fn run() {
                 .about(None)
                 .separator()
                 .text("open-plugins", "插件管理…")
-                .text("check-updates", "检查更新…")
+                .text("software-update", "软件更新…")
                 .separator()
                 .quit()
                 .build()?;
@@ -121,8 +169,10 @@ pub fn run() {
         .on_menu_event(|app, event| {
             if event.id() == "open-plugins" {
                 let _ = window_manager::open_plugin_window(app);
-            } else if event.id() == "check-updates" {
-                updater::request_check(app.clone(), true);
+            } else if event.id() == "software-update" {
+                if window_manager::open_update_window(app).is_ok() {
+                    updater::request_check_if_idle(app.clone());
+                }
             }
         })
         .manage(runtime.clone())
@@ -132,11 +182,17 @@ pub fn run() {
             restart_runtime,
             open_diagnostic_folder,
             get_desktop_version,
+            get_update_status,
+            check_for_updates,
+            download_update,
+            install_update,
+            set_update_auto_download,
             list_plugins,
             inspect_plugin_source,
             run_plugin_command,
         ])
         .setup(move |app| {
+            updater::initialize(app.handle());
             window_manager::create_main_window(app.handle(), runtime.clone())?;
             let receiver = setup_receiver
                 .lock()
@@ -151,7 +207,7 @@ pub fn run() {
 
     app.run(|app, event| match event {
         tauri::RunEvent::Ready if !cfg!(debug_assertions) => {
-            updater::request_check(app.clone(), false);
+            updater::request_check(app.clone());
         }
         tauri::RunEvent::ExitRequested { api, .. } => {
             if let Err(error) = app.state::<RuntimeHandle>().shutdown_blocking() {
