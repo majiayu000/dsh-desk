@@ -69,11 +69,11 @@ jobs:
           - platform: macos
             artifact: macos-arm64
             runner: macos-15
-            tauri_args: '--bundles app,dmg'
+            tauri_args: '--bundles app'
           - platform: macos
             artifact: macos-x64
             runner: macos-15-intel
-            tauri_args: '--bundles app,dmg'
+            tauri_args: '--bundles app'
           - platform: windows
             artifact: windows
             runner: windows-2022
@@ -177,6 +177,12 @@ jobs:
         with:
           uploadUpdaterJson: false
           args: ${{ matrix.tauri_args }}
+      - name: Package signed macOS DMG without Finder
+        if: runner.os == 'macOS'
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          DSH_PRESERVE_SIGNATURE: '1'
+        run: node scripts/package-macos.mjs
       - name: Notarize and staple macOS DMG
         if: runner.os == 'macOS'
         env:

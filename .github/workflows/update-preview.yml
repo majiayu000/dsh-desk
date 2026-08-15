@@ -21,17 +21,19 @@ jobs:
       max-parallel: 1
       matrix:
         include:
-          - platform: windows-x64
-            runner: windows-2022
-            tauri_args: --bundles nsis
+          - platform: macos-x64
+            runner: macos-15-intel
+            # Tauri's Finder-driven DMG bundler can hang on the Intel runner.
+            # Build the updater app here and create the DMG with hdiutil below.
+            tauri_args: --bundles app
           - platform: macos-arm64
             runner: macos-15
             # `app` produces the signed .app.tar.gz consumed by Tauri's macOS updater;
             # `dmg` remains the human-installable unsigned preview package.
             tauri_args: --bundles app,dmg
-          - platform: macos-x64
-            runner: macos-15-intel
-            tauri_args: --bundles app,dmg
+          - platform: windows-x64
+            runner: windows-2022
+            tauri_args: --bundles nsis
           - platform: linux-x64
             runner: ubuntu-22.04
             tauri_args: -vv --bundles appimage,deb
@@ -83,6 +85,22 @@ jobs:
           prerelease: true
           updaterJsonPreferNsis: true
           args: ${{ matrix.tauri_args }} --config src-tauri/tauri.update-preview.json
+      - name: Package Intel macOS DMG without Finder
+        if: matrix.platform == 'macos-x64'
+        env:
+          DSH_ALLOW_ADHOC: '1'
+        run: node scripts/package-macos.mjs
+      - name: Upload Intel macOS DMG
+        if: matrix.platform == 'macos-x64'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          gh release upload "preview-v${version}" \
+            "src-tauri/target/release/bundle/dmg/DSH Desk_${version}_x64.dmg" \
+            "src-tauri/target/release/bundle/dmg/DSH Desk_${version}_x64.dmg.sha256" \
+            --clobber
 
   publish-channel:
     name: Publish validated preview channel
