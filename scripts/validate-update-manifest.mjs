@@ -64,6 +64,8 @@ for (const [target, entry] of Object.entries(manifest.platforms ?? {})) {
 const requiredTargets = [
   "darwin-aarch64",
   "darwin-aarch64-app",
+  "darwin-x86_64",
+  "darwin-x86_64-app",
   "windows-x86_64",
   "windows-x86_64-nsis",
   "linux-x86_64",
@@ -73,6 +75,8 @@ const requiredTargets = [
 const suffixes = new Map([
   ["darwin-aarch64", ".app.tar.gz"],
   ["darwin-aarch64-app", ".app.tar.gz"],
+  ["darwin-x86_64", ".app.tar.gz"],
+  ["darwin-x86_64-app", ".app.tar.gz"],
   ["windows-x86_64", ".exe"],
   ["windows-x86_64-nsis", ".exe"],
   ["linux-x86_64", ".appimage"],
@@ -100,6 +104,7 @@ for (const target of requiredTargets) {
 }
 for (const [generic, specific] of [
   ["darwin-aarch64", "darwin-aarch64-app"],
+  ["darwin-x86_64", "darwin-x86_64-app"],
   ["windows-x86_64", "windows-x86_64-nsis"],
   ["linux-x86_64", "linux-x86_64-appimage"],
 ]) {

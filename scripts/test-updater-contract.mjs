@@ -105,6 +105,7 @@ assert(
 const previewWorkflow = read(".github/workflows/preview.yml");
 for (const token of [
   "macos-15",
+  "macos-15-intel",
   "windows-2022",
   "ubuntu-22.04",
   "--bundles dmg",
@@ -143,6 +144,8 @@ const updatePreviewWorkflow = read(".github/workflows/update-preview.yml");
 for (const token of [
   "workflow_dispatch:",
   "max-parallel: 1",
+  "macos-x64",
+  "macos-15-intel",
   "preview-v__VERSION__",
   "--bundles app,dmg",
   "src-tauri/tauri.update-preview.json",

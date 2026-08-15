@@ -27,6 +27,9 @@ jobs:
           - platform: macos-arm64
             runner: macos-15
             tauri_args: --bundles dmg
+          - platform: macos-x64
+            runner: macos-15-intel
+            tauri_args: --bundles dmg
           - platform: windows-x64
             runner: windows-2022
             tauri_args: --bundles nsis
