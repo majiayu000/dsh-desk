@@ -75,6 +75,7 @@ html[lang="zh-CN"] {
   --serif: "Songti SC", "STSong", "Noto Serif CJK SC", serif;
 }
 html[lang="zh-CN"] h1, html[lang="zh-CN"] h2 { letter-spacing: -.045em; line-height: .98; }
+html[lang="zh-CN"] h1 { font-size: clamp(3.4rem, 6.2vw, 6.4rem); }
 html[lang="zh-CN"] h1 em, html[lang="zh-CN"] h2 em { font-style: normal; }
 html[lang="zh-CN"] .eyebrow { letter-spacing: .12em; }
 
@@ -198,6 +199,7 @@ footer { display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: center;
   .site-header, main, footer { width: min(100% - 28px, 520px); }
   .site-header { height: 76px; }
   nav { gap: 14px; }
+  .site-header .nav-github { display: none; }
   .nav-github { padding: 8px 11px; }
   .hero { min-height: auto; gap: 20px; padding: 70px 0 90px; }
   h1 { font-size: clamp(3.4rem, 17vw, 5.3rem); }
