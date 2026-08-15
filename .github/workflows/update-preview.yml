@@ -21,14 +21,14 @@ jobs:
       max-parallel: 1
       matrix:
         include:
+          - platform: windows-x64
+            runner: windows-2022
+            tauri_args: --bundles nsis
           - platform: macos-arm64
             runner: macos-15
             # `app` produces the signed .app.tar.gz consumed by Tauri's macOS updater;
             # `dmg` remains the human-installable unsigned preview package.
             tauri_args: --bundles app,dmg
-          - platform: windows-x64
-            runner: windows-2022
-            tauri_args: --bundles nsis
           - platform: linux-x64
             runner: ubuntu-22.04
             tauri_args: -vv --bundles appimage,deb
