@@ -23,6 +23,7 @@ const copy = isChinese
       noJob: "未找到对应的平台验证记录",
       noCandidate: "未找到候选版本验证记录",
       noCi: "未找到 CI 验证记录",
+      notYetReported: "尚未报告",
       commit: "提交",
     }
   : {
@@ -36,6 +37,7 @@ const copy = isChinese
       noJob: "No job evidence found",
       noCandidate: "No candidate evidence found",
       noCi: "No CI evidence found",
+      notYetReported: "Not yet reported",
       commit: "Commit",
     };
 
@@ -124,15 +126,18 @@ async function loadRadar() {
   setState(ci, workflowState(ciRun), ciRun ? `${copy.commit} ${ciRun.head_sha.slice(0, 7)}` : copy.noCi);
   if (ciRun?.html_url) ci.querySelector("a").href = ciRun.html_url;
 
-  document.querySelector("[data-updated]").textContent = formatTimestamp(
-    compatibilityRun?.updated_at,
-    document.documentElement.lang || navigator.language,
-  );
+  document.querySelector("[data-updated]").textContent = compatibilityRun?.updated_at
+    ? formatTimestamp(
+        compatibilityRun.updated_at,
+        document.documentElement.lang || navigator.language,
+      )
+    : copy.notYetReported;
 }
 
-loadRadar().catch((error) => {
+export const radarReady = loadRadar().catch((error) => {
+  console.error("Failed to render compatibility evidence", error);
   const hero = document.querySelector("[data-overall]");
   hero.dataset.state = "unknown";
   hero.querySelector("[data-overall-label]").textContent = stateCopy.unknown.label;
-  hero.querySelector("[data-overall-message]").textContent = `${stateCopy.unknown.message} ${error.message}`;
+  hero.querySelector("[data-overall-message]").textContent = stateCopy.unknown.message;
 });

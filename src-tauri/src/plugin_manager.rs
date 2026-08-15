@@ -12,6 +12,8 @@ use serde::{Deserialize, Serialize};
 use tauri::Manager;
 
 use crate::harness_command::harness_command;
+#[cfg(windows)]
+use crate::process_termination::configure_windowless_command;
 
 const MAX_PLUGIN_ARCHIVE_BYTES: u64 = 50 * 1024 * 1024;
 const MAX_MANIFEST_BYTES: u64 = 1024 * 1024;
@@ -358,12 +360,16 @@ fn repair_profile(
         .ancestors()
         .nth(4)
         .ok_or_else(|| "无法定位内置插件运行环境。".to_string())?;
-    let output = Command::new(node)
+    let mut command = Command::new(node);
+    command
         .arg(node_modules.join("pnpm/bin/pnpm.cjs"))
         .args(["install", "--frozen-lockfile"])
         .current_dir(profile_dir)
         .env("PATH", path)
-        .env("NO_COLOR", "1")
+        .env("NO_COLOR", "1");
+    #[cfg(windows)]
+    configure_windowless_command(&mut command);
+    let output = command
         .output()
         .map_err(|error| format!("无法重新安装回滚后的插件依赖：{error}"))?;
     if output.status.success() {
@@ -492,7 +498,8 @@ fn read_registry_manifest(
         .ancestors()
         .nth(4)
         .ok_or_else(|| "无法定位内置插件运行环境。".to_string())?;
-    let output = Command::new(node)
+    let mut command = Command::new(node);
+    command
         .arg(node_modules.join("pnpm/bin/pnpm.cjs"))
         .args([
             "view",
@@ -505,7 +512,10 @@ fn read_registry_manifest(
             "--json",
         ])
         .current_dir(workspace)
-        .env("NO_COLOR", "1")
+        .env("NO_COLOR", "1");
+    #[cfg(windows)]
+    configure_windowless_command(&mut command);
+    let output = command
         .output()
         .map_err(|error| format!("无法查询 npm 插件元数据：{error}"))?;
     if !output.status.success() {
