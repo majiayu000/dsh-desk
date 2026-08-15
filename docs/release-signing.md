@@ -19,6 +19,10 @@ https://raw.githubusercontent.com/majiayu000/dsh-desk/update-channel-alpha/lates
 
 发布 Release 后，独立工作流会验证所有平台资产、安装器类型和 minisign 签名，再以带旧 SHA 的 GitHub Contents API 请求更新 channel 分支。alpha/beta 使用 `update-channel-alpha`，稳定版使用 `update-channel-stable`；draft 不会进入任何客户端通道，旧版本也不能覆盖新版本。
 
+在取得 Apple Developer ID 和 Windows Authenticode 证书前，可手动运行 `Update-capable unsigned preview` 工作流验证完整更新链路。它生成三平台未做系统身份签名的安装包，但 updater 包仍使用同一套 minisign 私钥签名；版本化资产发布到 `preview-v<version>`，通过校验的 `latest.json` 才会替换 `preview-channel`。该通道与正式 `releases/latest` 完全隔离。首次运行只建立当前版本基线；将三个版本文件同步递增后再次运行，旧预览版才能实际收到升级。
+
+这类预览只用于测试：macOS 仍可能触发 Gatekeeper，Windows 仍可能显示 SmartScreen 警告。没有系统证书不影响 updater 对包内容做签名校验，但不能证明发行者的 Apple/Microsoft 身份。
+
 桌面端在生产构建启动后检查一次，也可以从应用菜单选择“检查更新…”。用户确认后才下载；签名验证通过后先停止内置 Harness runtime，再安装完整桌面包并重启。WebView capability 不包含 updater 权限。
 
 ## macOS Secrets

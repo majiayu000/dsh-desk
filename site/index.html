@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Live, public compatibility evidence for the DSH Desk desktop distribution of DeepSeek Harness.">
+    <meta name="theme-color" content="#07161a">
+    <meta property="og:title" content="DSH Desk Compatibility Radar">
+    <meta property="og:description" content="Pinned runtime, upstream candidate, and three-platform verification status.">
+    <meta property="og:image" content="https://raw.githubusercontent.com/majiayu000/dsh-desk/main/assets/social/github-social-preview.png">
+    <title>DSH Desk — Compatibility Radar</title>
+    <link rel="stylesheet" href="./styles.css">
+    <script type="module" src="./status.js"></script>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="masthead">
+        <a class="brand" href="https://github.com/majiayu000/dsh-desk">
+          <img src="https://raw.githubusercontent.com/majiayu000/dsh-desk/main/assets/dsh-desk-logo-anime-v1.png" alt="">
+          <span><strong>DSH Desk</strong><span>Compatibility control room</span></span>
+        </a>
+        <nav aria-label="Primary">
+          <a href="https://github.com/majiayu000/dsh-desk/releases">Download</a>
+          <a href="https://github.com/majiayu000/dsh-desk/blob/main/docs/compatibility.md">Evidence</a>
+          <a href="https://github.com/majiayu000/dsh-desk">Source</a>
+        </nav>
+      </header>
+
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Live upstream signal / public evidence</p>
+          <h1>Know before you update.</h1>
+          <p class="lede">DSH Desk pins the runtime users receive, then tests the newest DeepSeek Harness candidate separately. A failed candidate never becomes a silent user upgrade.</p>
+        </div>
+        <aside class="overall" data-overall data-state="unknown" aria-live="polite">
+          <span class="status-label">Overall signal</span>
+          <strong data-overall-label>LOADING</strong>
+          <p data-overall-message>Fetching the latest public GitHub Actions evidence.</p>
+          <a href="https://github.com/majiayu000/dsh-desk/actions/workflows/compatibility.yml">Open latest evidence →</a>
+        </aside>
+      </section>
+
+      <section class="versions" aria-label="Pinned versions">
+        <dl class="version">
+          <dt>DSH Desk</dt>
+          <dd data-desktop-version>0.1.0-alpha.1</dd>
+        </dl>
+        <dl class="version">
+          <dt>DeepSeek Harness</dt>
+          <dd data-harness-version>0.1.0-rc.6</dd>
+        </dl>
+      </section>
+
+      <section aria-labelledby="platform-heading">
+        <div class="section-head">
+          <h2 id="platform-heading">Pinned runtime</h2>
+          <p>Last updated <span data-updated>waiting for GitHub</span></p>
+        </div>
+        <div class="platforms">
+          <article class="platform" data-platform="macos" data-state="unknown" data-number="01">
+            <span class="name">macOS arm64</span>
+            <strong data-status>UNKNOWN</strong>
+            <p data-detail>Waiting for job evidence</p>
+            <a href="https://github.com/majiayu000/dsh-desk/actions/workflows/compatibility.yml">macOS evidence</a>
+          </article>
+          <article class="platform" data-platform="windows" data-state="unknown" data-number="02">
+            <span class="name">Windows x64</span>
+            <strong data-status>UNKNOWN</strong>
+            <p data-detail>Waiting for job evidence</p>
+            <a href="https://github.com/majiayu000/dsh-desk/actions/workflows/compatibility.yml">Windows evidence</a>
+          </article>
+          <article class="platform" data-platform="linux" data-state="unknown" data-number="03">
+            <span class="name">Linux x64</span>
+            <strong data-status>UNKNOWN</strong>
+            <p data-detail>Waiting for job evidence</p>
+            <a href="https://github.com/majiayu000/dsh-desk/actions/workflows/compatibility.yml">Linux evidence</a>
+          </article>
+        </div>
+      </section>
+
+      <section class="signals" aria-label="Additional verification signals">
+        <article class="signal" data-candidate data-state="unknown">
+          <dl><dt>Newest npm candidate</dt><dd data-status>UNKNOWN</dd></dl>
+          <p data-detail>Waiting for candidate evidence</p>
+          <a href="https://github.com/majiayu000/dsh-desk/actions/workflows/compatibility.yml">Candidate evidence</a>
+        </article>
+        <article class="signal" data-ci data-state="unknown">
+          <dl><dt>Latest main CI</dt><dd data-status>UNKNOWN</dd></dl>
+          <p data-detail>Waiting for CI evidence</p>
+          <a href="https://github.com/majiayu000/dsh-desk/actions/workflows/ci.yml">CI evidence</a>
+        </article>
+      </section>
+
+      <footer>
+        <p>Green means the named public check passed. It does not imply that every future upstream release is compatible, or that preview installers carry production platform signatures.</p>
+        <p><a href="https://github.com/majiayu000/dsh-desk/blob/main/README.zh-CN.md">中文说明</a></p>
+      </footer>
+    </main>
+  </body>
+</html>

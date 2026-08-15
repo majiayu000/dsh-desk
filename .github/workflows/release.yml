@@ -29,9 +29,9 @@ jobs:
             bundles: nsis
             tauri_args: '--bundles nsis --config src-tauri/tauri.windows-signing.json'
           - platform: linux
-            runner: ubuntu-24.04
+            runner: ubuntu-22.04
             bundles: appimage-deb
-            tauri_args: '--bundles appimage,deb'
+            tauri_args: '-vv --bundles appimage,deb'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -40,8 +40,8 @@ jobs:
         if: runner.os == 'Linux'
         run: >-
           sudo apt-get update && sudo apt-get install -y
-          libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
-      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+          libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf libfuse2
+      - uses: pnpm/action-setup@v4
         with:
           version: 11.21.0
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
@@ -54,9 +54,8 @@ jobs:
         id: release
         shell: bash
         run: >-
-          node -e "const fs=require('node:fs');const semver=require('semver');
-          const v=require('./package.json').version;
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, 'prerelease=' + String(semver.prerelease(v) !== null) + '\n')"
+          node -e "const fs=require('node:fs');const v=require('./package.json').version;
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, 'prerelease=' + String(v.includes('-')) + '\n')"
       - name: Require macOS production signing credentials
         if: matrix.platform == 'macos'
         env:
@@ -180,7 +179,7 @@ jobs:
             src-tauri/target/release/bundle/**/*.tar.gz
             src-tauri/target/release/bundle/**/*.zip
       - name: Upload draft release checksums
-        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3
+        uses: softprops/action-gh-release@v2
         with:
           draft: true
           fail_on_unmatched_files: false

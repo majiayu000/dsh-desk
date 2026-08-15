@@ -20,6 +20,12 @@ DSH Desk 不把 GitHub 搜索结果或 npm 包名直接标记为“可信插件�
 
 未来只有在上游提供可机器验证的权限 manifest 后，才能把权限逐项预览和强制隔离做成发布门禁。在此之前，公开插件 catalog 必须是精选清单，不能把未知来源静默安装。
 
+## 可信目录
+
+目录随应用一起发布，不在运行时抓取 GitHub topic。每个条目必须包含精确包版本、适配的 Harness/Desk 版本、三平台状态、能力上限、复核日期和信任依据。`bundled` 只表示它已由固定的 Harness Web Profile 挂载；未来的 `available` 条目点击安装后仍必须进入来源检查和人工确认，目录身份不能绕过安装审查。
+
+当前公开生态里尚未找到能够确认兼容该插件协议的第三方包，因此首版只列出可由真实 Harness 组合配置证明的上游内置模块。新增第三方条目前必须先在三平台完成 add、dump-config、update、remove 与失败回滚测试。
+
 ## 失败恢复
 
 每次 add、update 或 remove 前保存 Profile 的声明状态。命令成功后必须再通过原版 DSH `--dump-config` 组合验证。

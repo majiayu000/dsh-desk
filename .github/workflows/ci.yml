@@ -39,6 +39,8 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
+      - name: Verify public growth surfaces
+        run: pnpm test:doc-links && pnpm test:status-page
       - name: Build frontend and check Rust
         run: pnpm check
       - name: Run Rust tests
@@ -49,6 +51,8 @@ jobs:
         run: pnpm test:cross-device
       - name: Verify development Harness contract
         run: pnpm test:harness-contract
+      - name: Verify first-run model onboarding contract
+        run: pnpm test:onboarding-contract
       - name: Assemble fixed offline runtime
         run: pnpm prepare:runtime
       - name: Verify packaged runtime contract
@@ -57,3 +61,5 @@ jobs:
         run: pnpm test:plugin-parity
       - name: Verify plugin developer template
         run: pnpm test:plugin-template
+      - name: Verify trusted plugin catalog
+        run: pnpm test:plugin-catalog

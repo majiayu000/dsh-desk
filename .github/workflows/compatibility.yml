@@ -42,10 +42,12 @@ jobs:
       - run: pnpm check
       - run: pnpm test:rust
       - run: pnpm test:harness-contract
+      - run: pnpm test:onboarding-contract
       - run: pnpm prepare:runtime
       - run: pnpm test:packaged-runtime
       - run: pnpm test:plugin-parity
       - run: pnpm test:plugin-template
+      - run: pnpm test:plugin-catalog
 
   upstream-latest:
     name: npm latest candidate
@@ -71,6 +73,6 @@ jobs:
         if: steps.upstream.outputs.drift == 'true'
         run: pnpm add --save-exact @deepseek-ai/dsh@${{ steps.upstream.outputs.latest }}
       - name: Exercise candidate desktop contract
-        run: pnpm check && pnpm test:rust && pnpm test:harness-contract
+        run: pnpm check && pnpm test:rust && pnpm test:harness-contract && pnpm test:onboarding-contract
       - name: Exercise candidate packaged runtime and plugins
         run: pnpm prepare:runtime && pnpm test:packaged-runtime && pnpm test:plugin-parity

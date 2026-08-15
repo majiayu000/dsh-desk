@@ -1,8 +1,20 @@
 {
   "name": "dsh-desk",
   "private": true,
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.3",
+  "description": "Installable Tauri desktop distribution for DeepSeek Harness with a bundled runtime and daily compatibility checks.",
   "license": "MIT",
+  "homepage": "https://github.com/majiayu000/dsh-desk/releases",
+  "bugs": {
+    "url": "https://github.com/majiayu000/dsh-desk/issues"
+  },
+  "keywords": [
+    "deepseek-harness",
+    "desktop-app",
+    "tauri",
+    "ai-agent",
+    "rust"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/majiayu000/dsh-desk.git"
@@ -16,12 +28,16 @@
     "check": "pnpm build && cargo check --manifest-path src-tauri/Cargo.toml",
     "test:rust": "cargo test --manifest-path src-tauri/Cargo.toml",
     "test:harness-contract": "node scripts/test-harness-contract.mjs",
+    "test:onboarding-contract": "node scripts/test-onboarding-contract.mjs",
     "test:packaged-runtime": "node scripts/test-harness-contract.mjs --runtime-root resources/runtime",
     "test:plugin-parity": "node scripts/test-plugin-parity.mjs",
     "test:plugin-template": "node scripts/test-plugin-template.mjs",
+    "test:plugin-catalog": "node scripts/test-plugin-catalog.mjs",
     "test:cross-device": "node --experimental-strip-types --test tests/cross-device-protocol.test.ts tests/relay.test.mjs",
     "test:updater-contract": "node scripts/test-updater-contract.mjs && node scripts/test-update-manifest-validator.mjs",
     "validate:update-manifest": "node scripts/validate-update-manifest.mjs",
+    "test:doc-links": "node scripts/check-doc-links.mjs",
+    "test:status-page": "node scripts/test-status-page.mjs",
     "relay:dev": "node relay/server.mjs",
     "companion:demo": "node --experimental-strip-types scripts/cross-device-demo.ts",
     "create:plugin": "node scripts/create-plugin.mjs",

@@ -9,9 +9,16 @@ DSH Desk 将桌面壳、Node、DeepSeek Harness 和 Web UI 作为一个固定版
 
 | DSH Desk | DeepSeek Harness | Node | macOS arm64 | Windows x64 | Linux x64 |
 |---|---|---|---|---|---|
-| `0.1.0-alpha.1` | `0.1.0-rc.6` | `24.x` | 本地验证 | CI 就绪，待首次运行 | CI 就绪，待首次运行 |
+| `0.1.0-alpha.3` | `0.1.0-rc.6` | `24.x` | 已验证 | 已验证 | 已验证 |
 
-“CI 就绪”只表示仓库已经定义对应门禁；首次公开运行通过前不能改成“已验证”。签名安装包状态单独记录，不与源码兼容混为一谈。
+三平台无系统签名 Preview 已在同一公开运行中完成构建并上传 DMG、NSIS、AppImage 与 DEB：
+[GitHub Actions #31864820646](https://github.com/majiayu000/dsh-desk/actions/runs/31864820646)。
+这里的“已验证”表示固定 runtime、应用构建和安装包生成通过，不表示安装包已经获得 Apple Developer ID 或 Windows Authenticode 签名。
+
+独立的测试更新通道也已完成三平台更新包生成、更新签名校验、清单发布，以及 macOS
+`0.1.0-alpha.2` 到 `0.1.0-alpha.3` 的下载、安装、进程退出、自动重启和版本切换验证：
+[GitHub Actions #31864820646](https://github.com/majiayu000/dsh-desk/actions/runs/31864820646)。
+该通道只用于验证更新基础设施，不会混入正式稳定更新端点。
 
 ## 自动门禁
 

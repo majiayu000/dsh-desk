@@ -1,0 +1,12 @@
+{
+  "bundle": {
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/majiayu000/dsh-desk/releases/download/preview-channel/latest.json"
+      ]
+    }
+  }
+}
