@@ -1,10 +1,47 @@
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::{
+    fs,
+    sync::Mutex,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
-use tauri::{AppHandle, Manager};
-use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
-use tauri_plugin_updater::UpdaterExt;
+use serde::{Deserialize, Serialize};
+use tauri::{AppHandle, Emitter, Manager, menu::MenuItemKind};
+use tauri_plugin_updater::{Update, UpdaterExt};
 
 use crate::runtime_supervisor::RuntimeHandle;
+
+const UPDATE_EVENT: &str = "update-status";
+const UPDATE_MENU_ID: &str = "software-update";
+const PREFERENCES_FILE: &str = "update-preferences.json";
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum UpdatePhase {
+    #[default]
+    Idle,
+    Checking,
+    UpToDate,
+    Available,
+    Downloading,
+    Ready,
+    Installing,
+    Error,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateStatus {
+    phase: UpdatePhase,
+    current_version: String,
+    available_version: Option<String>,
+    notes: Option<String>,
+    downloaded_bytes: u64,
+    total_bytes: Option<u64>,
+    checked_at: Option<u64>,
+    auto_download: bool,
+    download_ready: bool,
+    error: Option<String>,
+}
 
 #[derive(Debug, PartialEq, Eq)]
 enum InstallAfterShutdownError {
@@ -12,110 +49,451 @@ enum InstallAfterShutdownError {
     Install(String),
 }
 
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct UpdatePreferences {
+    auto_download: bool,
+}
+
+struct UpdateSession {
+    phase: UpdatePhase,
+    available_version: Option<String>,
+    notes: Option<String>,
+    downloaded_bytes: u64,
+    total_bytes: Option<u64>,
+    last_reported_bytes: u64,
+    last_reported_percent: u8,
+    checked_at: Option<u64>,
+    auto_download: bool,
+    error: Option<String>,
+    update: Option<Update>,
+    bytes: Option<Vec<u8>>,
+}
+
+impl Default for UpdateSession {
+    fn default() -> Self {
+        Self {
+            phase: UpdatePhase::Idle,
+            available_version: None,
+            notes: None,
+            downloaded_bytes: 0,
+            total_bytes: None,
+            last_reported_bytes: 0,
+            last_reported_percent: 0,
+            checked_at: None,
+            auto_download: true,
+            error: None,
+            update: None,
+            bytes: None,
+        }
+    }
+}
+
 #[derive(Default)]
 pub struct UpdateCoordinator {
-    checking: AtomicBool,
+    session: Mutex<UpdateSession>,
 }
 
 impl UpdateCoordinator {
-    fn begin(&self) -> bool {
-        !self.checking.swap(true, Ordering::AcqRel)
+    fn is_idle(&self) -> bool {
+        self.session
+            .lock()
+            .map(|session| session.phase == UpdatePhase::Idle)
+            .unwrap_or(false)
     }
 
-    fn finish(&self) {
-        self.checking.store(false, Ordering::Release);
+    fn snapshot(&self, app: &AppHandle) -> Result<UpdateStatus, String> {
+        let session = self
+            .session
+            .lock()
+            .map_err(|_| "更新状态暂时不可用，请重新打开更新窗口。".to_string())?;
+        Ok(UpdateStatus {
+            phase: session.phase,
+            current_version: app.package_info().version.to_string(),
+            available_version: session.available_version.clone(),
+            notes: session.notes.clone(),
+            downloaded_bytes: session.downloaded_bytes,
+            total_bytes: session.total_bytes,
+            checked_at: session.checked_at,
+            auto_download: session.auto_download,
+            download_ready: session.bytes.is_some(),
+            error: session.error.clone(),
+        })
+    }
+
+    fn begin_check(&self) -> Result<bool, String> {
+        let mut session = self
+            .session
+            .lock()
+            .map_err(|_| "无法开始更新检查。".to_string())?;
+        if matches!(
+            session.phase,
+            UpdatePhase::Checking | UpdatePhase::Downloading | UpdatePhase::Installing
+        ) {
+            return Ok(false);
+        }
+
+        session.phase = UpdatePhase::Checking;
+        session.error = None;
+        session.downloaded_bytes = 0;
+        session.total_bytes = None;
+        session.last_reported_bytes = 0;
+        session.last_reported_percent = 0;
+        session.bytes = None;
+        Ok(true)
+    }
+
+    fn finish_check(&self, update: Option<Update>) -> Result<bool, String> {
+        let mut session = self
+            .session
+            .lock()
+            .map_err(|_| "无法保存更新检查结果。".to_string())?;
+        session.checked_at = Some(now_millis());
+        session.error = None;
+
+        if let Some(update) = update {
+            session.phase = UpdatePhase::Available;
+            session.available_version = Some(update.version.clone());
+            session.notes = update
+                .body
+                .clone()
+                .filter(|value| !value.trim().is_empty())
+                .or_else(|| Some("此版本未提供更新说明。".to_string()));
+            session.update = Some(update);
+            Ok(session.auto_download)
+        } else {
+            session.phase = UpdatePhase::UpToDate;
+            session.available_version = None;
+            session.notes = None;
+            session.update = None;
+            Ok(false)
+        }
+    }
+
+    fn begin_download(&self) -> Result<Option<Update>, String> {
+        let mut session = self
+            .session
+            .lock()
+            .map_err(|_| "无法开始下载更新。".to_string())?;
+        if session.phase == UpdatePhase::Downloading || session.phase == UpdatePhase::Installing {
+            return Ok(None);
+        }
+        let Some(update) = session.update.clone() else {
+            return Err("更新信息已过期，请重新检查。".to_string());
+        };
+        session.phase = UpdatePhase::Downloading;
+        session.error = None;
+        session.downloaded_bytes = 0;
+        session.total_bytes = None;
+        session.last_reported_bytes = 0;
+        session.last_reported_percent = 0;
+        session.bytes = None;
+        Ok(Some(update))
+    }
+
+    fn record_download(&self, chunk: usize, total: Option<u64>) -> bool {
+        if let Ok(mut session) = self.session.lock() {
+            session.downloaded_bytes = session.downloaded_bytes.saturating_add(chunk as u64);
+            if total.is_some() {
+                session.total_bytes = total;
+            }
+            let percent = session.total_bytes.filter(|total| *total > 0).map(|total| {
+                ((session.downloaded_bytes.saturating_mul(100) / total).min(100)) as u8
+            });
+            let should_report = percent
+                .map(|value| value != session.last_reported_percent)
+                .unwrap_or_else(|| {
+                    session
+                        .downloaded_bytes
+                        .saturating_sub(session.last_reported_bytes)
+                        >= 512 * 1024
+                });
+            if should_report {
+                session.last_reported_bytes = session.downloaded_bytes;
+                session.last_reported_percent = percent.unwrap_or(session.last_reported_percent);
+            }
+            return should_report;
+        }
+        false
+    }
+
+    fn finish_download(&self, bytes: Vec<u8>) -> Result<(), String> {
+        let mut session = self
+            .session
+            .lock()
+            .map_err(|_| "无法保存已验证的更新包。".to_string())?;
+        session.downloaded_bytes = bytes.len() as u64;
+        session.total_bytes = Some(bytes.len() as u64);
+        session.bytes = Some(bytes);
+        session.phase = UpdatePhase::Ready;
+        session.error = None;
+        Ok(())
+    }
+
+    fn begin_install(&self) -> Result<Option<(Update, Vec<u8>)>, String> {
+        let mut session = self
+            .session
+            .lock()
+            .map_err(|_| "无法开始安装更新。".to_string())?;
+        if session.phase == UpdatePhase::Installing {
+            return Ok(None);
+        }
+        let update = session
+            .update
+            .clone()
+            .ok_or_else(|| "更新信息已过期，请重新检查。".to_string())?;
+        let bytes = session
+            .bytes
+            .take()
+            .ok_or_else(|| "更新包尚未下载完成。".to_string())?;
+        session.phase = UpdatePhase::Installing;
+        session.error = None;
+        Ok(Some((update, bytes)))
+    }
+
+    fn restore_download(&self, bytes: Vec<u8>, error: String) {
+        if let Ok(mut session) = self.session.lock() {
+            session.bytes = Some(bytes);
+            session.phase = UpdatePhase::Error;
+            session.error = Some(error);
+        }
+    }
+
+    fn fail(&self, error: String) {
+        if let Ok(mut session) = self.session.lock() {
+            session.phase = UpdatePhase::Error;
+            session.error = Some(error);
+        }
+    }
+
+    fn set_auto_download(&self, enabled: bool) -> Result<bool, String> {
+        let mut session = self
+            .session
+            .lock()
+            .map_err(|_| "无法保存自动下载设置。".to_string())?;
+        session.auto_download = enabled;
+        Ok(enabled && session.phase == UpdatePhase::Available)
+    }
+
+    fn load_auto_download(&self, enabled: bool) {
+        if let Ok(mut session) = self.session.lock() {
+            session.auto_download = enabled;
+        }
     }
 }
 
-pub fn request_check(app: AppHandle, interactive: bool) {
-    if !app.state::<UpdateCoordinator>().begin() {
-        if interactive {
-            show_info_nonblocking(&app, "正在检查更新", "另一个更新检查正在进行中。");
+pub fn initialize(app: &AppHandle) {
+    if let Ok(preferences) = load_preferences(app) {
+        app.state::<UpdateCoordinator>()
+            .load_auto_download(preferences.auto_download);
+    }
+}
+
+pub fn status(app: &AppHandle) -> Result<UpdateStatus, String> {
+    app.state::<UpdateCoordinator>().snapshot(app)
+}
+
+pub fn request_check(app: AppHandle) {
+    let coordinator = app.state::<UpdateCoordinator>();
+    match coordinator.begin_check() {
+        Ok(true) => publish(&app, true),
+        Ok(false) => return,
+        Err(error) => {
+            coordinator.fail(error);
+            publish(&app, true);
+            return;
         }
-        return;
     }
 
     tauri::async_runtime::spawn(async move {
-        let result = check_and_maybe_install(&app, interactive).await;
-        app.state::<UpdateCoordinator>().finish();
+        let result = async {
+            let update = app
+                .updater()
+                .map_err(|error| format!("无法初始化更新器：{error}"))?
+                .check()
+                .await
+                .map_err(|error| format!("无法获取更新信息：{error}"))?;
+            app.state::<UpdateCoordinator>().finish_check(update)
+        }
+        .await;
 
-        if let Err(error) = result {
-            if interactive {
-                show_error(&app, "更新失败", &error);
-            } else {
-                eprintln!("automatic update check failed: {error}");
+        match result {
+            Ok(auto_download) => {
+                publish(&app, true);
+                if auto_download {
+                    request_download(app.clone());
+                }
+            }
+            Err(error) => {
+                app.state::<UpdateCoordinator>().fail(error);
+                publish(&app, true);
             }
         }
     });
 }
 
-async fn check_and_maybe_install(app: &AppHandle, interactive: bool) -> Result<(), String> {
-    let Some(update) = app
-        .updater()
-        .map_err(|error| format!("无法初始化更新器：{error}"))?
-        .check()
-        .await
-        .map_err(|error| format!("无法获取更新信息：{error}"))?
-    else {
-        if interactive {
-            show_info(
-                app,
-                "已是最新版本",
-                &format!("当前版本 {} 已是最新版本。", app.package_info().version),
-            );
+pub fn request_check_if_idle(app: AppHandle) {
+    if app.state::<UpdateCoordinator>().is_idle() {
+        request_check(app);
+    }
+}
+
+pub fn request_download(app: AppHandle) {
+    let update = match app.state::<UpdateCoordinator>().begin_download() {
+        Ok(Some(update)) => update,
+        Ok(None) => return,
+        Err(error) => {
+            app.state::<UpdateCoordinator>().fail(error);
+            publish(&app, true);
+            return;
         }
-        return Ok(());
     };
+    publish(&app, true);
 
-    let notes = update
-        .body
-        .as_deref()
-        .filter(|notes| !notes.trim().is_empty())
-        .unwrap_or("此版本未提供更新说明。");
-    let message = format!(
-        "发现 DSH Desk {}（当前为 {}）。\n\n{}\n\n现在下载并安装吗？",
-        update.version, update.current_version, notes
-    );
-    let accepted = app
-        .dialog()
-        .message(message)
-        .title("发现新版本")
-        .kind(MessageDialogKind::Info)
-        .buttons(MessageDialogButtons::OkCancelCustom(
-            "更新并重启".to_string(),
-            "稍后".to_string(),
-        ))
-        .blocking_show();
-    if !accepted {
-        return Ok(());
-    }
+    tauri::async_runtime::spawn(async move {
+        let progress_app = app.clone();
+        let result = update
+            .download(
+                move |chunk, total| {
+                    let should_publish = progress_app
+                        .state::<UpdateCoordinator>()
+                        .record_download(chunk, total);
+                    if should_publish {
+                        publish(&progress_app, false);
+                    }
+                },
+                || {},
+            )
+            .await
+            .map_err(|error| format!("更新包下载或签名校验失败：{error}"));
 
-    let bytes = update
-        .download(|_, _| {}, || {})
-        .await
-        .map_err(|error| format!("更新包下载或签名校验失败：{error}"))?;
-
-    let runtime = app.state::<RuntimeHandle>().inner().clone();
-    let shutdown = tauri::async_runtime::spawn_blocking(move || runtime.shutdown_blocking())
-        .await
-        .map_err(|error| format!("停止 DeepSeek Harness 时发生内部错误：{error}"))?;
-
-    match install_after_shutdown(shutdown, || {
-        update.install(bytes).map_err(|error| error.to_string())
-    }) {
-        Ok(()) => app.restart(),
-        Err(InstallAfterShutdownError::Shutdown(error)) => {
-            return Err(format!("无法安全停止 DeepSeek Harness：{error}"));
+        match result {
+            Ok(bytes) => {
+                if let Err(error) = app.state::<UpdateCoordinator>().finish_download(bytes) {
+                    app.state::<UpdateCoordinator>().fail(error);
+                }
+            }
+            Err(error) => app.state::<UpdateCoordinator>().fail(error),
         }
-        Err(InstallAfterShutdownError::Install(error)) => {
-            show_error(
-                app,
-                "安装更新失败",
-                &format!("安装更新时发生错误：{error}\n\n应用将重新启动当前版本。"),
-            );
-            app.restart();
+        publish(&app, true);
+    });
+}
+
+pub fn request_install(app: AppHandle) {
+    let Some((update, bytes)) = (match app.state::<UpdateCoordinator>().begin_install() {
+        Ok(value) => value,
+        Err(error) => {
+            app.state::<UpdateCoordinator>().fail(error);
+            publish(&app, true);
+            return;
         }
+    }) else {
+        return;
+    };
+    publish(&app, true);
+
+    tauri::async_runtime::spawn(async move {
+        let runtime = app.state::<RuntimeHandle>().inner().clone();
+        let shutdown = tauri::async_runtime::spawn_blocking(move || runtime.shutdown_blocking())
+            .await
+            .map_err(|error| format!("停止 DeepSeek Harness 时发生内部错误：{error}"))
+            .and_then(|result| result);
+
+        match install_after_shutdown(shutdown, || {
+            update.install(&bytes).map_err(|error| error.to_string())
+        }) {
+            Ok(()) => app.restart(),
+            Err(InstallAfterShutdownError::Shutdown(error)) => {
+                app.state::<UpdateCoordinator>()
+                    .restore_download(bytes, format!("无法安全停止 DeepSeek Harness：{error}"));
+                publish(&app, true);
+            }
+            Err(InstallAfterShutdownError::Install(error)) => {
+                app.state::<UpdateCoordinator>().fail(format!(
+                    "安装更新时发生错误：{error}。应用将重新启动当前版本。"
+                ));
+                publish(&app, true);
+                app.restart();
+            }
+        }
+    });
+}
+
+pub fn set_auto_download(app: &AppHandle, enabled: bool) -> Result<UpdateStatus, String> {
+    let should_download = app
+        .state::<UpdateCoordinator>()
+        .set_auto_download(enabled)?;
+    save_preferences(
+        app,
+        UpdatePreferences {
+            auto_download: enabled,
+        },
+    )?;
+    publish(app, false);
+    if should_download {
+        request_download(app.clone());
     }
+    status(app)
+}
+
+fn publish(app: &AppHandle, update_menu: bool) {
+    let Ok(status) = status(app) else {
+        return;
+    };
+    let _ = app.emit(UPDATE_EVENT, status.clone());
+    if update_menu {
+        set_menu_label(app, &status);
+    }
+}
+
+fn set_menu_label(app: &AppHandle, status: &UpdateStatus) {
+    let text = match (&status.phase, status.available_version.as_deref()) {
+        (UpdatePhase::Available, Some(version)) => format!("下载 DSH Desk {version}…"),
+        (UpdatePhase::Downloading, Some(version)) => format!("正在下载 DSH Desk {version}…"),
+        (UpdatePhase::Ready, Some(version)) => format!("重启以安装 DSH Desk {version}…"),
+        _ => "软件更新…".to_string(),
+    };
+    if let Some(MenuItemKind::MenuItem(item)) = app.menu().and_then(|menu| menu.get(UPDATE_MENU_ID))
+    {
+        let _ = item.set_text(text);
+    }
+}
+
+fn preferences_path(app: &AppHandle) -> Result<std::path::PathBuf, String> {
+    app.path()
+        .app_config_dir()
+        .map(|directory| directory.join(PREFERENCES_FILE))
+        .map_err(|error| format!("无法定位更新设置目录：{error}"))
+}
+
+fn load_preferences(app: &AppHandle) -> Result<UpdatePreferences, String> {
+    let path = preferences_path(app)?;
+    if !path.exists() {
+        return Ok(UpdatePreferences {
+            auto_download: true,
+        });
+    }
+    let contents =
+        fs::read_to_string(path).map_err(|error| format!("无法读取更新设置：{error}"))?;
+    serde_json::from_str(&contents).map_err(|error| format!("无法解析更新设置：{error}"))
+}
+
+fn save_preferences(app: &AppHandle, preferences: UpdatePreferences) -> Result<(), String> {
+    let path = preferences_path(app)?;
+    let directory = path
+        .parent()
+        .ok_or_else(|| "更新设置路径无效。".to_string())?;
+    fs::create_dir_all(directory).map_err(|error| format!("无法创建更新设置目录：{error}"))?;
+    let contents = serde_json::to_vec_pretty(&preferences)
+        .map_err(|error| format!("无法序列化更新设置：{error}"))?;
+    fs::write(path, contents).map_err(|error| format!("无法保存更新设置：{error}"))
+}
+
+fn now_millis() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_millis() as u64)
+        .unwrap_or_default()
 }
 
 fn install_after_shutdown(
@@ -126,45 +504,45 @@ fn install_after_shutdown(
     install().map_err(InstallAfterShutdownError::Install)
 }
 
-fn show_info(app: &AppHandle, title: &str, message: &str) {
-    app.dialog()
-        .message(message)
-        .title(title)
-        .kind(MessageDialogKind::Info)
-        .blocking_show();
-}
-
-fn show_info_nonblocking(app: &AppHandle, title: &str, message: &str) {
-    app.dialog()
-        .message(message)
-        .title(title)
-        .kind(MessageDialogKind::Info)
-        .show(|_| {});
-}
-
-fn show_error(app: &AppHandle, title: &str, message: &str) {
-    app.dialog()
-        .message(message)
-        .title(title)
-        .kind(MessageDialogKind::Error)
-        .blocking_show();
-}
-
 #[cfg(test)]
 mod tests {
     use std::cell::Cell;
 
-    use super::{InstallAfterShutdownError, UpdateCoordinator, install_after_shutdown};
+    use super::{
+        InstallAfterShutdownError, UpdateCoordinator, UpdatePhase, install_after_shutdown,
+    };
 
     #[test]
-    fn coordinator_allows_only_one_check_at_a_time() {
+    fn coordinator_allows_only_one_busy_operation() {
         let coordinator = UpdateCoordinator::default();
 
-        assert!(coordinator.begin());
-        assert!(!coordinator.begin());
+        assert!(coordinator.begin_check().expect("first check should start"));
+        assert!(
+            !coordinator
+                .begin_check()
+                .expect("second check should be ignored")
+        );
+    }
 
-        coordinator.finish();
-        assert!(coordinator.begin());
+    #[test]
+    fn disabling_auto_download_is_reflected_in_state() {
+        let coordinator = UpdateCoordinator::default();
+        assert!(
+            !coordinator
+                .set_auto_download(false)
+                .expect("preference should update")
+        );
+        assert!(
+            !coordinator
+                .session
+                .lock()
+                .expect("session lock")
+                .auto_download
+        );
+        assert_eq!(
+            coordinator.session.lock().expect("session lock").phase,
+            UpdatePhase::Idle
+        );
     }
 
     #[test]

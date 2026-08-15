@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#101318" />
+    <title>软件更新 · DSH Desk</title>
+  </head>
+  <body>
+    <main class="update-shell">
+      <header class="update-header">
+        <div class="app-mark" aria-hidden="true">
+          <svg viewBox="0 0 64 64" role="presentation">
+            <path d="M18 36c1-12 9-20 20-20 7 0 13 3 17 8-4 0-7 2-9 5 6 0 10 4 10 10 0 8-7 13-17 13H25C14 52 7 46 7 38c0-5 4-9 11-10v8Z" />
+            <path class="mark-eye" d="M38 25h1" />
+          </svg>
+        </div>
+        <div>
+          <p class="eyebrow">DSH DESK</p>
+          <h1>软件更新</h1>
+        </div>
+      </header>
+
+      <section class="update-card" aria-live="polite" aria-atomic="true">
+        <div class="status-orbit" id="status-orbit" data-phase="idle" aria-hidden="true">
+          <svg viewBox="0 0 52 52" role="presentation">
+            <circle class="orbit-track" cx="26" cy="26" r="21" />
+            <circle class="orbit-progress" id="orbit-progress" cx="26" cy="26" r="21" />
+            <path class="orbit-arrow" d="M18.5 25.5a8.5 8.5 0 1 1 2.4 6M18.5 25.5v-6m0 6h6" />
+            <path class="orbit-check" d="m17 26 6 6 12-13" />
+          </svg>
+        </div>
+
+        <div class="status-copy">
+          <div class="status-heading">
+            <span id="status-badge" class="status-badge">准备就绪</span>
+            <span id="version-route" class="version-route"></span>
+          </div>
+          <h2 id="status-title">正在读取更新状态</h2>
+          <p id="status-detail">DSH Desk 会检查经过签名验证的正式更新。</p>
+        </div>
+
+        <div id="download-progress" class="download-progress" hidden>
+          <div class="progress-track"><span id="progress-bar"></span></div>
+          <div class="progress-meta">
+            <span id="progress-label">正在下载并验证…</span>
+            <span id="progress-percent">0%</span>
+          </div>
+        </div>
+
+        <div id="release-notes" class="release-notes" hidden>
+          <p>本次更新</p>
+          <div id="release-notes-body"></div>
+        </div>
+
+        <div class="update-actions">
+          <button id="primary-action" class="primary-action" type="button">检查更新</button>
+          <button id="check-action" class="quiet-action" type="button">重新检查</button>
+        </div>
+      </section>
+
+      <section class="preference-row" aria-labelledby="auto-download-title">
+        <div>
+          <h2 id="auto-download-title">自动下载更新</h2>
+          <p>在后台完成下载和签名验证，由你决定何时重启安装。</p>
+        </div>
+        <label class="switch">
+          <input id="auto-download" type="checkbox" />
+          <span aria-hidden="true"></span>
+          <span class="sr-only">自动下载更新</span>
+        </label>
+      </section>
+
+      <footer class="update-footer">
+        <span id="current-version">当前版本 —</span>
+        <span class="footer-divider" aria-hidden="true"></span>
+        <span id="checked-at">尚未检查</span>
+      </footer>
+    </main>
+    <script type="module" src="/src/update.ts"></script>
+  </body>
+</html>
