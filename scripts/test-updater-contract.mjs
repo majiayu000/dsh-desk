@@ -24,6 +24,18 @@ assert(
 );
 assert(updater.windows?.installMode === "passive", "Windows updates must use passive NSIS mode");
 
+const updaterSource = read("src-tauri/src/updater.rs");
+assert(
+  updaterSource.includes(
+    'show_info_nonblocking(&app, "正在检查更新", "另一个更新检查正在进行中。");',
+  ),
+  "A concurrent manual update check must not block the main event loop",
+);
+assert(
+  updaterSource.includes(".show(|_| {});"),
+  "The concurrent-check notice must use the non-blocking dialog API",
+);
+
 const decodedPublicKey = Buffer.from(updater.pubkey, "base64").toString("utf8");
 const publicKeyLines = decodedPublicKey.trim().split(/\r?\n/);
 assert(publicKeyLines.length === 2, "Updater public key must contain a comment and key payload");

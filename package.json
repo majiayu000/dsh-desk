@@ -1,7 +1,7 @@
 {
   "name": "dsh-desk",
   "private": true,
-  "version": "0.1.0-alpha.2",
+  "version": "0.1.0-alpha.3",
   "description": "Installable Tauri desktop distribution for DeepSeek Harness with a bundled runtime and daily compatibility checks.",
   "license": "MIT",
   "homepage": "https://github.com/majiayu000/dsh-desk/releases",
