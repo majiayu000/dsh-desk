@@ -5,7 +5,7 @@ import {
   readFileSync,
   writeFileSync,
 } from "node:fs";
-import { basename, join, resolve } from "node:path";
+import { basename, extname, join, relative, resolve, sep } from "node:path";
 import { walkFiles } from "./files.mjs";
 
 const platformFiles = {
@@ -20,6 +20,21 @@ const platformFiles = {
     ".deb.sig",
   ],
 };
+
+const installerFolders = new Map([
+  [".dmg", "dmg"],
+  [".exe", "nsis"],
+  [".msi", "msi"],
+  [".appimage", "appimage"],
+  [".deb", "deb"],
+  [".rpm", "rpm"],
+]);
+
+export function isReleaseInstaller(bundleRoot, file) {
+  const parts = relative(resolve(bundleRoot), resolve(file)).split(sep);
+  const expectedFolder = installerFolders.get(extname(file).toLowerCase());
+  return parts.length === 2 && parts[0] === expectedFolder && !basename(file).startsWith("rw.");
+}
 
 export function stageReleaseArtifacts(platform, bundleRoot, outputDirectory) {
   const requiredSuffixes = platformFiles[platform];

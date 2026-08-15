@@ -66,6 +66,7 @@ for (const token of [
   "tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f",
   "TAURI_SIGNING_PRIVATE_KEY",
   "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
+  "--bundles app,dmg",
   "needs: preflight",
   "uploadUpdaterJson: false",
   "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",

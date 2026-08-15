@@ -68,7 +68,7 @@ jobs:
         include:
           - platform: macos
             runner: macos-15
-            tauri_args: '--bundles dmg'
+            tauri_args: '--bundles app,dmg'
           - platform: windows
             runner: windows-2022
             tauri_args: '--bundles nsis --config src-tauri/tauri.windows-signing.json'
