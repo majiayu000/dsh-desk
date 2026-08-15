@@ -78,7 +78,7 @@ Open `DSH Desk → Plugins…` to inspect a plugin before installation:
 - compatibility with the pinned Desktop and Harness versions;
 - disable, removal, and profile restoration boundaries.
 
-Catalog failure never falls back to an unreviewed global search. Plugin authors can use the [minimal template](templates/dsh-plugin/README.md) and submit the [compatibility verification form](.github/ISSUE_TEMPLATE/plugin-validation.yml).
+Catalog failure never falls back to an unreviewed global search. Plugin authors can use the [minimal template](templates/dsh-plugin/README.md), run the reusable [candidate compatibility check](docs/plugin-verification.md), and submit the verification form only after it passes.
 
 ## Compatibility is a release artifact
 
@@ -129,10 +129,11 @@ pnpm create:plugin ./my-dsh-plugin @your-scope/my-dsh-plugin
 - [Compatibility matrix](docs/compatibility.md)
 - [Release signing gates](docs/release-signing.md)
 - [Plugin trust model](docs/plugin-trust.md)
+- [Plugin compatibility verification and badge rules](docs/plugin-verification.md)
 - [Product metrics and privacy gates](docs/product-metrics.md)
 - [30-day execution plan](docs/30-day-plan.md)
 - [Launch kit](docs/launch-kit.md)
-- [Contributing](CONTRIBUTING.md) · [Security policy](SECURITY.md) · [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Contributing](CONTRIBUTING.md) · [Support](SUPPORT.md) · [Security policy](SECURITY.md) · [Code of Conduct](CODE_OF_CONDUCT.md)
 
 ## License
 

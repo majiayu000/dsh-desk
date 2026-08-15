@@ -1,0 +1,102 @@
+name: DSH Desk plugin candidate check
+description: Exercise a DeepSeek Harness plugin through add, compose, why, update, and remove in a clean profile.
+author: DSH Desk contributors
+
+branding:
+  icon: shield
+  color: blue
+
+inputs:
+  plugin-path:
+    description: Path to the plugin package relative to the calling repository.
+    default: .
+    required: false
+  harness-version:
+    description: Exact @deepseek-ai/dsh version to verify.
+    default: 0.1.0-rc.6
+    required: false
+
+outputs:
+  package-name:
+    description: Verified plugin package name.
+    value: ${{ steps.verify.outputs.package-name }}
+  result:
+    description: Candidate verification result.
+    value: ${{ steps.verify.outputs.result }}
+
+runs:
+  using: composite
+  steps:
+    - name: Use the DSH Desk verification Node version
+      uses: actions/setup-node@v6
+      with:
+        node-version: 24
+    - name: Exercise plugin lifecycle in an isolated DSH profile
+      id: verify
+      shell: bash
+      env:
+        PLUGIN_PATH: ${{ inputs.plugin-path }}
+        HARNESS_VERSION: ${{ inputs.harness-version }}
+      run: |
+        set -euo pipefail
+        case "$PLUGIN_PATH" in
+          /*|../*|*/../*) echo "plugin-path must stay inside the checked-out repository" >&2; exit 1 ;;
+        esac
+
+        plugin_path=$(cd "$PLUGIN_PATH" && pwd -P)
+        case "$plugin_path/" in
+          "$GITHUB_WORKSPACE/"*) ;;
+          *) echo "plugin-path resolves outside GITHUB_WORKSPACE" >&2; exit 1 ;;
+        esac
+
+        package_name=$(node -e '
+          const fs = require("node:fs");
+          const manifest = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+          if (!manifest.name || !manifest.dsh?.bundle?.patch) {
+            throw new Error("package.json must declare name and dsh.bundle.patch");
+          }
+          const blocked = ["preinstall", "install", "postinstall", "prepare"]
+            .filter((name) => typeof manifest.scripts?.[name] === "string");
+          if (blocked.length) {
+            throw new Error(`candidate self-check refuses lifecycle scripts: ${blocked.join(", ")}`);
+          }
+          process.stdout.write(manifest.name);
+        ' "$plugin_path/package.json")
+
+        verification_root=$(mktemp -d)
+        trap 'rm -rf "$verification_root"' EXIT
+        run_dsh() {
+          DSH_HOME="$verification_root/home" NO_COLOR=1 \
+            npx --yes --package "@deepseek-ai/dsh@$HARNESS_VERSION" -- dsh "$@"
+        }
+
+        run_dsh plugin --profile web add "file:$plugin_path"
+        run_dsh --profile web --dump-config >/dev/null
+        run_dsh plugin --profile web why "$package_name"
+        run_dsh plugin --profile web update "$package_name"
+        run_dsh plugin --profile web remove "$package_name"
+
+        printf 'package-name=%s\nresult=candidate-passed\n' "$package_name" >> "$GITHUB_OUTPUT"
+        {
+          echo '## DSH Desk plugin candidate check'
+          echo
+          echo "- Package: \`$package_name\`"
+          echo "- Harness: \`$HARNESS_VERSION\`"
+          echo '- Result: add, compose, why, update, and remove passed in a clean profile'
+          echo
+          echo '> This is a self-service candidate check, not a security audit or a DSH Desk verified badge.'
+        } >> "$GITHUB_STEP_SUMMARY"
+
+        node -e '
+          console.log(JSON.stringify({
+            signals: [{
+              signal_type: "plugin_candidate_compatibility",
+              signal: {
+                package: process.argv[1],
+                harness_version: process.argv[2],
+                status: "passed",
+              },
+              reason: "Add, config composition, why, update, and remove passed in a clean DSH_HOME.",
+            }],
+          }, null, 2));
+        ' "$package_name" "$HARNESS_VERSION"

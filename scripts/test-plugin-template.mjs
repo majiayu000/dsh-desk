@@ -24,7 +24,17 @@ try {
   }
   JSON.parse(readFileSync(join(target, "package.json"), "utf8"));
   readFileSync(join(target, "cordis.patch.yml"), "utf8");
-  console.log("Plugin template verified: scaffold, manifest, safe scripts, and patch entry.");
+  const action = readFileSync(resolve(projectRoot, "plugin-verification/action.yml"), "utf8");
+  for (const command of ["plugin --profile web add", "--dump-config", "plugin --profile web why", "plugin --profile web update", "plugin --profile web remove"]) {
+    if (!action.includes(command)) throw new Error(`plugin verification action is missing ${command}`);
+  }
+  if (!action.includes("candidate self-check refuses lifecycle scripts")) {
+    throw new Error("plugin verification action must reject lifecycle scripts from self-service checks");
+  }
+  if (!action.includes('signal_type: "plugin_candidate_compatibility"')) {
+    throw new Error("plugin verification action must emit the structured compatibility signal");
+  }
+  console.log("Plugin tooling verified: scaffold, safe scripts, patch entry, and candidate action lifecycle.");
 } finally {
   rmSync(root, { recursive: true, force: true });
 }

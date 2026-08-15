@@ -35,6 +35,13 @@ body:
       label: 已验证 DSH 版本
     validations:
       required: true
+  - type: input
+    id: candidate-run
+    attributes:
+      label: Candidate 自测运行
+      description: 使用 DSH Desk plugin-verification Action 的公开成功运行链接。
+    validations:
+      required: true
   - type: checkboxes
     id: checks
     attributes:
@@ -43,4 +50,6 @@ body:
         - label: add、dump-config、启动、update 和 remove 均在全新 DSH_HOME 通过。
           required: true
         - label: README 已说明权限、数据流向和安装脚本。
+          required: true
+        - label: 我理解 Candidate 自测不是安全审计，也不代表已经获得 Verified 徽章。
           required: true

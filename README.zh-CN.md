@@ -100,6 +100,8 @@ DSH Desk 当前不宣称安装包最小：完整离线 runtime 会显著增加�
 
 `dist.integrity` 是内容校验，不是维护者签名。DSH 目前也没有标准化插件权限 manifest，因此未知插件不会被标记为“安全”。完整模型见[插件信任与回滚](docs/plugin-trust.md)。
 
+插件作者可以先接入可复用的 [Candidate 兼容自测](docs/plugin-verification.md)，在独立 `DSH_HOME` 中完成 add、配置组合、why、update 和 remove；通过后再申请 packaged runtime 验证。Candidate 不等于安全审计，也不能使用 Verified 徽章。
+
 ## 官方兼容如何验证
 
 每次提交在 macOS arm64、Windows x64、Linux x64 运行：
@@ -160,6 +162,7 @@ pnpm create:plugin ./my-dsh-plugin @your-scope/my-dsh-plugin
 - [签名发布门禁](docs/release-signing.md)
 - [每周与每月发布节奏](docs/release-cadence.md)
 - [插件信任模型](docs/plugin-trust.md)
+- [插件兼容验证与徽章规则](docs/plugin-verification.md)
 - [真实增长指标](docs/product-metrics.md)
 - [30 天执行计划](docs/30-day-plan.md)
 - [发布传播素材](docs/launch-kit.md)
