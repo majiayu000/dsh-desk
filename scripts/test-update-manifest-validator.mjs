@@ -47,7 +47,7 @@ function manifest(encodedSignature = signature) {
   };
 }
 
-function validate() {
+function validate(env = {}) {
   return spawnSync(
     process.execPath,
     [
@@ -58,7 +58,7 @@ function validate() {
       releasePath,
       currentManifestPath,
     ],
-    { encoding: "utf8" },
+    { encoding: "utf8", env: { ...process.env, ...env } },
   );
 }
 
@@ -81,6 +81,13 @@ try {
   if (valid.status !== 0) throw new Error(valid.stderr || valid.stdout);
   const normalized = JSON.parse(readFileSync(manifestPath, "utf8"));
   if (normalized.version !== version) throw new Error("validator changed the manifest version");
+
+  const publishedRelease = JSON.parse(readFileSync(releasePath, "utf8"));
+  writeFileSync(releasePath, JSON.stringify({ ...publishedRelease, draft: true }));
+  if (validate().status === 0) throw new Error("validator accepted a draft release by default");
+  const allowedDraft = validate({ DSH_ALLOW_DRAFT_RELEASE: "1" });
+  if (allowedDraft.status !== 0) throw new Error(allowedDraft.stderr || allowedDraft.stdout);
+  writeFileSync(releasePath, JSON.stringify(publishedRelease));
 
   writeFileSync(manifestPath, JSON.stringify(manifest("not-a-minisign-signature")));
   const invalidSignature = validate();
