@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
 import {
   assembleUpdateManifest,
+  isReleaseInstaller,
   stageReleaseArtifacts,
 } from "./lib/release-artifacts.mjs";
 
@@ -40,6 +41,12 @@ try {
   }
   const staged = stageReleaseArtifacts("linux", bundleRoot, stagedRoot);
   if (staged.length !== 6) throw new Error(`Expected 6 staged Linux artifacts, got ${staged.length}`);
+  if (!isReleaseInstaller(bundleRoot, join(bundleRoot, "appimage", "DSH.Desk.AppImage"))) {
+    throw new Error("Top-level AppImage installer was not recognized");
+  }
+  if (isReleaseInstaller(bundleRoot, join(bundleRoot, "appimage", "runtime", "helper.exe"))) {
+    throw new Error("Nested runtime executable was mistaken for a release installer");
+  }
   rmSync(bundleRoot, { recursive: true, force: true });
   rmSync(stagedRoot, { recursive: true, force: true });
 
