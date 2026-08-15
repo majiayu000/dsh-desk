@@ -4,43 +4,33 @@ on:
   push:
     tags: ['v*']
 
-permissions:
-  contents: write
-  id-token: write
-  attestations: write
+concurrency:
+  group: signed-release-${{ github.ref_name }}
+  cancel-in-progress: false
 
 jobs:
-  build:
-    name: ${{ matrix.platform }} signed bundle
-    runs-on: ${{ matrix.runner }}
-    strategy:
-      fail-fast: false
-      # tauri-action merges latest.json with the existing draft asset. Serializing the
-      # matrix prevents concurrent read/delete/upload cycles from losing a platform.
-      max-parallel: 1
-      matrix:
-        include:
-          - platform: macos
-            runner: macos-15
-            bundles: dmg
-            tauri_args: '--bundles dmg'
-          - platform: windows
-            runner: windows-2022
-            bundles: nsis
-            tauri_args: '--bundles nsis --config src-tauri/tauri.windows-signing.json'
-          - platform: linux
-            runner: ubuntu-24.04
-            bundles: appimage-deb
-            tauri_args: '--bundles appimage,deb'
+  preflight:
+    name: Release preflight
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
+          fetch-depth: 0
           persist-credentials: false
+      - name: Require a version tag from main
+        shell: bash
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          test "$GITHUB_REF_NAME" = "v${version}"
+          git fetch --no-tags origin main
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main
       - name: Install Linux desktop dependencies
-        if: runner.os == 'Linux'
         run: >-
           sudo apt-get update && sudo apt-get install -y
-          libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+          libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf libfuse2
       - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
         with:
           version: 11.21.0
@@ -49,40 +39,79 @@ jobs:
           node-version: 24
           cache: pnpm
       - uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
-      - run: pnpm install --frozen-lockfile
-      - name: Read release metadata
-        id: release
-        shell: bash
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+        with:
+          shared-key: release-preflight
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Verify release source once
         run: >-
-          node -e "const fs=require('node:fs');const semver=require('semver');
-          const v=require('./package.json').version;
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, 'prerelease=' + String(semver.prerelease(v) !== null) + '\n')"
-      - name: Require macOS production signing credentials
-        if: matrix.platform == 'macos'
+          pnpm check &&
+          pnpm test:rust &&
+          pnpm test:updater-contract &&
+          pnpm prepare:runtime &&
+          pnpm test:packaged-runtime &&
+          pnpm test:plugin-parity
+
+  build:
+    name: ${{ matrix.platform }} signed bundle
+    needs: preflight
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos
+            runner: macos-15
+            tauri_args: '--bundles app,dmg'
+          - platform: windows
+            runner: windows-2022
+            tauri_args: '--bundles nsis --config src-tauri/tauri.windows-signing.json'
+          - platform: linux
+            runner: ubuntu-22.04
+            tauri_args: '-vv --bundles appimage,deb'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Install Linux desktop dependencies
+        if: runner.os == 'Linux'
+        run: >-
+          sudo apt-get update && sudo apt-get install -y
+          libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf libfuse2
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+        with:
+          version: 11.21.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+        with:
+          shared-key: signed-release-${{ matrix.platform }}
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Require production signing credentials
         env:
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_API_KEY_CONTENT: ${{ secrets.APPLE_API_KEY_CONTENT }}
-          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
-          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_CERTIFICATE: ${{ matrix.platform == 'macos' && secrets.APPLE_CERTIFICATE || '' }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ matrix.platform == 'macos' && secrets.APPLE_CERTIFICATE_PASSWORD || '' }}
+          APPLE_SIGNING_IDENTITY: ${{ matrix.platform == 'macos' && secrets.APPLE_SIGNING_IDENTITY || '' }}
+          APPLE_API_KEY_CONTENT: ${{ matrix.platform == 'macos' && secrets.APPLE_API_KEY_CONTENT || '' }}
+          APPLE_API_KEY: ${{ matrix.platform == 'macos' && secrets.APPLE_API_KEY || '' }}
+          APPLE_API_ISSUER: ${{ matrix.platform == 'macos' && secrets.APPLE_API_ISSUER || '' }}
+          WINDOWS_CERTIFICATE: ${{ matrix.platform == 'windows' && secrets.WINDOWS_CERTIFICATE || '' }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ matrix.platform == 'windows' && secrets.WINDOWS_CERTIFICATE_PASSWORD || '' }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: pnpm check:release-env ${{ matrix.platform }} && pnpm check:updater-key
-      - name: Require Windows production signing credentials
-        if: matrix.platform == 'windows'
-        env:
-          WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
-          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-        run: pnpm check:release-env ${{ matrix.platform }} && pnpm check:updater-key
-      - name: Require Linux production signing credentials
-        if: matrix.platform == 'linux'
-        env:
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-        run: pnpm check:release-env ${{ matrix.platform }} && pnpm check:updater-key
+      - name: Prepare fixed platform runtime
+        run: pnpm prepare:runtime
       - name: Prepare Apple notarization key
         if: runner.os == 'macOS'
         env:
@@ -90,6 +119,7 @@ jobs:
         shell: bash
         run: |
           printf '%s' "$APPLE_API_KEY_CONTENT" | base64 --decode > "$RUNNER_TEMP/AuthKey.p8"
+          chmod 600 "$RUNNER_TEMP/AuthKey.p8"
           echo "APPLE_API_KEY_PATH=$RUNNER_TEMP/AuthKey.p8" >> "$GITHUB_ENV"
       - name: Import Apple Developer ID certificate
         if: runner.os == 'macOS'
@@ -124,50 +154,126 @@ jobs:
           $certificate = Import-PfxCertificate -FilePath $certificatePath -CertStoreLocation Cert:\CurrentUser\My -Password $password
           $config = @{ bundle = @{ windows = @{ certificateThumbprint = $certificate.Thumbprint; digestAlgorithm = 'sha256'; timestampUrl = 'http://timestamp.digicert.com' } } }
           $config | ConvertTo-Json -Depth 5 | Set-Content -Encoding utf8 'src-tauri/tauri.windows-signing.json'
-      - name: Build and test fixed runtime
-        run: pnpm check && pnpm test:rust && pnpm test:updater-contract && pnpm prepare:runtime && pnpm test:packaged-runtime && pnpm test:plugin-parity
       - name: Sign bundled macOS native runtime
         if: runner.os == 'macOS'
         env:
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
         run: pnpm release:macos:sign-runtime
-      - name: Build and upload signed platform bundle
+      - name: Build signed platform bundle
         uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f # v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
           APPLE_SIGNING_IDENTITY: ${{ runner.os == 'macOS' && secrets.APPLE_SIGNING_IDENTITY || '' }}
           APPLE_API_KEY: ${{ runner.os == 'macOS' && secrets.APPLE_API_KEY || '' }}
           APPLE_API_ISSUER: ${{ runner.os == 'macOS' && secrets.APPLE_API_ISSUER || '' }}
         with:
-          tagName: v__VERSION__
-          releaseName: DSH Desk v__VERSION__
-          releaseDraft: true
-          prerelease: ${{ steps.release.outputs.prerelease }}
-          generateReleaseNotes: true
-          updaterJsonPreferNsis: true
+          uploadUpdaterJson: false
           args: ${{ matrix.tauri_args }}
+      - name: Notarize and staple macOS DMG
+        if: runner.os == 'macOS'
+        env:
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+        run: pnpm release:macos:notarize-dmg
       - name: Verify notarized macOS distribution
         if: runner.os == 'macOS'
         run: pnpm release:macos:verify
       - name: Write SHA-256 checksums
         run: pnpm release:checksums
+      - name: Stage immutable release artifacts
+        shell: bash
+        run: >-
+          pnpm release:artifacts stage "${{ matrix.platform }}"
+          src-tauri/target/release/bundle "release-staging/${{ matrix.platform }}"
       - name: Attest release provenance
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
         with:
-          subject-path: |
-            src-tauri/target/release/bundle/**/*.dmg
-            src-tauri/target/release/bundle/**/*.exe
-            src-tauri/target/release/bundle/**/*.AppImage
-            src-tauri/target/release/bundle/**/*.deb
-            src-tauri/target/release/bundle/**/*.sig
-            src-tauri/target/release/bundle/**/*.tar.gz
-            src-tauri/target/release/bundle/**/*.zip
-      - name: Upload draft release checksums
-        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3
+          subject-path: release-staging/${{ matrix.platform }}/*
+      - name: Upload immutable platform artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          draft: true
-          fail_on_unmatched_files: false
-          files: |
-            src-tauri/target/release/bundle/**/*.sha256
+          name: signed-release-${{ matrix.platform }}-${{ github.sha }}
+          path: release-staging/${{ matrix.platform }}/*
+          if-no-files-found: error
+          retention-days: 3
+          compression-level: 0
+
+  publish:
+    name: Publish atomic signed release
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment:
+      name: production
+      url: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+        with:
+          version: 11.21.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Download all signed platform artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          pattern: signed-release-*-${{ github.sha }}
+          path: release-staging
+          merge-multiple: true
+      - name: Read release metadata and assemble updater manifest
+        id: release
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        shell: bash
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          prerelease="$(node -e "const semver=require('semver');process.stdout.write(String(Boolean(semver.prerelease(process.argv[1]))))" "$version")"
+          pnpm release:artifacts manifest release-staging "$version" "$GITHUB_REF_NAME"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
+      - name: Create or resume the private draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRERELEASE: ${{ steps.release.outputs.prerelease }}
+        shell: bash
+        run: |
+          if gh release view "$GITHUB_REF_NAME" --json isDraft > release-staging/existing.json 2>/dev/null; then
+            test "$(jq -r .isDraft release-staging/existing.json)" = "true"
+          else
+            arguments=(--draft --verify-tag --generate-notes --title "DSH Desk $GITHUB_REF_NAME")
+            if test "$PRERELEASE" = "true"; then arguments+=(--prerelease); fi
+            gh release create "$GITHUB_REF_NAME" "${arguments[@]}"
+          fi
+      - name: Upload and validate the complete draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DSH_ALLOW_DRAFT_RELEASE: '1'
+          VERSION: ${{ steps.release.outputs.version }}
+        shell: bash
+        run: |
+          mapfile -d '' assets < <(find release-staging -maxdepth 1 -type f ! -name existing.json -print0)
+          gh release upload "$GITHUB_REF_NAME" "${assets[@]}" --clobber
+          gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${GITHUB_REF_NAME}" > release-staging/release.json
+          pnpm validate:update-manifest \
+            release-staging/latest.json "$VERSION" "$GITHUB_REF_NAME" \
+            release-staging/release.json
+      - name: Publish the verified release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.release.outputs.version }}
+        shell: bash
+        run: |
+          gh release edit "$GITHUB_REF_NAME" --draft=false
+          gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${GITHUB_REF_NAME}" > release-staging/release.json
+          pnpm validate:update-manifest \
+            release-staging/latest.json "$VERSION" "$GITHUB_REF_NAME" \
+            release-staging/release.json

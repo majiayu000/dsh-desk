@@ -3,6 +3,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "no
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { compare, prerelease, valid } from "semver";
+import { validateEncodedSignature } from "./lib/release-artifacts.mjs";
 
 const [manifestPath, expectedVersion, expectedTag, releasePath, currentManifestPath] =
   process.argv.slice(2);
@@ -21,7 +22,8 @@ if (manifest.version !== expectedVersion) {
     `Update manifest version ${manifest.version ?? "missing"} does not match ${expectedVersion}`,
   );
 }
-if (release.tag_name !== expectedTag || release.draft) {
+const allowDraftRelease = process.env.DSH_ALLOW_DRAFT_RELEASE === "1";
+if (release.tag_name !== expectedTag || (release.draft && !allowDraftRelease)) {
   throw new Error(`Release ${release.tag_name ?? "missing"} is not the published ${expectedTag}`);
 }
 const expectedPrerelease = prerelease(expectedVersion) !== null;
@@ -44,7 +46,9 @@ if (currentManifestPath && existsSync(resolve(currentManifestPath))) {
 
 const assets = release.assets ?? [];
 const publicUrls = new Map(assets.map((asset) => [asset.url, asset.browser_download_url]));
-const publicAssetUrls = new Set(assets.map((asset) => asset.browser_download_url));
+const publicAssetUrls = new Set(
+  assets.map((asset) => new URL(asset.browser_download_url).href),
+);
 for (const [target, entry] of Object.entries(manifest.platforms ?? {})) {
   if (!entry?.url) continue;
   const url = new URL(entry.url);
@@ -86,7 +90,7 @@ for (const target of requiredTargets) {
   if (!url.pathname.includes(`/releases/download/${expectedTag}/`)) {
     throw new Error(`${target} update URL does not point at ${expectedTag}`);
   }
-  if (!publicAssetUrls.has(entry.url)) {
+  if (!publicAssetUrls.has(url.href)) {
     throw new Error(`${target} update URL is not an asset of ${expectedTag}`);
   }
   const filename = decodeURIComponent(url.pathname).toLowerCase();
@@ -112,20 +116,6 @@ if (process.env.DSH_VERIFY_UPDATE_ARTIFACTS === "1") {
 
 writeFileSync(resolvedManifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 console.log(`Update manifest ${expectedVersion} contains signed artifacts for all targets.`);
-
-function validateEncodedSignature(target, encoded) {
-  if (typeof encoded !== "string" || !/^[A-Za-z0-9+/]+={0,2}$/.test(encoded)) {
-    throw new Error(`Update manifest has a malformed ${target} signature`);
-  }
-  const lines = Buffer.from(encoded, "base64").toString("utf8").trim().split(/\r?\n/);
-  if (
-    lines.length !== 4 ||
-    !lines[0].startsWith("untrusted comment:") ||
-    !lines[2].startsWith("trusted comment:")
-  ) {
-    throw new Error(`Update manifest has malformed minisign data for ${target}`);
-  }
-}
 
 async function verifyArtifacts(candidate, targets) {
   const directory = mkdtempSync(resolve(tmpdir(), "dsh-release-artifacts-"));

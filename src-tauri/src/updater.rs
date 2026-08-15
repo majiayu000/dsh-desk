@@ -30,7 +30,7 @@ impl UpdateCoordinator {
 pub fn request_check(app: AppHandle, interactive: bool) {
     if !app.state::<UpdateCoordinator>().begin() {
         if interactive {
-            show_info(&app, "正在检查更新", "另一个更新检查正在进行中。");
+            show_info_nonblocking(&app, "正在检查更新", "另一个更新检查正在进行中。");
         }
         return;
     }
@@ -105,7 +105,7 @@ async fn check_and_maybe_install(app: &AppHandle, interactive: bool) -> Result<(
     }) {
         Ok(()) => app.restart(),
         Err(InstallAfterShutdownError::Shutdown(error)) => {
-            Err(format!("无法安全停止 DeepSeek Harness：{error}"))
+            return Err(format!("无法安全停止 DeepSeek Harness：{error}"));
         }
         Err(InstallAfterShutdownError::Install(error)) => {
             show_error(
@@ -132,6 +132,14 @@ fn show_info(app: &AppHandle, title: &str, message: &str) {
         .title(title)
         .kind(MessageDialogKind::Info)
         .blocking_show();
+}
+
+fn show_info_nonblocking(app: &AppHandle, title: &str, message: &str) {
+    app.dialog()
+        .message(message)
+        .title(title)
+        .kind(MessageDialogKind::Info)
+        .show(|_| {});
 }
 
 fn show_error(app: &AppHandle, title: &str, message: &str) {

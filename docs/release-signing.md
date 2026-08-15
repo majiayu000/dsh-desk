@@ -11,13 +11,17 @@ Tauri updater 使用一套独立于 Apple Developer ID 和 Windows Authenticode 
 
 当前维护机的加密私钥位于 `/Users/apple/.tauri/dsh-desk.key`，密码保存在 macOS Keychain 的 `dsh-desk-tauri-updater` service 下。私钥和密码都不得提交到仓库、Release asset、日志或工单。
 
-正式构建会先用私钥签署测试载荷，并以配置中的公钥验证，密钥不匹配会在打包前失败。之后生成平台更新包和 `.sig`，`tauri-apps/tauri-action` 将它们连同 `latest.json` 上传到同一个草稿 Release。三个矩阵任务串行发布，避免并发覆盖 `latest.json` 中其他平台的记录。客户端只访问 HTTPS 地址：
+正式构建会先用私钥签署测试载荷，并以配置中的公钥验证，密钥不匹配会在打包前失败。源代码和发布契约只完整验证一次；通过后 macOS、Windows、Linux 并行生成平台更新包与 `.sig`，各自上传不可变的 workflow artifact，不直接修改 GitHub Release。最后一个受 `production` environment 保护的任务下载全部平台产物，集中生成并验证 `latest.json`，再一次性公开完整 Release。这样既不会发生并发覆盖，也不会为每个平台重复整套测试。客户端只访问 HTTPS 地址：
 
 ```text
 https://raw.githubusercontent.com/majiayu000/dsh-desk/update-channel-alpha/latest.json
 ```
 
 发布 Release 后，独立工作流会验证所有平台资产、安装器类型和 minisign 签名，再以带旧 SHA 的 GitHub Contents API 请求更新 channel 分支。alpha/beta 使用 `update-channel-alpha`，稳定版使用 `update-channel-stable`；draft 不会进入任何客户端通道，旧版本也不能覆盖新版本。
+
+在取得 Apple Developer ID 和 Windows Authenticode 证书前，可手动运行 `Update-capable unsigned preview` 工作流验证完整更新链路。它生成三平台未做系统身份签名的安装包，但 updater 包仍使用同一套 minisign 私钥签名；版本化资产发布到 `preview-v<version>`，通过校验的 `latest.json` 才会替换 `preview-channel`。该通道与正式 `releases/latest` 完全隔离。首次运行只建立当前版本基线；将三个版本文件同步递增后再次运行，旧预览版才能实际收到升级。
+
+这类预览只用于测试：macOS 仍可能触发 Gatekeeper，Windows 仍可能显示 SmartScreen 警告。没有系统证书不影响 updater 对包内容做签名校验，但不能证明发行者的 Apple/Microsoft 身份。
 
 桌面端在生产构建启动后检查一次，也可以从应用菜单选择“检查更新…”。用户确认后才下载；签名验证通过后先停止内置 Harness runtime，再安装完整桌面包并重启。WebView capability 不包含 updater 权限。
 
@@ -30,7 +34,7 @@ https://raw.githubusercontent.com/majiayu000/dsh-desk/update-channel-alpha/lates
 - `APPLE_API_KEY`
 - `APPLE_API_ISSUER`
 
-Tauri 使用 Hardened Runtime 完成签名并提交 Apple 公证。发布前还必须在干净 Mac 上人工验证 Gatekeeper、签名链、公证 ticket 与内置 Node runtime；CI 成功不能替代首次实机门禁。
+Tauri 使用 Hardened Runtime 完成签名并先提交 `.app` 公证。DMG 生成后，发布链会再次提交 DMG 公证并 staple ticket；只有公证后的文件才会进入平台 workflow artifact 和最终 Release。发布前还必须在干净 Mac 上人工验证 Gatekeeper、签名链、公证 ticket 与内置 Node runtime；CI 成功不能替代首次实机门禁。
 
 离线 runtime 中的 Node、ripgrep、原生 `.node` 模块和动态库都属于 Apple 公证检查范围。正式构建在 Tauri 封装前扫描所有 Mach-O：保留已有 Developer ID Application 签名，并用当前发行身份补签其余原生代码。封装后再次验证每个 Mach-O 的签名 Authority、应用公证 ticket、DMG 签名和 Gatekeeper；任一项缺失都会阻止 Release。
 
@@ -54,6 +58,6 @@ Linux AppImage 与 deb 会生成 SHA-256，并由 GitHub OIDC artifact attestati
 3. 完成模型配置、首次任务、工具审批和重启恢复。
 4. 验证卸载后没有进程与监听端口残留。
 5. 核对 SHA-256、兼容矩阵、许可证清单和已知问题。
-6. 草稿 Release 经人工确认后才能发布。
+6. 在 GitHub `production` environment 审批构建产物；审批后汇总任务才会公开 Release。
 7. 从上一个正式版本检查更新，验证提示、签名下载、runtime 停止、安装和重启后的版本。
 8. 将 `latest.json` 中的签名临时替换为无效值，在隔离测试 Release 中确认客户端拒绝安装。
