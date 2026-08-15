@@ -126,6 +126,11 @@ jobs:
           $config | ConvertTo-Json -Depth 5 | Set-Content -Encoding utf8 'src-tauri/tauri.windows-signing.json'
       - name: Build and test fixed runtime
         run: pnpm check && pnpm test:rust && pnpm test:updater-contract && pnpm prepare:runtime && pnpm test:packaged-runtime && pnpm test:plugin-parity
+      - name: Sign bundled macOS native runtime
+        if: runner.os == 'macOS'
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+        run: pnpm release:macos:sign-runtime
       - name: Build and upload signed platform bundle
         uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f # v1
         env:
@@ -143,6 +148,9 @@ jobs:
           generateReleaseNotes: true
           updaterJsonPreferNsis: true
           args: ${{ matrix.tauri_args }}
+      - name: Verify notarized macOS distribution
+        if: runner.os == 'macOS'
+        run: pnpm release:macos:verify
       - name: Write SHA-256 checksums
         run: pnpm release:checksums
       - name: Attest release provenance
