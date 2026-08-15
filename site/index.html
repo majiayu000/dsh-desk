@@ -3,98 +3,228 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Live, public compatibility evidence for the DSH Desk desktop distribution of DeepSeek Harness.">
-    <meta name="theme-color" content="#07161a">
-    <meta property="og:title" content="DSH Desk Compatibility Radar">
-    <meta property="og:description" content="Pinned runtime, upstream candidate, and three-platform verification status.">
+    <meta name="description" content="DSH Desk puts DeepSeek Harness on your desktop with a bundled runtime, trusted plugin review, and public compatibility evidence.">
+    <meta name="theme-color" content="#06101d">
+    <meta property="og:title" content="DSH Desk — DeepSeek Harness, ready on desktop">
+    <meta property="og:description" content="No Node setup. A pinned runtime. Public compatibility evidence.">
     <meta property="og:image" content="https://raw.githubusercontent.com/majiayu000/dsh-desk/main/assets/social/github-social-preview.png">
-    <title>DSH Desk — Compatibility Radar</title>
+    <title>DSH Desk — DeepSeek Harness, ready on desktop</title>
+    <link rel="canonical" href="https://www.dshdesk.com/">
+    <link rel="alternate" hreflang="en" href="https://www.dshdesk.com/">
+    <link rel="alternate" hreflang="zh-CN" href="https://www.dshdesk.com/zh-CN/">
+    <link rel="alternate" hreflang="x-default" href="https://www.dshdesk.com/">
+    <link rel="icon" href="https://raw.githubusercontent.com/majiayu000/dsh-desk/main/assets/dsh-desk-logo-anime-v1.png" type="image/png">
+    <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/majiayu000/dsh-desk/main/assets/dsh-desk-logo-anime-v1.png">
     <link rel="stylesheet" href="./styles.css">
     <script type="module" src="./status.js"></script>
   </head>
   <body>
-    <main class="shell">
-      <header class="masthead">
-        <a class="brand" href="https://github.com/majiayu000/dsh-desk">
-          <img src="https://raw.githubusercontent.com/majiayu000/dsh-desk/main/assets/dsh-desk-logo-anime-v1.png" alt="">
-          <span><strong>DSH Desk</strong><span>Compatibility control room</span></span>
-        </a>
-        <nav aria-label="Primary">
-          <a href="https://github.com/majiayu000/dsh-desk/releases">Download</a>
-          <a href="https://github.com/majiayu000/dsh-desk/blob/main/docs/compatibility.md">Evidence</a>
-          <a href="https://github.com/majiayu000/dsh-desk">Source</a>
-        </nav>
-      </header>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="ambient ambient-one" aria-hidden="true"></div>
+    <div class="ambient ambient-two" aria-hidden="true"></div>
 
-      <section class="hero">
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="DSH Desk home">
+        <img src="https://raw.githubusercontent.com/majiayu000/dsh-desk/main/assets/dsh-desk-logo-anime-v1.png" alt="">
+        <span>DSH <strong>Desk</strong></span>
+      </a>
+      <nav aria-label="Primary navigation">
+        <a href="#why">Why Desk</a>
+        <a href="#trust">Trust</a>
+        <a href="#status">Live status</a>
+        <a class="language-switch" href="./zh-CN/" lang="zh-CN" hreflang="zh-CN" aria-label="切换到中文">中文</a>
+        <a class="nav-github" href="https://github.com/majiayu000/dsh-desk">GitHub <span aria-hidden="true">↗</span></a>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section class="hero" id="top">
         <div class="hero-copy">
-          <p class="eyebrow">Live upstream signal / public evidence</p>
-          <h1>Know before you update.</h1>
-          <p class="lede">DSH Desk pins the runtime users receive, then tests the newest DeepSeek Harness candidate separately. A failed candidate never becomes a silent user upgrade.</p>
+          <p class="eyebrow"><span></span> Community desktop distribution</p>
+          <h1>Your agent.<br><em>Ready when you are.</em></h1>
+          <p class="hero-lede">DeepSeek Harness, packaged as a focused desktop app. No Node setup, no terminal ritual, and no surprise runtime upgrades.</p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="https://github.com/majiayu000/dsh-desk/releases">
+              <span class="button-icon" aria-hidden="true">↓</span>
+              Download preview
+            </a>
+            <a class="button button-secondary" href="https://github.com/majiayu000/dsh-desk">View source <span aria-hidden="true">↗</span></a>
+          </div>
+          <p class="availability"><span aria-hidden="true">●</span> Preview available for macOS Apple Silicon · MIT licensed</p>
         </div>
-        <aside class="overall" data-overall data-state="unknown" aria-live="polite">
-          <span class="status-label">Overall signal</span>
-          <strong data-overall-label>LOADING</strong>
-          <p data-overall-message>Fetching the latest public GitHub Actions evidence.</p>
-          <a href="https://github.com/majiayu000/dsh-desk/actions/workflows/compatibility.yml">Open latest evidence →</a>
-        </aside>
+
+        <div class="product-stage" aria-label="DSH Desk runtime preview">
+          <div class="orbit orbit-outer" aria-hidden="true"></div>
+          <div class="orbit orbit-inner" aria-hidden="true"></div>
+          <div class="whale-orb" aria-hidden="true">
+            <img src="https://raw.githubusercontent.com/majiayu000/dsh-desk/main/assets/dsh-desk-logo-anime-v1.png" alt="">
+          </div>
+          <div class="runtime-card">
+            <div class="runtime-topline">
+              <span class="runtime-title"><i></i> DSH runtime</span>
+              <span class="window-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+            </div>
+            <div class="runtime-body">
+              <span class="runtime-kicker">System ready</span>
+              <strong>Harness is running</strong>
+              <p>Private loopback · managed lifecycle</p>
+              <div class="runtime-metric">
+                <span>Runtime</span>
+                <code data-harness-version>0.1.0-rc.6</code>
+              </div>
+              <div class="runtime-metric">
+                <span>Origin</span>
+                <code>127.0.0.1</code>
+              </div>
+            </div>
+          </div>
+          <div class="float-pill pill-one"><span>01</span> Bundled runtime</div>
+          <div class="float-pill pill-two"><span>02</span> Daily checks</div>
+        </div>
+
+        <div class="scroll-cue" aria-hidden="true"><span></span>Scroll to dive deeper</div>
       </section>
 
-      <section class="versions" aria-label="Pinned versions">
-        <dl class="version">
-          <dt>DSH Desk</dt>
-          <dd data-desktop-version>0.1.0-alpha.1</dd>
-        </dl>
-        <dl class="version">
-          <dt>DeepSeek Harness</dt>
-          <dd data-harness-version>0.1.0-rc.6</dd>
-        </dl>
+      <section class="proof-strip" aria-label="Product highlights">
+        <div><strong>60 sec</strong><span>Product target: download to first task</span></div>
+        <div><strong>3 platforms</strong><span>Compatibility tested on every change</span></div>
+        <div><strong>0 surprises</strong><span>Pinned runtime, candidate tested separately</span></div>
       </section>
 
-      <section aria-labelledby="platform-heading">
-        <div class="section-head">
-          <h2 id="platform-heading">Pinned runtime</h2>
-          <p>Last updated <span data-updated>waiting for GitHub</span></p>
+      <section class="section why" id="why">
+        <div class="section-intro">
+          <p class="eyebrow"><span></span> Desktop, without the baggage</p>
+          <h2>Less setup.<br><em>More momentum.</em></h2>
+          <p>DSH Desk does not fork the Harness experience. It gives the official UI the reliable desktop lifecycle it deserves.</p>
         </div>
+        <div class="feature-grid">
+          <article class="feature feature-large">
+            <span class="feature-number">01</span>
+            <div class="feature-icon" aria-hidden="true">⌁</div>
+            <h3>Open it like an app</h3>
+            <p>Node 24 and a known-good Harness runtime travel with the installer. Launch from your desktop and start working.</p>
+            <div class="mini-terminal" aria-hidden="true">
+              <span><i></i><i></i><i></i></span>
+              <code><b>✓</b> runtime verified<br><b>✓</b> local service healthy<br><b>✓</b> workspace connected</code>
+            </div>
+          </article>
+          <article class="feature">
+            <span class="feature-number">02</span>
+            <div class="feature-icon" aria-hidden="true">◎</div>
+            <h3>Stable by design</h3>
+            <p>You run a pinned version. The newest candidate must pass its own checks before it enters the conversation.</p>
+            <div class="version-track" aria-hidden="true"><i></i><i></i><i></i><span>pinned</span></div>
+          </article>
+          <article class="feature feature-dark">
+            <span class="feature-number">03</span>
+            <div class="feature-icon" aria-hidden="true">◇</div>
+            <h3>Small, native shell</h3>
+            <p>Built with Tauri and your system WebView—no extra Chromium instance, no rewritten product UI.</p>
+            <div class="shell-mark" aria-hidden="true"><span>TAURI 2</span><strong>Native<br>lifecycle</strong></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section trust" id="trust">
+        <div class="trust-visual" aria-label="Security boundary diagram">
+          <div class="boundary boundary-outer"><span>Desktop boundary</span></div>
+          <div class="boundary boundary-mid"><span>Exact origin only</span></div>
+          <div class="boundary-core">
+            <img src="https://raw.githubusercontent.com/majiayu000/dsh-desk/main/assets/dsh-desk-logo-anime-v1.png" alt="">
+            <span>Harness</span>
+          </div>
+          <span class="satellite satellite-one">IPC blocked</span>
+          <span class="satellite satellite-two">Private DSH_HOME</span>
+          <span class="satellite satellite-three">Loopback only</span>
+        </div>
+        <div class="trust-copy">
+          <p class="eyebrow"><span></span> A deliberately narrow boundary</p>
+          <h2>Powerful locally.<br><em>Careful by default.</em></h2>
+          <p class="trust-lede">The runtime page gets no Tauri IPC, shell, or filesystem permissions. DSH Desk manages the process; Harness remains the source of truth.</p>
+          <ul class="trust-list">
+            <li><span>01</span><div><strong>Isolated data</strong><p>A private DSH_HOME leaves your existing CLI profile untouched.</p></div></li>
+            <li><span>02</span><div><strong>Review before install</strong><p>Inspect plugin source, integrity, lifecycle scripts, and rollback boundaries first.</p></div></li>
+            <li><span>03</span><div><strong>Fail closed</strong><p>Broken health checks, navigation, or signing gates stop the release—not the user.</p></div></li>
+          </ul>
+          <a class="text-link" href="https://github.com/majiayu000/dsh-desk/blob/main/docs/desktop-architecture.md">Read the architecture notes <span aria-hidden="true">↗</span></a>
+        </div>
+      </section>
+
+      <section class="section radar" id="status">
+        <div class="radar-head">
+          <div>
+            <p class="eyebrow"><span></span> Live public evidence</p>
+            <h2>Know before<br><em>you update.</em></h2>
+          </div>
+          <aside class="overall" data-overall data-state="unknown" aria-live="polite">
+            <span class="status-dot" aria-hidden="true"></span>
+            <div>
+              <span class="status-label">Overall signal</span>
+              <strong data-overall-label>LOADING</strong>
+              <p data-overall-message>Fetching the latest public GitHub Actions evidence.</p>
+            </div>
+            <a href="https://github.com/majiayu000/dsh-desk/actions/workflows/compatibility.yml" aria-label="Open latest compatibility evidence">↗</a>
+          </aside>
+        </div>
+
+        <div class="versions" aria-label="Pinned versions">
+          <dl class="version"><dt>DSH Desk</dt><dd data-desktop-version>0.1.0-alpha.5</dd></dl>
+          <dl class="version"><dt>DeepSeek Harness</dt><dd data-harness-version>0.1.0-rc.6</dd></dl>
+          <dl class="version version-updated"><dt>Evidence updated</dt><dd data-updated>waiting for GitHub</dd></dl>
+        </div>
+
         <div class="platforms">
           <article class="platform" data-platform="macos" data-state="unknown" data-number="01">
-            <span class="name">macOS arm64</span>
+            <div><span class="name">macOS</span><small>Apple Silicon</small></div>
             <strong data-status>UNKNOWN</strong>
             <p data-detail>Waiting for job evidence</p>
-            <a href="https://github.com/majiayu000/dsh-desk/actions/workflows/compatibility.yml">macOS evidence</a>
+            <a href="https://github.com/majiayu000/dsh-desk/actions/workflows/compatibility.yml" aria-label="View macOS evidence"></a>
           </article>
           <article class="platform" data-platform="windows" data-state="unknown" data-number="02">
-            <span class="name">Windows x64</span>
+            <div><span class="name">Windows</span><small>x64</small></div>
             <strong data-status>UNKNOWN</strong>
             <p data-detail>Waiting for job evidence</p>
-            <a href="https://github.com/majiayu000/dsh-desk/actions/workflows/compatibility.yml">Windows evidence</a>
+            <a href="https://github.com/majiayu000/dsh-desk/actions/workflows/compatibility.yml" aria-label="View Windows evidence"></a>
           </article>
           <article class="platform" data-platform="linux" data-state="unknown" data-number="03">
-            <span class="name">Linux x64</span>
+            <div><span class="name">Linux</span><small>x64</small></div>
             <strong data-status>UNKNOWN</strong>
             <p data-detail>Waiting for job evidence</p>
-            <a href="https://github.com/majiayu000/dsh-desk/actions/workflows/compatibility.yml">Linux evidence</a>
+            <a href="https://github.com/majiayu000/dsh-desk/actions/workflows/compatibility.yml" aria-label="View Linux evidence"></a>
           </article>
         </div>
+
+        <div class="signals" aria-label="Additional verification signals">
+          <article class="signal" data-candidate data-state="unknown">
+            <dl><dt>Newest npm candidate</dt><dd data-status>UNKNOWN</dd></dl>
+            <p data-detail>Waiting for candidate evidence</p>
+            <a href="https://github.com/majiayu000/dsh-desk/actions/workflows/compatibility.yml" aria-label="View npm candidate evidence"></a>
+          </article>
+          <article class="signal" data-ci data-state="unknown">
+            <dl><dt>Latest main CI</dt><dd data-status>UNKNOWN</dd></dl>
+            <p data-detail>Waiting for CI evidence</p>
+            <a href="https://github.com/majiayu000/dsh-desk/actions/workflows/ci.yml" aria-label="View CI evidence"></a>
+          </article>
+        </div>
+        <p class="radar-note">Green means the named public check passed. It does not imply that every future upstream release is compatible or that preview installers carry production platform signatures.</p>
       </section>
 
-      <section class="signals" aria-label="Additional verification signals">
-        <article class="signal" data-candidate data-state="unknown">
-          <dl><dt>Newest npm candidate</dt><dd data-status>UNKNOWN</dd></dl>
-          <p data-detail>Waiting for candidate evidence</p>
-          <a href="https://github.com/majiayu000/dsh-desk/actions/workflows/compatibility.yml">Candidate evidence</a>
-        </article>
-        <article class="signal" data-ci data-state="unknown">
-          <dl><dt>Latest main CI</dt><dd data-status>UNKNOWN</dd></dl>
-          <p data-detail>Waiting for CI evidence</p>
-          <a href="https://github.com/majiayu000/dsh-desk/actions/workflows/ci.yml">CI evidence</a>
-        </article>
+      <section class="final-cta">
+        <div>
+          <p class="eyebrow"><span></span> Dive in</p>
+          <h2>Put Harness<br><em>on your desk.</em></h2>
+        </div>
+        <div class="final-action">
+          <p>Start with the macOS Apple Silicon preview, explore the source, or help bring the next platform over the line.</p>
+          <a class="button button-primary" href="https://github.com/majiayu000/dsh-desk/releases"><span class="button-icon" aria-hidden="true">↓</span> Download preview</a>
+        </div>
       </section>
-
-      <footer>
-        <p>Green means the named public check passed. It does not imply that every future upstream release is compatible, or that preview installers carry production platform signatures.</p>
-        <p><a href="https://github.com/majiayu000/dsh-desk/blob/main/README.zh-CN.md">中文说明</a></p>
-      </footer>
     </main>
+
+    <footer>
+      <a class="brand" href="#top"><img src="https://raw.githubusercontent.com/majiayu000/dsh-desk/main/assets/dsh-desk-logo-anime-v1.png" alt=""><span>DSH <strong>Desk</strong></span></a>
+      <p>Community-built for DeepSeek Harness.<br>Not affiliated with or endorsed by DeepSeek.</p>
+      <div class="footer-links"><a href="https://github.com/majiayu000/dsh-desk">GitHub</a><a href="https://github.com/majiayu000/dsh-desk/blob/main/README.zh-CN.md">中文说明</a><a href="https://github.com/majiayu000/dsh-desk/blob/main/LICENSE">MIT License</a></div>
+    </footer>
   </body>
 </html>

@@ -340,8 +340,14 @@ mod tests {
         command
             .args(["-c", "trap '' INT; (trap '' INT; sleep 60) & wait"])
             .process_group(0);
-        let child = command.spawn().expect("test process group must start");
-        let mut process = ProcessTree::attach(child).expect("test process tree must attach");
+        let child = match command.spawn() {
+            Ok(child) => child,
+            Err(error) => panic!("test process group must start: {error}"),
+        };
+        let mut process = match ProcessTree::attach(child) {
+            Ok(process) => process,
+            Err(error) => panic!("test process tree must attach: {error}"),
+        };
         thread::sleep(Duration::from_millis(50));
 
         stop_process_tree_with_timeout(
@@ -379,19 +385,27 @@ mod windows_tests {
             "$null = Start-Process powershell.exe -ArgumentList '-NoProfile','-Command','Start-Sleep 60' -PassThru; Start-Sleep 60",
         ]);
         configure_process_tree_command(&mut command);
-        let child = command.spawn().expect("suspended test parent must start");
-        let mut process = ProcessTree::attach(child).expect("test parent must enter the job");
+        let child = match command.spawn() {
+            Ok(child) => child,
+            Err(error) => panic!("suspended test parent must start: {error}"),
+        };
+        let mut process = match ProcessTree::attach(child) {
+            Ok(process) => process,
+            Err(error) => panic!("test parent must enter the job: {error}"),
+        };
         thread::sleep(Duration::from_millis(500));
 
-        stop_process_tree_with_timeout(
+        if let Err(error) = stop_process_tree_with_timeout(
             &mut process,
             Duration::from_millis(100),
             Duration::from_secs(2),
-        )
-        .expect("the complete Windows test job must stop");
-        assert_eq!(
-            active_job_processes(process.job).expect("test job must remain queryable"),
-            0
-        );
+        ) {
+            panic!("the complete Windows test job must stop: {error}");
+        }
+        let active_processes = match active_job_processes(process.job) {
+            Ok(active_processes) => active_processes,
+            Err(error) => panic!("test job must remain queryable: {error}"),
+        };
+        assert_eq!(active_processes, 0);
     }
 }
