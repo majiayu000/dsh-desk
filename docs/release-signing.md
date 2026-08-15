@@ -36,6 +36,8 @@ https://github.com/majiayu000/dsh-desk/releases/latest/download/latest.json
 
 Tauri 使用 Hardened Runtime 完成签名并提交 Apple 公证。发布前还必须在干净 Mac 上人工验证 Gatekeeper、签名链、公证 ticket 与内置 Node runtime；CI 成功不能替代首次实机门禁。
 
+离线 runtime 中的 Node、ripgrep、原生 `.node` 模块和动态库都属于 Apple 公证检查范围。正式构建在 Tauri 封装前扫描所有 Mach-O：保留已有 Developer ID Application 签名，并用当前发行身份补签其余原生代码。封装后再次验证每个 Mach-O 的签名 Authority、应用公证 ticket、DMG 签名和 Gatekeeper；任一项缺失都会阻止 Release。
+
 本地正式构建也可以把 `.p8` 路径放入 `APPLE_API_KEY_PATH`；`APPLE_API_KEY_CONTENT` 仅用于 CI。`pnpm release:macos:preview` 会明确生成 ad-hoc 预览包，不能作为正式 Release。
 
 ## Windows Secrets

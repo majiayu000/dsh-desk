@@ -20,7 +20,7 @@
     "url": "https://github.com/majiayu000/dsh-desk.git"
   },
   "type": "module",
-  "packageManager": "pnpm@11.7.0",
+  "packageManager": "pnpm@11.21.0",
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 1420",
     "build": "tsc --noEmit && vite build",
@@ -44,18 +44,21 @@
     "check:release-env": "node scripts/check-release-env.mjs",
     "check:updater-key": "node scripts/check-updater-key.mjs",
     "release:checksums": "node scripts/write-release-checksums.mjs",
+    "release:macos:sign-runtime": "node scripts/macos-release.mjs sign-runtime",
+    "release:macos:verify": "node scripts/macos-release.mjs verify-bundle",
     "prepare:runtime": "node scripts/prepare-runtime.mjs",
-    "release:macos": "pnpm check:release-env macos && pnpm prepare:runtime && tauri build --bundles dmg && pnpm release:checksums",
+    "release:macos": "pnpm check:release-env macos && pnpm prepare:runtime && pnpm release:macos:sign-runtime && tauri build --bundles dmg && pnpm release:macos:verify && pnpm release:checksums",
     "release:macos:preview": "pnpm prepare:runtime && tauri build --bundles app && DSH_ALLOW_ADHOC=1 node scripts/package-macos.mjs"
   },
   "dependencies": {
     "@deepseek-ai/dsh": "0.1.0-rc.6",
     "@tauri-apps/api": "2.11.1",
     "@tauri-apps/plugin-dialog": "2.7.2",
-    "pnpm": "11.7.0"
+    "pnpm": "11.21.0"
   },
   "devDependencies": {
     "@tauri-apps/cli": "2.11.4",
+    "semver": "7.7.2",
     "typescript": "7.0.2",
     "vite": "8.2.1"
   }
