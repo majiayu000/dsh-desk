@@ -8,7 +8,7 @@ import {
 } from "./lib/release-artifacts.mjs";
 
 const directory = mkdtempSync(resolve(tmpdir(), "dsh-release-artifacts-"));
-const version = "0.1.0-alpha.9";
+const version = "0.1.0-alpha.10";
 const tag = `v${version}`;
 const signature = Buffer.from(
   "untrusted comment: test signature\nRWQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\ntrusted comment: test timestamp\nRWQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n",
@@ -50,6 +50,25 @@ try {
   }
   rmSync(bundleRoot, { recursive: true, force: true });
   rmSync(stagedRoot, { recursive: true, force: true });
+
+  const macBundleRoot = join(directory, "mac-bundle");
+  const stagedMacRoot = join(directory, "staged-mac");
+  mkdirSync(join(macBundleRoot, "nested"), { recursive: true });
+  for (const suffix of [".dmg", ".dmg.sha256", ".app.tar.gz", ".app.tar.gz.sig"]) {
+    writeFileSync(join(macBundleRoot, "nested", `DSH Desk${suffix}`), "fixture");
+  }
+  const stagedMac = stageReleaseArtifacts("macos", macBundleRoot, stagedMacRoot, {
+    macArchitecture: "aarch64",
+    version,
+  });
+  if (
+    !stagedMac.some((file) => file.endsWith(`_${version}_aarch64.app.tar.gz`)) ||
+    !stagedMac.some((file) => file.endsWith(`_${version}_aarch64.app.tar.gz.sig`))
+  ) {
+    throw new Error("macOS updater artifacts were not architecture-qualified before publishing");
+  }
+  rmSync(macBundleRoot, { recursive: true, force: true });
+  rmSync(stagedMacRoot, { recursive: true, force: true });
 
   const { manifest, output } = assembleUpdateManifest({
     artifactDirectory: directory,

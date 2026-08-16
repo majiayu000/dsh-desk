@@ -36,7 +36,7 @@ export function isReleaseInstaller(bundleRoot, file) {
   return parts.length === 2 && parts[0] === expectedFolder && !basename(file).startsWith("rw.");
 }
 
-export function stageReleaseArtifacts(platform, bundleRoot, outputDirectory) {
+export function stageReleaseArtifacts(platform, bundleRoot, outputDirectory, options = {}) {
   const requiredSuffixes = platformFiles[platform];
   if (!requiredSuffixes) {
     throw new Error(`Unsupported release platform: ${platform}`);
@@ -49,6 +49,14 @@ export function stageReleaseArtifacts(platform, bundleRoot, outputDirectory) {
   }
   mkdirSync(destinationRoot, { recursive: true });
 
+  const macArchitecture = options.macArchitecture;
+  const version = options.version;
+  if (platform === "macos") {
+    if (!["aarch64", "x64"].includes(macArchitecture) || !version) {
+      throw new Error("macOS staging requires aarch64|x64 architecture and a version");
+    }
+  }
+
   const staged = [];
   for (const suffix of requiredSuffixes) {
     const matches = walkFiles(sourceRoot).filter(
@@ -59,7 +67,11 @@ export function stageReleaseArtifacts(platform, bundleRoot, outputDirectory) {
         `${platform} release requires exactly one ${suffix} artifact, found ${matches.length}`,
       );
     }
-    const destination = join(destinationRoot, basename(matches[0]));
+    const destinationName =
+      platform === "macos" && suffix.startsWith(".app.tar.gz")
+        ? `DSH Desk_${version}_${macArchitecture}${suffix}`
+        : basename(matches[0]);
+    const destination = join(destinationRoot, destinationName);
     if (existsSync(destination)) {
       throw new Error(`Refusing to overwrite staged release artifact: ${destination}`);
     }

@@ -240,9 +240,11 @@ jobs:
         run: pnpm release:checksums
       - name: Stage immutable release artifacts
         shell: bash
-        run: >-
-          pnpm release:artifacts stage "${{ matrix.platform }}"
-          src-tauri/target/release/bundle "release-staging/${{ matrix.artifact }}"
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          pnpm release:artifacts stage "${{ matrix.platform }}" \
+            src-tauri/target/release/bundle "release-staging/${{ matrix.artifact }}" \
+            "${{ matrix.artifact }}" "$version"
       - name: Record Windows signing metadata
         if: runner.os == 'Windows'
         env:
