@@ -9,11 +9,28 @@ DSH Desk 将桌面壳、Node、DeepSeek Harness 和 Web UI 作为一个固定版
 
 | DSH Desk | DeepSeek Harness | Node | macOS arm64 | Windows x64 | Linux x64 |
 |---|---|---|---|---|---|
-| `0.1.0-alpha.3` | `0.1.0-rc.6` | `24.x` | 已验证 | 已验证 | 已验证 |
+| `0.1.0-alpha.10` | `0.1.0-rc.6` | `24.x` | 已验证 | 已验证 | 已验证 |
 
-三平台无系统签名 Preview 已在同一公开运行中完成构建并上传 DMG、NSIS、AppImage 与 DEB：
+这里的“已验证”指该固定组合通过三平台 CI 契约：TypeScript/Rust 构建、固定 DSH 版本、严格
+loopback 健康检查、离线 runtime 与插件 parity。最近一次公开运行（2026-08-16，含 PR #19）：
+[GitHub Actions #31922781274](https://github.com/majiayu000/dsh-desk/actions/runs/31922781274)。
+每日兼容检查（含 npm `latest` 候选）最近一次成功运行：
+[GitHub Actions #31923751715](https://github.com/majiayu000/dsh-desk/actions/runs/31923751715)。
+
+`v0.1.0-alpha.10` 已发布三平台安装包与 updater 工件（macOS DMG 双架构、Windows NSIS、
+Linux AppImage/DEB，含 SHA-256 与 minisign 签名）：
+[Release v0.1.0-alpha.10](https://github.com/majiayu000/dsh-desk/releases/tag/v0.1.0-alpha.10)。
+四个平台打包 job 全部通过（macOS 含 Developer ID 签名、notarization 与 DMG 内容验证；
+Windows 为无签名的 Alpha 安装包）。该标签的 `Publish atomic release` 步骤失败，
+端到端发布链路将由 `v0.1.0-alpha.11` 全新标签验证：
+[Issue #20](https://github.com/majiayu000/dsh-desk/issues/20)。
+
+### 历史证据
+
+三平台无系统签名 Preview 曾在同一公开运行中完成构建并上传 DMG、NSIS、AppImage 与 DEB：
 [GitHub Actions #31864820646](https://github.com/majiayu000/dsh-desk/actions/runs/31864820646)。
-这里的“已验证”表示固定 runtime、应用构建和安装包生成通过，不表示安装包已经获得 Apple Developer ID 或 Windows Authenticode 签名。
+当时的“已验证”表示固定 runtime、应用构建和安装包生成通过，不表示安装包已经获得 Apple
+Developer ID 或 Windows Authenticode 签名。
 
 独立的测试更新通道也已完成三平台更新包生成、更新签名校验、清单发布，以及 macOS
 `0.1.0-alpha.2` 到 `0.1.0-alpha.3` 的下载、安装、进程退出、自动重启和版本切换验证：
