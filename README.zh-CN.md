@@ -166,6 +166,7 @@ pnpm create:plugin ./my-dsh-plugin @your-scope/my-dsh-plugin
 - [真实增长指标](docs/product-metrics.md)
 - [30 天执行计划](docs/30-day-plan.md)
 - [发布传播素材](docs/launch-kit.md)
+- [2026-08 发布文案](docs/launch-posts-2026-08.md)
 - [生态横评 v1](docs/ecosystem-review-v1.md)
 - [跨设备查看与审批安全协议](docs/cross-device-rfc.md)
 - [贡献指南](CONTRIBUTING.md)
