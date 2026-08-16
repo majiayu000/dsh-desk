@@ -3,6 +3,12 @@ name: Publish verified update channel
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Published v* release tag to verify and publish
+        required: true
+        type: string
 
 concurrency:
   group: release-update-channel
@@ -10,14 +16,14 @@ concurrency:
 
 jobs:
   validate:
-    if: startsWith(github.event.release.tag_name, 'v')
+    if: startsWith(github.event.release.tag_name || inputs.release_tag, 'v')
     runs-on: ubuntu-24.04
     outputs:
       channel-branch: ${{ steps.channel.outputs.branch }}
     permissions:
       contents: read
     env:
-      RELEASE_TAG: ${{ github.event.release.tag_name }}
+      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -89,7 +95,7 @@ jobs:
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       CHANNEL_BRANCH: ${{ needs.validate.outputs.channel-branch }}
-      RELEASE_TAG: ${{ github.event.release.tag_name }}
+      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
     steps:
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
