@@ -133,6 +133,7 @@ pnpm create:plugin ./my-dsh-plugin @your-scope/my-dsh-plugin
 - [Product metrics and privacy gates](docs/product-metrics.md)
 - [30-day execution plan](docs/30-day-plan.md)
 - [Launch kit](docs/launch-kit.md)
+- [Ecosystem review v1](docs/ecosystem-review-v1.md)
 - [Contributing](CONTRIBUTING.md) · [Support](SUPPORT.md) · [Security policy](SECURITY.md) · [Code of Conduct](CODE_OF_CONDUCT.md)
 
 ## License
