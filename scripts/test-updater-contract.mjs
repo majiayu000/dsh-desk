@@ -108,6 +108,18 @@ assert(
   "Release artifact actions must be pinned to reviewed commits",
 );
 
+const macosRelease = read("scripts/macos-release.mjs");
+assert(
+  macosRelease.includes(
+    'run("hdiutil", ["attach", "-nobrowse", "-readonly", "-mountpoint", mountPath, dmgPath]);',
+  ),
+  "macOS verification must mount the shipped DMG",
+);
+assert(
+  !macosRelease.includes("let verifiedAppPath = appPath"),
+  "macOS verification must assess the app inside the shipped DMG, not the build directory",
+);
+
 const previewConfig = JSON.parse(read("src-tauri/tauri.unsigned-preview.json"));
 assert(
   previewConfig.bundle?.createUpdaterArtifacts === false,
