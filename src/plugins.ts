@@ -2,6 +2,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { open } from '@tauri-apps/plugin-dialog'
 import catalogData from './plugin-catalog.json'
 import { resolveReviewedOperation, type ResolvedPluginOperation } from './plugin-review'
+import { clipboardPluginSource, parsePluginInstallInput } from './plugin-source'
 import './plugins.css'
 
 type PluginAction = 'add' | 'remove' | 'update' | 'why'
@@ -93,11 +94,19 @@ const catalogSearch = document.querySelector<HTMLInputElement>('#catalog-search'
 const catalogFilters = document.querySelector<HTMLElement>('#catalog-filters')!
 const catalogList = document.querySelector<HTMLDivElement>('#catalog-list')!
 const catalogCount = document.querySelector<HTMLParagraphElement>('#catalog-count')!
+const openRegistry = document.querySelector<HTMLButtonElement>('#open-registry')!
+const registryHint = document.querySelector<HTMLParagraphElement>('#registry-hint')!
+const clipboardOffer = document.querySelector<HTMLElement>('#clipboard-offer')!
+const clipboardSpec = document.querySelector<HTMLElement>('#clipboard-spec')!
+const reviewClipboard = document.querySelector<HTMLButtonElement>('#review-clipboard')!
+const dismissClipboard = document.querySelector<HTMLButtonElement>('#dismiss-clipboard')!
+const pasteInstall = document.querySelector<HTMLButtonElement>('#paste-install')!
 
 let busy = false
 let pendingReview: ResolvedPluginOperation | null = null
 let selectedCategory: CatalogCategory | 'all' = 'all'
 let installedNames = new Set<string>()
+const dismissedClipboardSources = new Set<string>()
 
 function setBusy(value: boolean): void {
   busy = value
@@ -108,10 +117,46 @@ function setBusy(value: boolean): void {
   chooseDirectory.disabled = value
   catalogSearch.disabled = value
   cancelReview.disabled = value
+  openRegistry.disabled = value
+  pasteInstall.disabled = value
+  reviewClipboard.disabled = value
+  dismissClipboard.disabled = value
   for (const button of list.querySelectorAll('button')) button.disabled = value
   for (const button of catalogFilters.querySelectorAll('button')) button.disabled = value
   for (const button of catalogList.querySelectorAll('button')) {
     button.disabled = value || button.dataset.permanentlyDisabled === 'true'
+  }
+}
+
+function operandFromInput(raw: string): string {
+  return parsePluginInstallInput(raw).operand
+}
+
+function beginReviewFromInput(raw: string): void {
+  const operand = operandFromInput(raw)
+  if (operand && operand !== source.value.trim()) {
+    source.value = operand
+  }
+  void beginReview('add', operand)
+}
+
+function hideClipboardOffer(): void {
+  clipboardOffer.hidden = true
+}
+
+function showClipboardOffer(operand: string): void {
+  if (busy || dismissedClipboardSources.has(operand)) return
+  clipboardSpec.textContent = operand
+  clipboardOffer.hidden = false
+}
+
+async function detectClipboardOffer(): Promise<void> {
+  if (busy || document.visibilityState !== 'visible') return
+  try {
+    const operand = clipboardPluginSource(await navigator.clipboard.readText())
+    if (operand) showClipboardOffer(operand)
+  } catch {
+    // Clipboard permission is optional; the paste button remains available.
   }
 }
 
@@ -320,7 +365,7 @@ function renderCatalog(): void {
   if (entries.length === 0) {
     const empty = document.createElement('div')
     empty.className = 'empty-state'
-    empty.textContent = '没有匹配的可信目录条目。仍可在下方手动检查其他来源。'
+    empty.textContent = '没有匹配的可信目录条目。可打开社区目录浏览，或在下方手动检查其他来源。'
     catalogList.append(empty)
   }
 }
@@ -348,9 +393,62 @@ async function loadPlugins(): Promise<void> {
   }
 }
 
-install.addEventListener('click', () => void beginReview('add', source.value))
+install.addEventListener('click', () => beginReviewFromInput(source.value))
 source.addEventListener('keydown', (event) => {
-  if (event.key === 'Enter') void beginReview('add', source.value)
+  if (event.key === 'Enter') beginReviewFromInput(source.value)
+})
+openRegistry.addEventListener('click', () => {
+  if (busy) return
+  void (async () => {
+    setBusy(true)
+    try {
+      await invoke('open_plugin_registry')
+      registryHint.hidden = false
+      source.placeholder = '粘贴刚才复制的 dsh plugin --profile web add …'
+      source.focus()
+      void detectClipboardOffer()
+    } catch (error) {
+      showOperation('打开社区目录', '失败', String(error))
+    } finally {
+      setBusy(false)
+    }
+  })()
+})
+pasteInstall.addEventListener('click', () => {
+  if (busy) return
+  void (async () => {
+    try {
+      const text = await navigator.clipboard.readText()
+      const operand = parsePluginInstallInput(text).operand
+      if (!operand) {
+        showOperation('粘贴插件来源', '剪贴板里没有安装命令或包名', text.trim() || '剪贴板为空')
+        return
+      }
+      source.value = operand
+      void beginReview('add', operand)
+    } catch {
+      source.focus()
+      showOperation('粘贴插件来源', '无法读取剪贴板', '请把安装命令直接粘贴到输入框。')
+    }
+  })()
+})
+reviewClipboard.addEventListener('click', () => {
+  const operand = clipboardSpec.textContent?.trim() ?? ''
+  if (!operand) return
+  hideClipboardOffer()
+  source.value = operand
+  void beginReview('add', operand)
+})
+dismissClipboard.addEventListener('click', () => {
+  const operand = clipboardSpec.textContent?.trim()
+  if (operand) dismissedClipboardSources.add(operand)
+  hideClipboardOffer()
+})
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') void detectClipboardOffer()
+})
+window.addEventListener('focus', () => {
+  void detectClipboardOffer()
 })
 confirmRisk.addEventListener('change', () => {
   confirmInstall.disabled = !confirmRisk.checked
@@ -392,3 +490,4 @@ chooseDirectory.addEventListener('click', async () => {
 
 renderCatalog()
 void loadPlugins()
+void detectClipboardOffer()

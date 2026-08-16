@@ -63,5 +63,7 @@ jobs:
         run: pnpm test:plugin-review
       - name: Verify plugin developer template
         run: pnpm test:plugin-template
+      - name: Verify copied plugin install commands parse
+        run: pnpm test:plugin-source
       - name: Verify trusted plugin catalog
         run: pnpm test:plugin-catalog

@@ -98,7 +98,7 @@ DSH Desk 当前不宣称安装包最小：完整离线 runtime 会显著增加�
 3. 手动输入 npm、GitHub、TGZ 或本地目录来源时，查看包名、版本、repository、integrity、生命周期脚本和有效权限上限；
 4. 明确确认后，Desk 才委托固定版本的原版 `dsh plugin --profile web` 执行；操作后组合配置验证失败会恢复操作前 Profile。
 
-`dist.integrity` 是内容校验，不是维护者签名。DSH 目前也没有标准化插件权限 manifest，因此未知插件不会被标记为“安全”。完整模型见[插件信任与回滚](docs/plugin-trust.md)。
+`dist.integrity` 是内容校验，不是维护者签名。DSH 目前也没有标准化插件权限 manifest，因此未知插件不会被标记为“安全”。插件窗口可以打开社区目录 [plugin.dshdesk.com](https://plugin.dshdesk.com/)，复制的 `dsh plugin add` 命令会进入同一套审查，该站点不是 Desk 可信目录。完整模型见[插件信任与回滚](docs/plugin-trust.md)。
 
 插件作者可以先接入可复用的 [Candidate 兼容自测](docs/plugin-verification.md)，在独立 `DSH_HOME` 中完成 add、配置组合、why、update 和 remove；通过后再申请 packaged runtime 验证。Candidate 不等于安全审计，也不能使用 Verified 徽章。
 
@@ -138,6 +138,7 @@ pnpm prepare:runtime       # 必须使用 Node 24
 pnpm test:packaged-runtime
 pnpm test:plugin-parity
 pnpm test:plugin-template
+pnpm test:plugin-source
 ```
 
 创建插件骨架：

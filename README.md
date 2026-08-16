@@ -78,7 +78,7 @@ Open `DSH Desk → Plugins…` to inspect a plugin before installation:
 - compatibility with the pinned Desktop and Harness versions;
 - disable, removal, and profile restoration boundaries.
 
-Catalog failure never falls back to an unreviewed global search. Plugin authors can use the [minimal template](templates/dsh-plugin/README.md), run the reusable [candidate compatibility check](docs/plugin-verification.md), and submit the verification form only after it passes.
+Catalog failure never falls back to an unreviewed global search. The Plugins window can open the community registry at [plugin.dshdesk.com](https://plugin.dshdesk.com/); copied `dsh plugin add` commands are parsed into the same review flow, and that site is not the trusted catalog. Plugin authors can use the [minimal template](templates/dsh-plugin/README.md), run the reusable [candidate compatibility check](docs/plugin-verification.md), and submit the verification form only after it passes.
 
 ## Compatibility is a release artifact
 
@@ -113,6 +113,7 @@ pnpm test:packaged-runtime
 pnpm test:plugin-parity
 pnpm test:plugin-template
 pnpm test:plugin-catalog
+pnpm test:plugin-source
 pnpm test:updater-contract
 ```
 
