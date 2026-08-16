@@ -3,13 +3,18 @@ import { assembleUpdateManifest, stageReleaseArtifacts } from "./lib/release-art
 const [command, ...args] = process.argv.slice(2);
 
 if (command === "stage") {
-  const [platform, bundleRoot, outputDirectory] = args;
+  const [platform, bundleRoot, outputDirectory, artifact, version] = args;
   if (!platform || !bundleRoot || !outputDirectory) {
     throw new Error(
-      "Usage: node scripts/release-artifacts.mjs stage <macos|windows|linux> <bundle-root> <output-directory>",
+      "Usage: node scripts/release-artifacts.mjs stage <macos|windows|linux> <bundle-root> <output-directory> [artifact] [version]",
     );
   }
-  const staged = stageReleaseArtifacts(platform, bundleRoot, outputDirectory);
+  const macArchitecture =
+    artifact === "macos-arm64" ? "aarch64" : artifact === "macos-x64" ? "x64" : undefined;
+  const staged = stageReleaseArtifacts(platform, bundleRoot, outputDirectory, {
+    macArchitecture,
+    version,
+  });
   console.log(`Staged ${staged.length} ${platform} release artifacts.`);
 } else if (command === "manifest") {
   const [artifactDirectory, version, tag] = args;
