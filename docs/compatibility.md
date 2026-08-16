@@ -9,21 +9,23 @@ DSH Desk 将桌面壳、Node、DeepSeek Harness 和 Web UI 作为一个固定版
 
 | DSH Desk | DeepSeek Harness | Node | macOS arm64 | Windows x64 | Linux x64 |
 |---|---|---|---|---|---|
-| `0.1.0-alpha.10` | `0.1.0-rc.6` | `24.x` | 已验证 | 已验证 | 已验证 |
+| `0.1.0-alpha.11` | `0.1.0-rc.6` | `24.x` | 已验证 | 已验证 | 已验证 |
 
 这里的“已验证”指该固定组合通过三平台 CI 契约：TypeScript/Rust 构建、固定 DSH 版本、严格
-loopback 健康检查、离线 runtime 与插件 parity。最近一次公开运行（2026-08-16，含 PR #19）：
-[GitHub Actions #31922781274](https://github.com/majiayu000/dsh-desk/actions/runs/31922781274)。
+loopback 健康检查、离线 runtime 与插件 parity。最近一次公开运行（2026-08-16，含 PR #23）：
+[GitHub Actions #31941075574](https://github.com/majiayu000/dsh-desk/actions/runs/31941075574)。
 每日兼容检查（含 npm `latest` 候选）最近一次成功运行：
 [GitHub Actions #31923751715](https://github.com/majiayu000/dsh-desk/actions/runs/31923751715)。
 
-`v0.1.0-alpha.10` 已发布三平台安装包与 updater 工件（macOS DMG 双架构、Windows NSIS、
-Linux AppImage/DEB，含 SHA-256 与 minisign 签名）：
-[Release v0.1.0-alpha.10](https://github.com/majiayu000/dsh-desk/releases/tag/v0.1.0-alpha.10)。
-四个平台打包 job 全部通过（macOS 含 Developer ID 签名、notarization 与 DMG 内容验证；
-Windows 为无签名的 Alpha 安装包）。该标签的 `Publish atomic release` 步骤失败，
-端到端发布链路将由 `v0.1.0-alpha.11` 全新标签验证：
-[Issue #20](https://github.com/majiayu000/dsh-desk/issues/20)。
+`v0.1.0-alpha.11` 已完成端到端发布验证：Release 运行的六个 job（preflight、macOS arm64/x64、
+Windows x64、Linux x64、`Publish atomic release`）全部成功，共发布 18 个安装包、updater、签名、
+SHA-256 与 `latest.json` 资产；随后更新通道工作流原子更新 manifest，并对全部唯一 updater 资产
+完成下载与验签：
+[Release v0.1.0-alpha.11](https://github.com/majiayu000/dsh-desk/releases/tag/v0.1.0-alpha.11) ·
+[Release Actions #31937135348](https://github.com/majiayu000/dsh-desk/actions/runs/31937135348) ·
+[Channel Actions #31941091678](https://github.com/majiayu000/dsh-desk/actions/runs/31941091678)。
+macOS 含 Developer ID 签名、notarization 与 DMG 内容验证；Windows 为无签名的 Alpha 安装包。
+验收清单见 [Issue #20](https://github.com/majiayu000/dsh-desk/issues/20)。
 
 ### 历史证据
 
@@ -36,6 +38,10 @@ Developer ID 或 Windows Authenticode 签名。
 `0.1.0-alpha.2` 到 `0.1.0-alpha.3` 的下载、安装、进程退出、自动重启和版本切换验证：
 [GitHub Actions #31864820646](https://github.com/majiayu000/dsh-desk/actions/runs/31864820646)。
 该通道只用于验证更新基础设施，不会混入正式稳定更新端点。
+
+`v0.1.0-alpha.10` 的四个平台打包 job 全部通过（含 macOS Developer ID 签名与 DMG 内容验证），
+但 `Publish atomic release` 步骤失败。该缺口由 PR #19 与 PR #23 修复，修复后的链路已在
+`v0.1.0-alpha.11` 标签上完成端到端验证。
 
 ## 自动门禁
 
