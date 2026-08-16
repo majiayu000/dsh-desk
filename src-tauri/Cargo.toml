@@ -32,5 +32,5 @@ tauri-plugin-updater = { version = "2.10.1", git = "https://github.com/tauri-app
 windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Security", "Win32_Storage_FileSystem", "Win32_System_Diagnostics", "Win32_System_Diagnostics_ToolHelp", "Win32_System_JobObjects", "Win32_System_Threading"] }
 
 [dev-dependencies]
-base64 = "0.22"
+base64 = "0.23"
 minisign-verify = "0.2.5"
