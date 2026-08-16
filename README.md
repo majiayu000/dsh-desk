@@ -32,7 +32,7 @@
 
 No system Node.js installation, npm setup, port selection, or terminal command is required.
 
-> A clean-machine, start-to-first-task video is the next launch gate. Until that measurement is published, “60 seconds” is a product target rather than a benchmark claim.
+> 📺 Video slot: a clean-machine, uncut download-to-first-task recording is the next launch gate and will be embedded here once published. Until then, “60 seconds” is a product target rather than a benchmark claim.
 
 ## Why this distribution exists
 
@@ -51,11 +51,11 @@ DeepSeek Harness already provides the agent runtime, web UI, sessions, tools, ap
 
 | Platform | Public status | Signing status |
 |---|---|---|
-| macOS Apple Silicon | `v0.1.0-alpha.1` preview | Ad-hoc signed; not notarized |
-| Windows x64 | Alpha installer available | Authenticode optional during alpha; updater signature remains required |
-| Linux x64 | CI/update preview available | Updater signature gate configured |
+| macOS Apple Silicon & Intel | `v0.1.0-alpha.10` DMG (both architectures) | Developer ID signed, notarized, stapled |
+| Windows x64 | `v0.1.0-alpha.10` NSIS installer | Unsigned alpha (SmartScreen notice); updater payloads independently signed |
+| Linux x64 | `v0.1.0-alpha.10` AppImage & deb | Updater signatures included |
 
-Windows alpha releases may be published without Authenticode and will say so in their Release Notes; their updater payloads remain independently signed. macOS production releases still fail closed without Developer ID and notarization credentials. See the live [compatibility radar](https://majiayu000.github.io/dsh-desk/), [compatibility evidence](docs/compatibility.md), and individual [Actions runs](https://github.com/majiayu000/dsh-desk/actions) for the latest facts.
+All four platform bundle jobs of the [`v0.1.0-alpha.10` release run](https://github.com/majiayu000/dsh-desk/actions/runs/31919809876) passed, including macOS signing, notarization, and verify-from-DMG. The run's final `Publish atomic release` step failed; the repaired pipeline is being verified end to end with a fresh `v0.1.0-alpha.11` tag ([issue #20](https://github.com/majiayu000/dsh-desk/issues/20)). Windows alpha releases may be published without Authenticode and say so in their Release Notes. See the live [compatibility radar](https://majiayu000.github.io/dsh-desk/), [compatibility evidence](docs/compatibility.md), and individual [Actions runs](https://github.com/majiayu000/dsh-desk/actions) for the latest facts.
 
 ## What is different
 
