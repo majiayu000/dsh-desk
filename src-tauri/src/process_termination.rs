@@ -121,6 +121,83 @@ pub(crate) fn stop_process_tree(
     stop_process_tree_with_timeout(process, graceful_timeout, FORCE_STOP_TIMEOUT)
 }
 
+/// Runs a helper subprocess to completion with a hard deadline and captures
+/// its output. The child gets its own process group (Unix) or a
+/// kill-on-close Job Object (Windows), so a timeout terminates everything it
+/// spawned instead of leaving orphans behind. Unlike `Command::output`, this
+/// can never block the caller forever on a hung child.
+pub(crate) fn run_command_with_timeout(
+    command: &mut std::process::Command,
+    timeout: Duration,
+) -> Result<std::process::Output, String> {
+    use std::process::Stdio;
+
+    command
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        command.process_group(0);
+    }
+    #[cfg(windows)]
+    configure_process_tree_command(command);
+
+    let mut child = command
+        .spawn()
+        .map_err(|error| format!("failed to start helper process: {error}"))?;
+    let stdout = child
+        .stdout
+        .take()
+        .expect("piped stdout missing from helper process");
+    let stderr = child
+        .stderr
+        .take()
+        .expect("piped stderr missing from helper process");
+    let stdout = thread::spawn(move || read_all(stdout));
+    let stderr = thread::spawn(move || read_all(stderr));
+
+    let mut tree = ProcessTree::attach(child)?;
+    let deadline = Instant::now() + timeout;
+    let status = loop {
+        match tree
+            .try_wait()
+            .map_err(|error| format!("failed to inspect helper process: {error}"))?
+        {
+            Some(status) => break status,
+            None if Instant::now() >= deadline => {
+                stop_process_tree(&mut tree, Duration::from_secs(1))?;
+                return Err(format!(
+                    "helper process did not finish within {} seconds",
+                    timeout.as_secs()
+                ));
+            }
+            None => thread::sleep(Duration::from_millis(50)),
+        }
+    };
+
+    let stdout = stdout
+        .join()
+        .map_err(|_| "helper stdout reader panicked".to_string())?
+        .map_err(|error| format!("failed to read helper stdout: {error}"))?;
+    let stderr = stderr
+        .join()
+        .map_err(|_| "helper stderr reader panicked".to_string())?
+        .map_err(|error| format!("failed to read helper stderr: {error}"))?;
+    Ok(std::process::Output {
+        status,
+        stdout,
+        stderr,
+    })
+}
+
+fn read_all(mut reader: impl std::io::Read) -> std::io::Result<Vec<u8>> {
+    let mut buffer = Vec::new();
+    reader.read_to_end(&mut buffer)?;
+    Ok(buffer)
+}
+
 #[cfg(unix)]
 fn stop_process_tree_with_timeout(
     process: &mut ProcessTree,
@@ -151,10 +228,13 @@ fn signal_process_group(process_group: i32, signal: i32) -> Result<(), String> {
         return Ok(());
     }
     let error = std::io::Error::last_os_error();
-    if error.raw_os_error() == Some(libc::ESRCH) {
-        Ok(())
-    } else {
-        Err(format!("failed to signal runtime process group: {error}"))
+    match error.raw_os_error() {
+        // The group is gone, or it still holds a member we are not allowed to
+        // signal while the remaining members received the signal (EPERM from
+        // kill on a group is per-member, not all-or-nothing). Either way the
+        // caller should keep waiting instead of treating this as a failure.
+        Some(libc::ESRCH) | Some(libc::EPERM) => Ok(()),
+        _ => Err(format!("failed to signal runtime process group: {error}")),
     }
 }
 
@@ -337,9 +417,14 @@ fn resume_main_thread(process_id: u32) -> Result<(), String> {
 
 #[cfg(all(test, unix))]
 mod tests {
-    use std::{os::unix::process::CommandExt, process::Command, thread, time::Duration};
+    use std::{
+        os::unix::process::CommandExt,
+        process::Command,
+        thread,
+        time::{Duration, Instant},
+    };
 
-    use super::{ProcessTree, stop_process_tree_with_timeout};
+    use super::{ProcessTree, run_command_with_timeout, stop_process_tree_with_timeout};
 
     #[test]
     fn force_stop_waits_for_an_entire_process_group() {
@@ -370,6 +455,34 @@ mod tests {
                 .expect("test child status must be readable")
                 .is_some(),
             "the direct test child must be reaped"
+        );
+    }
+
+    #[test]
+    fn timed_helper_command_captures_output() {
+        let mut command = Command::new("sh");
+        command.args(["-c", "echo out; echo err >&2"]);
+
+        let output = run_command_with_timeout(&mut command, Duration::from_secs(10))
+            .expect("fast helper command must finish");
+
+        assert!(output.status.success());
+        assert_eq!(String::from_utf8_lossy(&output.stdout), "out\n");
+        assert_eq!(String::from_utf8_lossy(&output.stderr), "err\n");
+    }
+
+    #[test]
+    fn timed_helper_command_is_killed_at_the_deadline() {
+        let mut command = Command::new("sh");
+        command.args(["-c", "echo started; sleep 60; echo done"]);
+
+        let started = Instant::now();
+        let result = run_command_with_timeout(&mut command, Duration::from_millis(300));
+
+        assert!(result.is_err(), "hung helper command must time out");
+        assert!(
+            started.elapsed() < Duration::from_secs(10),
+            "timeout must not wait for the child to exit on its own"
         );
     }
 }

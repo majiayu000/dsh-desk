@@ -5,6 +5,7 @@ use std::{
     io::Read,
     path::{Path, PathBuf},
     process::Command,
+    time::Duration,
 };
 
 use flate2::read::GzDecoder;
@@ -12,12 +13,18 @@ use serde::{Deserialize, Serialize};
 use tauri::Manager;
 
 use crate::harness_command::harness_command;
-#[cfg(windows)]
-use crate::process_termination::configure_windowless_command;
+use crate::process_termination::run_command_with_timeout;
 
 const MAX_PLUGIN_ARCHIVE_BYTES: u64 = 50 * 1024 * 1024;
 const MAX_MANIFEST_BYTES: u64 = 1024 * 1024;
 const PROFILE_STATE_FILES: [&str; 3] = ["package.json", "pnpm-lock.yaml", "cordis.patch.yml"];
+/// Plugin subprocesses run inline on the single supervisor thread, so every
+/// one of them needs a hard deadline; a hung `dsh`/`pnpm` call would
+/// otherwise block Restart/Shutdown and the app quit forever.
+const PLUGIN_COMMAND_TIMEOUT: Duration = Duration::from_secs(300);
+const PLUGIN_VALIDATION_TIMEOUT: Duration = Duration::from_secs(60);
+const PLUGIN_REPAIR_TIMEOUT: Duration = Duration::from_secs(300);
+const PLUGIN_REGISTRY_VIEW_TIMEOUT: Duration = Duration::from_secs(60);
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -261,27 +268,30 @@ pub(crate) fn execute_plugin_command(
         .then(|| ProfileBackup::capture(profile_dir.clone()))
         .transpose()?;
 
-    let output = harness_command(node, entry)
+    let mut plugin_command = harness_command(node, entry);
+    plugin_command
         .args(["plugin", "--profile", "web", request.action.as_str()])
         .arg(&request.operand)
         .current_dir(&workspace)
         .env("DSH_HOME", &home)
         .env("PATH", &path)
-        .env("NO_COLOR", "1")
-        .output()
+        .env("NO_COLOR", "1");
+    let output = run_command_with_timeout(&mut plugin_command, PLUGIN_COMMAND_TIMEOUT)
         .map_err(|error| format!("无法运行原版 dsh plugin：{error}"))?;
 
     let mut success = output.status.success();
     let mut exit_code = output.status.code();
     let mut stderr = String::from_utf8_lossy(&output.stderr).into_owned();
     if success && request.is_mutating() {
-        let validation = harness_command(node, entry)
+        let mut validation_command = harness_command(node, entry);
+        validation_command
             .args(["--profile", "web", "--dump-config"])
             .current_dir(&workspace)
             .env("DSH_HOME", &home)
             .env("PATH", &path)
-            .env("NO_COLOR", "1")
-            .output();
+            .env("NO_COLOR", "1");
+        let validation =
+            run_command_with_timeout(&mut validation_command, PLUGIN_VALIDATION_TIMEOUT);
         match validation {
             Ok(validation) if !validation.status.success() => {
                 success = false;
@@ -367,10 +377,7 @@ fn repair_profile(
         .current_dir(profile_dir)
         .env("PATH", path)
         .env("NO_COLOR", "1");
-    #[cfg(windows)]
-    configure_windowless_command(&mut command);
-    let output = command
-        .output()
+    let output = run_command_with_timeout(&mut command, PLUGIN_REPAIR_TIMEOUT)
         .map_err(|error| format!("无法重新安装回滚后的插件依赖：{error}"))?;
     if output.status.success() {
         Ok(())
@@ -513,10 +520,7 @@ fn read_registry_manifest(
         ])
         .current_dir(workspace)
         .env("NO_COLOR", "1");
-    #[cfg(windows)]
-    configure_windowless_command(&mut command);
-    let output = command
-        .output()
+    let output = run_command_with_timeout(&mut command, PLUGIN_REGISTRY_VIEW_TIMEOUT)
         .map_err(|error| format!("无法查询 npm 插件元数据：{error}"))?;
     if !output.status.success() {
         return Err(format!(

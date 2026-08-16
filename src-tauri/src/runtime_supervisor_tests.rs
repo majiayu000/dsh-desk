@@ -79,3 +79,31 @@ fn confirmed_shutdown_remains_successful_after_the_worker_stops() {
 
     assert_eq!(handle.shutdown_blocking(), Ok(()));
 }
+
+#[test]
+fn starting_a_new_runtime_requires_a_fresh_shutdown_handshake() {
+    let (handle, command_rx) = RuntimeHandle::new();
+
+    handle
+        .shutdown_confirmed
+        .store(true, std::sync::atomic::Ordering::Release);
+    assert_eq!(
+        handle.shutdown_blocking(),
+        Ok(()),
+        "a confirmed shutdown must short-circuit without a new handshake"
+    );
+
+    handle.invalidate_shutdown_confirmation();
+    assert_eq!(
+        handle.shutdown_blocking_with_timeout(Duration::ZERO),
+        Err("runtime supervisor did not accept shutdown before the deadline".to_string()),
+        "after a runtime restart the shutdown must go through a real handshake again"
+    );
+    let command = command_rx
+        .recv()
+        .expect("a fresh shutdown command must be queued");
+    assert!(
+        matches!(command, RuntimeCommand::Shutdown(..)),
+        "queued command must be shutdown"
+    );
+}

@@ -462,8 +462,18 @@ pub fn request_install(app: AppHandle) {
                 publish(&app, true);
             }
             Err(InstallAfterShutdownError::Install(error)) => {
-                app.state::<UpdateCoordinator>()
-                    .restore_download(bytes, format!("安装更新时发生错误：{error}"));
+                app.state::<UpdateCoordinator>().restore_download(
+                    bytes,
+                    format!("安装更新时发生错误：{error}；已保留下载内容，正在重启本地运行环境。"),
+                );
+                // The harness was stopped for the install attempt; without a
+                // restart the runtime would stay dead until the app is
+                // relaunched manually.
+                if let Err(restart_error) = app.state::<RuntimeHandle>().inner().restart() {
+                    eprintln!(
+                        "failed to restart the runtime after a failed update install: {restart_error}"
+                    );
+                }
                 publish(&app, true);
             }
         }

@@ -24,14 +24,20 @@ use crate::plugin_manager::{
     PluginCommandRequest, PluginCommandResult, PluginInspection, execute_plugin_command,
     inspect_plugin_source,
 };
-use crate::process_termination::{ProcessTree, stop_process_tree};
 #[cfg(windows)]
-use crate::process_termination::{configure_process_tree_command, configure_windowless_command};
+use crate::process_termination::configure_process_tree_command;
+use crate::process_termination::{ProcessTree, run_command_with_timeout, stop_process_tree};
 use crate::window_manager::{navigate_to_runtime, restore_bootstrap};
 
 const START_TIMEOUT: Duration = Duration::from_secs(20);
 const HEALTH_TIMEOUT: Duration = Duration::from_secs(5);
 const STOP_TIMEOUT: Duration = Duration::from_secs(5);
+/// Total budget for force-stopping an uncooperative runtime tree. Without a
+/// cap, a group member that survives SIGKILL (or denies signaling) would
+/// wedge the single supervisor thread forever and make the app unquittable.
+const FORCE_STOP_WINDOW: Duration = Duration::from_secs(15);
+const NODE_PROBE_TIMEOUT: Duration = Duration::from_secs(15);
+const LOGIN_SHELL_PROBE_TIMEOUT: Duration = Duration::from_secs(10);
 
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
@@ -162,6 +168,13 @@ impl RuntimeHandle {
             })?
     }
 
+    /// A confirmed shutdown only covers the runtime instance that was
+    /// stopped; starting a new runtime must require a fresh shutdown
+    /// handshake when the app quits.
+    fn invalidate_shutdown_confirmation(&self) {
+        self.shutdown_confirmed.store(false, Ordering::Release);
+    }
+
     fn update(&self, app: &tauri::AppHandle, status: RuntimeStatus) {
         *self.status.lock().expect("runtime status mutex poisoned") = status.clone();
         let _ = app.emit("runtime-status", status);
@@ -247,11 +260,15 @@ pub fn spawn_worker(
                     handle.shutdown_confirmed.store(true, Ordering::Release);
                     handle.update(&app, RuntimeStatus::default());
                     let _ = ack.send(result);
-                    break;
+                    // Keep the worker alive: a later Restart (e.g. after a
+                    // failed update install) must be able to bring the
+                    // runtime back without relaunching the whole app.
                 }
                 Err(RecvTimeoutError::Disconnected) => {
-                    if let Some(mut process) = running.take() {
-                        stop_process_tree_until_dead(&mut process.child);
+                    if let Some(mut process) = running.take()
+                        && let Err(error) = stop_process_tree_until_dead(&mut process.child)
+                    {
+                        eprintln!("failed to stop runtime process tree: {error}");
                     }
                     break;
                 }
@@ -261,23 +278,16 @@ pub fn spawn_worker(
             if let Some(process) = running.as_mut() {
                 match process.child.try_wait() {
                     Ok(Some(exit)) => {
-                        match process.child.is_tree_alive() {
-                            Ok(true) => {
-                                publish_shutdown_failed(
-                                    &app,
-                                    &handle,
-                                    "Harness parent exited but its process tree is still alive"
-                                        .to_string(),
-                                );
-                                continue;
-                            }
-                            Err(error) => {
-                                publish_shutdown_failed(&app, &handle, error);
-                                continue;
-                            }
-                            Ok(false) => {}
+                        // The parent is gone. If any group member survived it,
+                        // force-stop them within a bounded budget instead of
+                        // re-reporting the same failure every tick, then land
+                        // in a terminal Failed state exactly once.
+                        let mut message = format!("DeepSeek Harness 意外退出（{exit}）。");
+                        if let Err(stop_error) = stop_process_tree_until_dead(&mut process.child) {
+                            message.push_str(&format!(
+                                "其残留子进程未能完全终止，可能需要手动清理：{stop_error}。"
+                            ));
                         }
-                        let message = format!("DeepSeek Harness 意外退出（{exit}）。");
                         running = None;
                         handle.update(
                             &app,
@@ -311,6 +321,7 @@ pub fn spawn_worker(
 }
 
 fn start_and_publish(app: &tauri::AppHandle, handle: &RuntimeHandle) -> Option<RunningRuntime> {
+    handle.invalidate_shutdown_confirmation();
     handle.update(
         app,
         RuntimeStatus {
@@ -333,7 +344,10 @@ fn start_and_publish(app: &tauri::AppHandle, handle: &RuntimeHandle) -> Option<R
                 },
             );
             if let Err(message) = navigate_to_runtime(app, &process.url) {
-                stop_process_tree_until_dead(&mut process.child);
+                let mut message = message;
+                if let Err(stop_error) = stop_process_tree_until_dead(&mut process.child) {
+                    message.push_str(&format!("（残留进程未能完全终止：{stop_error}）"));
+                }
                 handle.update(
                     app,
                     RuntimeStatus {
@@ -497,8 +511,12 @@ fn start_runtime(app: &tauri::AppHandle) -> Result<RunningRuntime, RuntimeFailur
         match output_rx.recv_timeout(Duration::from_millis(250)) {
             Ok(RuntimeOutput::Stdout(line)) => {
                 if let Some(url) = parse_ready_url(&line) {
-                    if let Err(error) = wait_for_health(&url) {
-                        stop_process_tree_until_dead(&mut child);
+                    if let Err(mut error) = wait_for_health(&url) {
+                        if let Err(stop_error) = stop_process_tree_until_dead(&mut child) {
+                            error
+                                .message
+                                .push_str(&format!("（残留进程未能完全终止：{stop_error}）"));
+                        }
                         return Err(error);
                     }
                     return Ok(RunningRuntime { child, url });
@@ -510,11 +528,16 @@ fn start_runtime(app: &tauri::AppHandle) -> Result<RunningRuntime, RuntimeFailur
         }
     }
 
-    stop_process_tree_until_dead(&mut child);
-    Err(RuntimeFailure {
+    let mut failure = RuntimeFailure {
         code: "runtime-timeout",
         message: "DeepSeek Harness 未在 20 秒内完成启动。".to_string(),
-    })
+    };
+    if let Err(stop_error) = stop_process_tree_until_dead(&mut child) {
+        failure
+            .message
+            .push_str(&format!("（残留进程未能完全终止：{stop_error}）"));
+    }
+    Err(failure)
 }
 
 fn resolve_runtime(app: &tauri::AppHandle) -> Result<(PathBuf, PathBuf), RuntimeFailure> {
@@ -617,10 +640,9 @@ fn node_from_login_shell() -> Option<PathBuf> {
     let shell = std::env::var_os("SHELL")
         .filter(|value| Path::new(value).is_absolute())
         .unwrap_or_else(|| OsString::from("/bin/zsh"));
-    let output = Command::new(shell)
-        .args(["-lc", "command -v node"])
-        .output()
-        .ok()?;
+    let mut command = Command::new(shell);
+    command.args(["-lc", "command -v node"]);
+    let output = run_command_with_timeout(&mut command, LOGIN_SHELL_PROBE_TIMEOUT).ok()?;
     if !output.status.success() {
         return None;
     }
@@ -633,8 +655,7 @@ fn node_from_login_shell() -> Option<PathBuf> {
 fn node_from_login_shell() -> Option<PathBuf> {
     let mut command = Command::new("where.exe");
     command.arg("node.exe");
-    configure_windowless_command(&mut command);
-    let output = command.output().ok()?;
+    let output = run_command_with_timeout(&mut command, LOGIN_SHELL_PROBE_TIMEOUT).ok()?;
     if !output.status.success() {
         return None;
     }
@@ -650,11 +671,11 @@ fn node_from_login_shell() -> Option<PathBuf> {
 fn validate_node(path: &Path) -> Result<(), RuntimeFailure> {
     let mut command = Command::new(path);
     command.arg("--version");
-    #[cfg(windows)]
-    configure_windowless_command(&mut command);
-    let output = command.output().map_err(|error| RuntimeFailure {
-        code: "node-runtime-invalid",
-        message: format!("无法运行 Node.js {}：{error}", path.display()),
+    let output = run_command_with_timeout(&mut command, NODE_PROBE_TIMEOUT).map_err(|error| {
+        RuntimeFailure {
+            code: "node-runtime-invalid",
+            message: format!("无法运行 Node.js {}：{error}", path.display()),
+        }
     })?;
     let version = String::from_utf8_lossy(&output.stdout);
     let mut parts = version.trim().trim_start_matches('v').split('.');
@@ -761,11 +782,17 @@ pub fn diagnostic_dir(app: &tauri::AppHandle) -> Result<PathBuf, RuntimeFailure>
         .map_err(|error| failure("runtime-log-failed", error))
 }
 
-fn stop_process_tree_until_dead(process: &mut ProcessTree) {
+fn stop_process_tree_until_dead(process: &mut ProcessTree) -> Result<(), String> {
+    let deadline = Instant::now() + FORCE_STOP_WINDOW;
     loop {
         match stop_process_tree(process, STOP_TIMEOUT) {
-            Ok(()) => return,
-            Err(error) => eprintln!("failed to stop runtime process tree; retrying: {error}"),
+            Ok(()) => return Ok(()),
+            Err(error) => {
+                if Instant::now() >= deadline {
+                    return Err(error);
+                }
+                eprintln!("failed to stop runtime process tree; retrying: {error}");
+            }
         }
         thread::sleep(Duration::from_millis(250));
     }

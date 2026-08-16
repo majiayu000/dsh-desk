@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core'
 import { open } from '@tauri-apps/plugin-dialog'
 import catalogData from './plugin-catalog.json'
+import { resolveReviewedOperation, type ResolvedPluginOperation } from './plugin-review'
 import './plugins.css'
 
 type PluginAction = 'add' | 'remove' | 'update' | 'why'
@@ -22,7 +23,7 @@ interface PluginCommandResult {
 type PluginRisk = 'low' | 'review' | 'high'
 type PluginSourceKind = 'registry' | 'github' | 'directory' | 'tarball' | 'url' | 'unknown'
 
-interface PluginInspection {
+export interface PluginInspection {
   source: string
   kind: PluginSourceKind
   name: string | null
@@ -93,7 +94,7 @@ const catalogList = document.querySelector<HTMLDivElement>('#catalog-list')!
 const catalogCount = document.querySelector<HTMLParagraphElement>('#catalog-count')!
 
 let busy = false
-let pendingReview: { action: 'add' | 'update'; operand: string } | null = null
+let pendingReview: ResolvedPluginOperation | null = null
 let selectedCategory: CatalogCategory | 'all' = 'all'
 let installedNames = new Set<string>()
 
@@ -176,7 +177,7 @@ async function beginReview(action: 'add' | 'update', operand: string): Promise<v
   showOperation(`检查 ${value}`, '正在读取来源和安装脚本…')
   try {
     const inspection = await invoke<PluginInspection>('inspect_plugin_source', { operand: value })
-    pendingReview = { action, operand: value }
+    pendingReview = resolveReviewedOperation(action, value, inspection)
     reviewTitle.textContent = `${action === 'add' ? '安装' : '升级'} ${inspection.name ?? value}`
     riskBadge.dataset.risk = inspection.risk
     riskBadge.textContent = { low: '低风险信号', review: '需要检查', high: '高风险信号' }[inspection.risk]
