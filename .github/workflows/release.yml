@@ -1,11 +1,11 @@
-name: Signed release
+name: Release
 
 on:
   push:
     tags: ['v*']
 
 concurrency:
-  group: signed-release-${{ github.ref_name }}
+  group: release-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
@@ -54,7 +54,7 @@ jobs:
           pnpm test:plugin-parity
 
   build:
-    name: ${{ matrix.artifact }} signed bundle
+    name: ${{ matrix.artifact }} release bundle
     needs: preflight
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 45
@@ -77,7 +77,7 @@ jobs:
           - platform: windows
             artifact: windows
             runner: windows-2022
-            tauri_args: '--bundles nsis --config src-tauri/tauri.windows-signing.json'
+            tauri_args: '--bundles nsis'
           - platform: linux
             artifact: linux
             runner: ubuntu-22.04
@@ -101,10 +101,10 @@ jobs:
       - uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
         with:
-          shared-key: signed-release-${{ matrix.artifact }}
+          shared-key: release-${{ matrix.artifact }}
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
-      - name: Require production signing credentials
+      - name: Require release integrity credentials
         env:
           APPLE_CERTIFICATE: ${{ matrix.platform == 'macos' && secrets.APPLE_CERTIFICATE || '' }}
           APPLE_CERTIFICATE_PASSWORD: ${{ matrix.platform == 'macos' && secrets.APPLE_CERTIFICATE_PASSWORD || '' }}
@@ -117,6 +117,25 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: pnpm check:release-env ${{ matrix.platform }} && pnpm check:updater-key
+      - name: Detect optional Windows Authenticode credentials
+        id: windows-signing
+        if: runner.os == 'Windows'
+        env:
+          WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        shell: pwsh
+        run: |
+          $hasCertificate = -not [string]::IsNullOrWhiteSpace($env:WINDOWS_CERTIFICATE)
+          $hasPassword = -not [string]::IsNullOrWhiteSpace($env:WINDOWS_CERTIFICATE_PASSWORD)
+          if ($hasCertificate -ne $hasPassword) {
+            throw 'WINDOWS_CERTIFICATE and WINDOWS_CERTIFICATE_PASSWORD must be provided together.'
+          }
+          $enabled = if ($hasCertificate) { 'true' } else { 'false' }
+          "enabled=$enabled" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          if ($hasCertificate) {
+            'config_args=--config src-tauri/tauri.windows-signing.json' |
+              Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          }
       - name: Prepare fixed platform runtime
         run: pnpm prepare:runtime
       - name: Prepare Apple notarization key
@@ -149,7 +168,7 @@ jobs:
           security default-keychain -d user -s "$keychain_path"
           security find-identity -v -p codesigning "$keychain_path" | grep -F "$APPLE_SIGNING_IDENTITY"
       - name: Import Windows Authenticode certificate
-        if: runner.os == 'Windows'
+        if: runner.os == 'Windows' && steps.windows-signing.outputs.enabled == 'true'
         env:
           WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
           WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
@@ -166,7 +185,7 @@ jobs:
         env:
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
         run: pnpm release:macos:sign-runtime
-      - name: Build signed platform bundle
+      - name: Build platform bundle
         uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f # v1
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
@@ -176,7 +195,7 @@ jobs:
           APPLE_API_ISSUER: ${{ runner.os == 'macOS' && secrets.APPLE_API_ISSUER || '' }}
         with:
           uploadUpdaterJson: false
-          args: ${{ matrix.tauri_args }}
+          args: ${{ matrix.tauri_args }} ${{ steps.windows-signing.outputs.config_args }}
       - name: Package signed macOS DMG without Finder
         if: runner.os == 'macOS'
         env:
@@ -192,6 +211,31 @@ jobs:
       - name: Verify notarized macOS distribution
         if: runner.os == 'macOS'
         run: pnpm release:macos:verify
+      - name: Verify Windows Authenticode state
+        if: runner.os == 'Windows'
+        env:
+          WINDOWS_AUTHENTICODE_ENABLED: ${{ steps.windows-signing.outputs.enabled }}
+        shell: pwsh
+        run: |
+          $installers = @()
+          if (Test-Path 'src-tauri/target/release/bundle/nsis') {
+            $installers += Get-ChildItem 'src-tauri/target/release/bundle/nsis' -File -Filter '*.exe'
+          }
+          if (Test-Path 'src-tauri/target/release/bundle/msi') {
+            $installers += Get-ChildItem 'src-tauri/target/release/bundle/msi' -File -Filter '*.msi'
+          }
+          if ($installers.Count -eq 0) {
+            throw 'No Windows installer was produced.'
+          }
+          foreach ($installer in $installers) {
+            $signature = Get-AuthenticodeSignature -FilePath $installer.FullName
+            if ($env:WINDOWS_AUTHENTICODE_ENABLED -eq 'true' -and $signature.Status -ne 'Valid') {
+              throw "Expected a valid Authenticode signature on $($installer.Name), got $($signature.Status)."
+            }
+            if ($env:WINDOWS_AUTHENTICODE_ENABLED -ne 'true' -and $signature.Status -ne 'NotSigned') {
+              throw "Expected unsigned Windows alpha installer $($installer.Name), got $($signature.Status)."
+            }
+          }
       - name: Write SHA-256 checksums
         run: pnpm release:checksums
       - name: Stage immutable release artifacts
@@ -199,6 +243,18 @@ jobs:
         run: >-
           pnpm release:artifacts stage "${{ matrix.platform }}"
           src-tauri/target/release/bundle "release-staging/${{ matrix.artifact }}"
+      - name: Record Windows signing metadata
+        if: runner.os == 'Windows'
+        env:
+          WINDOWS_AUTHENTICODE_ENABLED: ${{ steps.windows-signing.outputs.enabled }}
+        shell: pwsh
+        run: |
+          $enabled = $env:WINDOWS_AUTHENTICODE_ENABLED -eq 'true'
+          $metadata = @{
+            authenticode = $enabled
+            status = if ($enabled) { 'signed' } else { 'unsigned' }
+          }
+          $metadata | ConvertTo-Json | Set-Content -Encoding utf8 'release-staging/${{ matrix.artifact }}/windows-release-metadata.json'
       - name: Attest release provenance
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
         with:
@@ -206,14 +262,14 @@ jobs:
       - name: Upload immutable platform artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: signed-release-${{ matrix.artifact }}-${{ github.sha }}
+          name: release-${{ matrix.artifact }}-${{ github.sha }}
           path: release-staging/${{ matrix.artifact }}/*
           if-no-files-found: error
           retention-days: 3
           compression-level: 0
 
   publish:
-    name: Publish atomic signed release
+    name: Publish atomic release
     needs: build
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -236,10 +292,10 @@ jobs:
           cache: pnpm
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
-      - name: Download all signed platform artifacts
+      - name: Download all platform artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
-          pattern: signed-release-*-${{ github.sha }}
+          pattern: release-*-${{ github.sha }}
           path: release-staging
           merge-multiple: true
       - name: Read release metadata and assemble updater manifest
@@ -259,11 +315,21 @@ jobs:
           PRERELEASE: ${{ steps.release.outputs.prerelease }}
         shell: bash
         run: |
-          if gh release view "$GITHUB_REF_NAME" --json isDraft > release-staging/existing.json 2>/dev/null; then
+          windows_status="$(jq -r .status release-staging/windows-release-metadata.json)"
+          notice=""
+          if test "$windows_status" = "unsigned"; then
+            notice=$'### Windows Alpha signing notice\n\nThe Windows installer is an unsigned alpha build and may trigger Microsoft Defender SmartScreen. Verify its SHA-256 checksum and GitHub build provenance before choosing **More info → Run anyway**. Tauri updater artifacts remain independently signed and verified.'
+          fi
+          if gh release view "$GITHUB_REF_NAME" --json isDraft,body > release-staging/existing.json 2>/dev/null; then
             test "$(jq -r .isDraft release-staging/existing.json)" = "true"
+            if test -n "$notice" && ! jq -er '.body | contains("Windows Alpha signing notice")' release-staging/existing.json >/dev/null; then
+              existing_body="$(jq -r .body release-staging/existing.json)"
+              gh release edit "$GITHUB_REF_NAME" --notes "${notice}"$'\n\n'"${existing_body}"
+            fi
           else
             arguments=(--draft --verify-tag --generate-notes --title "DSH Desk $GITHUB_REF_NAME")
             if test "$PRERELEASE" = "true"; then arguments+=(--prerelease); fi
+            if test -n "$notice"; then arguments+=(--notes "$notice"); fi
             gh release create "$GITHUB_REF_NAME" "${arguments[@]}"
           fi
       - name: Upload and validate the complete draft
@@ -273,7 +339,8 @@ jobs:
           VERSION: ${{ steps.release.outputs.version }}
         shell: bash
         run: |
-          mapfile -d '' assets < <(find release-staging -maxdepth 1 -type f ! -name existing.json -print0)
+          mapfile -d '' assets < <(find release-staging -maxdepth 1 -type f \
+            ! -name existing.json ! -name windows-release-metadata.json -print0)
           gh release upload "$GITHUB_REF_NAME" "${assets[@]}" --clobber
           gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${GITHUB_REF_NAME}" > release-staging/release.json
           pnpm validate:update-manifest \

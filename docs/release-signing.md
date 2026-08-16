@@ -1,6 +1,6 @@
-# 签名发布门禁
+# 发布签名与完整性门禁
 
-生产 Release 只由 `.github/workflows/release.yml` 从版本标签触发。工作流会先检查 `v<package.version>` 一致性和平台凭证，缺少签名材料时直接失败，不生成看起来像正式版的未签名资产。
+生产 Release 只由 `.github/workflows/release.yml` 从版本标签触发。工作流先检查 `v<package.version>` 一致性和 updater 密钥。macOS 仍要求完整 Developer ID 与公证材料；Windows Alpha 允许在没有 Authenticode 证书时生成明确标记的未签名安装包。
 
 ## 自动更新签名
 
@@ -19,7 +19,7 @@ https://raw.githubusercontent.com/majiayu000/dsh-desk/update-channel-alpha/lates
 
 发布 Release 后，独立工作流会验证所有平台资产、安装器类型和 minisign 签名，再以带旧 SHA 的 GitHub Contents API 请求更新 channel 分支。alpha/beta 使用 `update-channel-alpha`，稳定版使用 `update-channel-stable`；draft 不会进入任何客户端通道，旧版本也不能覆盖新版本。
 
-在取得 Apple Developer ID 和 Windows Authenticode 证书前，可手动运行 `Update-capable unsigned preview` 工作流验证完整更新链路。它生成三平台未做系统身份签名的安装包，但 updater 包仍使用同一套 minisign 私钥签名；版本化资产发布到 `preview-v<version>`，通过校验的 `latest.json` 才会替换 `preview-channel`。该通道与正式 `releases/latest` 完全隔离。首次运行只建立当前版本基线；将三个版本文件同步递增后再次运行，旧预览版才能实际收到升级。
+可手动运行 `Update-capable unsigned preview` 工作流验证完整更新链路。它生成三平台未做系统身份签名的安装包，但 updater 包仍使用同一套 minisign 私钥签名；版本化资产发布到 `preview-v<version>`，通过校验的 `latest.json` 才会替换 `preview-channel`。该通道与正式 `releases/latest` 完全隔离。首次运行只建立当前版本基线；将三个版本文件同步递增后再次运行，旧预览版才能实际收到升级。
 
 这类预览只用于测试：macOS 仍可能触发 Gatekeeper，Windows 仍可能显示 SmartScreen 警告。没有系统证书不影响 updater 对包内容做签名校验，但不能证明发行者的 Apple/Microsoft 身份。
 
@@ -45,7 +45,9 @@ Tauri 使用 Hardened Runtime 完成签名并先提交 `.app` 公证。DMG 生�
 - `WINDOWS_CERTIFICATE`：Authenticode `.pfx` 的 Base64 内容
 - `WINDOWS_CERTIFICATE_PASSWORD`
 
-工作流把证书临时导入当前用户证书库，生成不入库的 Tauri Release 配置，使用 SHA-256 与 RFC 3161 时间戳签署 NSIS 安装包。
+这两个 Secret 必须同时存在或同时缺失。存在时，工作流把证书临时导入当前用户证书库，生成不入库的 Tauri Release 配置，使用 SHA-256 与 RFC 3161 时间戳签署 NSIS 安装包，并验证 Authenticode 状态。缺失时，Windows Alpha 仍构建并发布 unsigned NSIS；Release Notes 会自动显示 SmartScreen 警告，安装包仍有 SHA-256、GitHub OIDC 构建证明和独立的 Tauri updater 签名。
+
+未签名模式仅表示 Windows 无法验证发布者身份，不会关闭 updater 内容验签。项目进入稳定发布阶段后，应接入 SignPath、Microsoft Artifact Signing 或其他受信任签名服务。
 
 ## Linux
 
@@ -54,7 +56,7 @@ Linux AppImage 与 deb 会生成 SHA-256，并由 GitHub OIDC artifact attestati
 ## 发布前人工检查
 
 1. 在无 Node/npm/pnpm 的全新系统用户下安装。
-2. 验证签名主体、时间戳、公证或 Authenticode 状态。
+2. 验证签名主体、时间戳、公证或 Authenticode 状态；unsigned Windows Alpha 核对 Release 警告、SHA-256 与构建证明。
 3. 完成模型配置、首次任务、工具审批和重启恢复。
 4. 验证卸载后没有进程与监听端口残留。
 5. 核对 SHA-256、兼容矩阵、许可证清单和已知问题。

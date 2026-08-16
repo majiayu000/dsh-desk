@@ -52,10 +52,10 @@ DeepSeek Harness already provides the agent runtime, web UI, sessions, tools, ap
 | Platform | Public status | Signing status |
 |---|---|---|
 | macOS Apple Silicon | `v0.1.0-alpha.1` preview | Ad-hoc signed; not notarized |
-| Windows x64 | CI/update preview available | Production Authenticode release gate configured |
+| Windows x64 | Alpha installer available | Authenticode optional during alpha; updater signature remains required |
 | Linux x64 | CI/update preview available | Updater signature gate configured |
 
-The Windows and Linux preview artifacts exercise packaging and updates, but they are not presented as production-signed releases. Production release workflows fail closed when required credentials are absent. See the live [compatibility radar](https://majiayu000.github.io/dsh-desk/), [compatibility evidence](docs/compatibility.md), and individual [Actions runs](https://github.com/majiayu000/dsh-desk/actions) for the latest facts.
+Windows alpha releases may be published without Authenticode and will say so in their Release Notes; their updater payloads remain independently signed. macOS production releases still fail closed without Developer ID and notarization credentials. See the live [compatibility radar](https://majiayu000.github.io/dsh-desk/), [compatibility evidence](docs/compatibility.md), and individual [Actions runs](https://github.com/majiayu000/dsh-desk/actions) for the latest facts.
 
 ## What is different
 
