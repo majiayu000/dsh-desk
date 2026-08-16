@@ -1,6 +1,10 @@
 use std::{thread, time::Duration};
 
-use super::{RuntimeCommand, RuntimeHandle, parse_ready_url};
+use super::{
+    RuntimeCommand, RuntimeHandle, parse_ready_url, should_restart_after_plugin,
+    stop_retries_exhausted,
+};
+use crate::plugin_manager::PluginCommandResult;
 
 #[test]
 fn accepts_only_strict_loopback_ready_lines() {
@@ -78,4 +82,83 @@ fn confirmed_shutdown_remains_successful_after_the_worker_stops() {
     drop(command_rx);
 
     assert_eq!(handle.shutdown_blocking(), Ok(()));
+}
+
+fn plugin_result(success: bool, rolled_back: bool, profile_unrecoverable: bool) -> PluginCommandResult {
+    PluginCommandResult {
+        success,
+        exit_code: None,
+        stdout: String::new(),
+        stderr: String::new(),
+        rolled_back,
+        profile_unrecoverable,
+    }
+}
+
+#[test]
+fn mutating_plugin_success_restarts_the_runtime() {
+    assert!(should_restart_after_plugin(
+        true,
+        &Ok(plugin_result(true, false, false)),
+    ));
+}
+
+#[test]
+fn successful_rollback_still_restarts_the_restored_profile() {
+    assert!(should_restart_after_plugin(
+        true,
+        &Ok(plugin_result(false, true, false)),
+    ));
+}
+
+#[test]
+fn unrecoverable_profile_does_not_restart_the_runtime() {
+    assert!(!should_restart_after_plugin(
+        true,
+        &Ok(plugin_result(false, false, true)),
+    ));
+}
+
+#[test]
+fn read_only_plugin_commands_never_restart() {
+    assert!(!should_restart_after_plugin(
+        false,
+        &Ok(plugin_result(true, false, false)),
+    ));
+}
+
+#[test]
+fn starting_a_new_runtime_requires_a_fresh_shutdown_handshake() {
+    let (handle, command_rx) = RuntimeHandle::new();
+
+    handle
+        .shutdown_confirmed
+        .store(true, std::sync::atomic::Ordering::Release);
+    assert_eq!(
+        handle.shutdown_blocking(),
+        Ok(()),
+        "a confirmed shutdown must short-circuit without a new handshake"
+    );
+
+    handle.invalidate_shutdown_confirmation();
+    assert_eq!(
+        handle.shutdown_blocking_with_timeout(Duration::ZERO),
+        Err("runtime supervisor did not accept shutdown before the deadline".to_string()),
+        "after a runtime restart the shutdown must go through a real handshake again"
+    );
+    let command = command_rx
+        .recv()
+        .expect("a fresh shutdown command must be queued");
+    assert!(
+        matches!(command, RuntimeCommand::Shutdown(..)),
+        "queued command must be shutdown"
+    );
+}
+
+#[test]
+fn force_stop_retries_exhaust_at_the_deadline() {
+    let window = Duration::from_secs(15);
+    assert!(!stop_retries_exhausted(Duration::from_secs(14), window));
+    assert!(stop_retries_exhausted(window, window));
+    assert!(stop_retries_exhausted(window + Duration::from_millis(1), window));
 }

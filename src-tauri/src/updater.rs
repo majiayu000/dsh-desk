@@ -462,8 +462,15 @@ pub fn request_install(app: AppHandle) {
                 publish(&app, true);
             }
             Err(InstallAfterShutdownError::Install(error)) => {
-                app.state::<UpdateCoordinator>()
-                    .restore_download(bytes, format!("安装更新时发生错误：{error}"));
+                app.state::<UpdateCoordinator>().restore_download(
+                    bytes,
+                    format!("安装更新时发生错误：{error}；已保留下载内容，正在重启本地运行环境。"),
+                );
+                if let Err(restart_error) = app.state::<RuntimeHandle>().inner().restart() {
+                    eprintln!(
+                        "failed to restart the runtime after a failed update install: {restart_error}"
+                    );
+                }
                 publish(&app, true);
             }
         }
@@ -539,10 +546,13 @@ fn save_preferences(app: &AppHandle, preferences: UpdatePreferences) -> Result<(
     let directory = path
         .parent()
         .ok_or_else(|| "更新设置路径无效。".to_string())?;
-    fs::create_dir_all(directory).map_err(|error| format!("无法创建更新设置目录：{error}"))?;
+    crate::secure_fs::ensure_private_dir(directory)
+        .map_err(|error| format!("无法创建更新设置目录：{error}"))?;
     let contents = serde_json::to_vec_pretty(&preferences)
         .map_err(|error| format!("无法序列化更新设置：{error}"))?;
-    atomic_write(&path, &contents).map_err(|error| format!("无法保存更新设置：{error}"))
+    atomic_write(&path, &contents).map_err(|error| format!("无法保存更新设置：{error}"))?;
+    crate::secure_fs::restrict_file_permissions(&path)
+        .map_err(|error| format!("无法限制更新设置权限：{error}"))
 }
 
 fn atomic_write(path: &Path, contents: &[u8]) -> std::io::Result<()> {

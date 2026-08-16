@@ -1,7 +1,9 @@
 mod harness_command;
+mod log_redact;
 mod plugin_manager;
 mod process_termination;
 mod runtime_supervisor;
+mod secure_fs;
 mod security_policy;
 mod updater;
 mod window_manager;
@@ -13,25 +15,46 @@ use plugin_manager::{
     list_installed_plugins,
 };
 use runtime_supervisor::{RuntimeHandle, RuntimeStatus, diagnostic_dir, spawn_worker};
+use security_policy::window_can_invoke;
 use tauri::{
     Manager,
     menu::{MenuBuilder, SubmenuBuilder},
 };
 
-#[tauri::command]
-fn get_runtime_status(runtime: tauri::State<'_, RuntimeHandle>) -> RuntimeStatus {
-    runtime.status()
+fn require_command_window(window: &tauri::WebviewWindow, command: &str) -> Result<(), String> {
+    if window_can_invoke(window.label(), command) {
+        Ok(())
+    } else {
+        Err(format!("{command} is available only in its assigned window"))
+    }
 }
 
 #[tauri::command]
-fn restart_runtime(runtime: tauri::State<'_, RuntimeHandle>) -> Result<(), String> {
+fn get_runtime_status(
+    window: tauri::WebviewWindow,
+    runtime: tauri::State<'_, RuntimeHandle>,
+) -> Result<RuntimeStatus, String> {
+    require_command_window(&window, "get_runtime_status")?;
+    Ok(runtime.status())
+}
+
+#[tauri::command]
+fn restart_runtime(
+    window: tauri::WebviewWindow,
+    runtime: tauri::State<'_, RuntimeHandle>,
+) -> Result<(), String> {
+    require_command_window(&window, "restart_runtime")?;
     runtime.restart()
 }
 
 #[tauri::command]
-fn open_diagnostic_folder(app: tauri::AppHandle) -> Result<(), String> {
+fn open_diagnostic_folder(
+    window: tauri::WebviewWindow,
+    app: tauri::AppHandle,
+) -> Result<(), String> {
+    require_command_window(&window, "open_diagnostic_folder")?;
     let path = diagnostic_dir(&app).map_err(|error| error.message)?;
-    std::fs::create_dir_all(&path).map_err(|error| error.to_string())?;
+    crate::secure_fs::ensure_private_dir(&path).map_err(|error| error.to_string())?;
 
     #[cfg(target_os = "macos")]
     let mut command = Command::new("open");
@@ -48,16 +71,9 @@ fn open_diagnostic_folder(app: tauri::AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn get_desktop_version(app: tauri::AppHandle) -> String {
-    app.package_info().version.to_string()
-}
-
-fn require_update_window(window: &tauri::WebviewWindow) -> Result<(), String> {
-    if window.label() == "updates" {
-        Ok(())
-    } else {
-        Err("update commands are available only in the software update window".to_string())
-    }
+fn get_desktop_version(window: tauri::WebviewWindow, app: tauri::AppHandle) -> Result<String, String> {
+    require_command_window(&window, "get_desktop_version")?;
+    Ok(app.package_info().version.to_string())
 }
 
 #[tauri::command]
@@ -65,27 +81,27 @@ fn get_update_status(
     window: tauri::WebviewWindow,
     app: tauri::AppHandle,
 ) -> Result<updater::UpdateStatus, String> {
-    require_update_window(&window)?;
+    require_command_window(&window, "get_update_status")?;
     updater::status(&app)
 }
 
 #[tauri::command]
 fn check_for_updates(window: tauri::WebviewWindow, app: tauri::AppHandle) -> Result<(), String> {
-    require_update_window(&window)?;
+    require_command_window(&window, "check_for_updates")?;
     updater::request_check(app);
     Ok(())
 }
 
 #[tauri::command]
 fn download_update(window: tauri::WebviewWindow, app: tauri::AppHandle) -> Result<(), String> {
-    require_update_window(&window)?;
+    require_command_window(&window, "download_update")?;
     updater::request_download(app);
     Ok(())
 }
 
 #[tauri::command]
 fn install_update(window: tauri::WebviewWindow, app: tauri::AppHandle) -> Result<(), String> {
-    require_update_window(&window)?;
+    require_command_window(&window, "install_update")?;
     updater::request_install(app);
     Ok(())
 }
@@ -96,16 +112,8 @@ fn set_update_auto_download(
     app: tauri::AppHandle,
     enabled: bool,
 ) -> Result<updater::UpdateStatus, String> {
-    require_update_window(&window)?;
+    require_command_window(&window, "set_update_auto_download")?;
     updater::set_auto_download(&app, enabled)
-}
-
-fn require_plugin_window(window: &tauri::WebviewWindow) -> Result<(), String> {
-    if window.label() == "plugins" {
-        Ok(())
-    } else {
-        Err("plugin commands are available only in the plugin manager".to_string())
-    }
 }
 
 #[tauri::command]
@@ -113,7 +121,7 @@ fn list_plugins(
     window: tauri::WebviewWindow,
     app: tauri::AppHandle,
 ) -> Result<Vec<InstalledPlugin>, String> {
-    require_plugin_window(&window)?;
+    require_command_window(&window, "list_plugins")?;
     list_installed_plugins(&app)
 }
 
@@ -123,7 +131,7 @@ async fn run_plugin_command(
     runtime: tauri::State<'_, RuntimeHandle>,
     request: PluginCommandRequest,
 ) -> Result<PluginCommandResult, String> {
-    require_plugin_window(&window)?;
+    require_command_window(&window, "run_plugin_command")?;
     let runtime = runtime.inner().clone();
     tauri::async_runtime::spawn_blocking(move || runtime.run_plugin(request))
         .await
@@ -136,7 +144,7 @@ async fn inspect_plugin_source(
     runtime: tauri::State<'_, RuntimeHandle>,
     operand: String,
 ) -> Result<PluginInspection, String> {
-    require_plugin_window(&window)?;
+    require_command_window(&window, "inspect_plugin_source")?;
     let runtime = runtime.inner().clone();
     tauri::async_runtime::spawn_blocking(move || runtime.inspect_plugin(operand))
         .await

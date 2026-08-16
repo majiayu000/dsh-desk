@@ -1,0 +1,89 @@
+[[permission]]
+identifier = "allow-get-runtime-status"
+description = "Read the local runtime supervisor status."
+commands.allow = ["get_runtime_status"]
+
+[[permission]]
+identifier = "allow-restart-runtime"
+description = "Restart the bundled Harness runtime."
+commands.allow = ["restart_runtime"]
+
+[[permission]]
+identifier = "allow-open-diagnostic-folder"
+description = "Open the local diagnostic log folder."
+commands.allow = ["open_diagnostic_folder"]
+
+[[permission]]
+identifier = "allow-get-desktop-version"
+description = "Read the desktop application version."
+commands.allow = ["get_desktop_version"]
+
+[[permission]]
+identifier = "allow-list-plugins"
+description = "List plugins installed in the desktop Harness profile."
+commands.allow = ["list_plugins"]
+
+[[permission]]
+identifier = "allow-inspect-plugin-source"
+description = "Inspect a plugin source before installation."
+commands.allow = ["inspect_plugin_source"]
+
+[[permission]]
+identifier = "allow-run-plugin-command"
+description = "Run an original dsh plugin add, update, remove, or why command."
+commands.allow = ["run_plugin_command"]
+
+[[permission]]
+identifier = "allow-get-update-status"
+description = "Read signed desktop update status."
+commands.allow = ["get_update_status"]
+
+[[permission]]
+identifier = "allow-check-for-updates"
+description = "Check the signed update channel."
+commands.allow = ["check_for_updates"]
+
+[[permission]]
+identifier = "allow-download-update"
+description = "Download a verified desktop update payload."
+commands.allow = ["download_update"]
+
+[[permission]]
+identifier = "allow-install-update"
+description = "Install a verified desktop update after the runtime stops."
+commands.allow = ["install_update"]
+
+[[permission]]
+identifier = "allow-set-update-auto-download"
+description = "Change the automatic update download preference."
+commands.allow = ["set_update_auto_download"]
+
+[[set]]
+identifier = "desktop-bootstrap"
+description = "Commands for the local startup and recovery page."
+permissions = [
+  "allow-get-runtime-status",
+  "allow-restart-runtime",
+  "allow-open-diagnostic-folder",
+  "allow-get-desktop-version",
+]
+
+[[set]]
+identifier = "desktop-plugins"
+description = "Commands for the local plugin manager window."
+permissions = [
+  "allow-list-plugins",
+  "allow-inspect-plugin-source",
+  "allow-run-plugin-command",
+]
+
+[[set]]
+identifier = "desktop-updates"
+description = "Commands for the local software update window."
+permissions = [
+  "allow-get-update-status",
+  "allow-check-for-updates",
+  "allow-download-update",
+  "allow-install-update",
+  "allow-set-update-auto-download",
+]

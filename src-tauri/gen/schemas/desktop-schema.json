@@ -177,6 +177,96 @@
       "description": "Permission identifier",
       "oneOf": [
         {
+          "description": "Commands for the local startup and recovery page.\n#### This permission set includes:\n\n- `allow-get-runtime-status`\n- `allow-restart-runtime`\n- `allow-open-diagnostic-folder`\n- `allow-get-desktop-version`",
+          "type": "string",
+          "const": "desktop-bootstrap",
+          "markdownDescription": "Commands for the local startup and recovery page.\n#### This permission set includes:\n\n- `allow-get-runtime-status`\n- `allow-restart-runtime`\n- `allow-open-diagnostic-folder`\n- `allow-get-desktop-version`"
+        },
+        {
+          "description": "Commands for the local plugin manager window.\n#### This permission set includes:\n\n- `allow-list-plugins`\n- `allow-inspect-plugin-source`\n- `allow-run-plugin-command`",
+          "type": "string",
+          "const": "desktop-plugins",
+          "markdownDescription": "Commands for the local plugin manager window.\n#### This permission set includes:\n\n- `allow-list-plugins`\n- `allow-inspect-plugin-source`\n- `allow-run-plugin-command`"
+        },
+        {
+          "description": "Commands for the local software update window.\n#### This permission set includes:\n\n- `allow-get-update-status`\n- `allow-check-for-updates`\n- `allow-download-update`\n- `allow-install-update`\n- `allow-set-update-auto-download`",
+          "type": "string",
+          "const": "desktop-updates",
+          "markdownDescription": "Commands for the local software update window.\n#### This permission set includes:\n\n- `allow-get-update-status`\n- `allow-check-for-updates`\n- `allow-download-update`\n- `allow-install-update`\n- `allow-set-update-auto-download`"
+        },
+        {
+          "description": "Check the signed update channel.",
+          "type": "string",
+          "const": "allow-check-for-updates",
+          "markdownDescription": "Check the signed update channel."
+        },
+        {
+          "description": "Download a verified desktop update payload.",
+          "type": "string",
+          "const": "allow-download-update",
+          "markdownDescription": "Download a verified desktop update payload."
+        },
+        {
+          "description": "Read the desktop application version.",
+          "type": "string",
+          "const": "allow-get-desktop-version",
+          "markdownDescription": "Read the desktop application version."
+        },
+        {
+          "description": "Read the local runtime supervisor status.",
+          "type": "string",
+          "const": "allow-get-runtime-status",
+          "markdownDescription": "Read the local runtime supervisor status."
+        },
+        {
+          "description": "Read signed desktop update status.",
+          "type": "string",
+          "const": "allow-get-update-status",
+          "markdownDescription": "Read signed desktop update status."
+        },
+        {
+          "description": "Inspect a plugin source before installation.",
+          "type": "string",
+          "const": "allow-inspect-plugin-source",
+          "markdownDescription": "Inspect a plugin source before installation."
+        },
+        {
+          "description": "Install a verified desktop update after the runtime stops.",
+          "type": "string",
+          "const": "allow-install-update",
+          "markdownDescription": "Install a verified desktop update after the runtime stops."
+        },
+        {
+          "description": "List plugins installed in the desktop Harness profile.",
+          "type": "string",
+          "const": "allow-list-plugins",
+          "markdownDescription": "List plugins installed in the desktop Harness profile."
+        },
+        {
+          "description": "Open the local diagnostic log folder.",
+          "type": "string",
+          "const": "allow-open-diagnostic-folder",
+          "markdownDescription": "Open the local diagnostic log folder."
+        },
+        {
+          "description": "Restart the bundled Harness runtime.",
+          "type": "string",
+          "const": "allow-restart-runtime",
+          "markdownDescription": "Restart the bundled Harness runtime."
+        },
+        {
+          "description": "Run an original dsh plugin add, update, remove, or why command.",
+          "type": "string",
+          "const": "allow-run-plugin-command",
+          "markdownDescription": "Run an original dsh plugin add, update, remove, or why command."
+        },
+        {
+          "description": "Change the automatic update download preference.",
+          "type": "string",
+          "const": "allow-set-update-auto-download",
+          "markdownDescription": "Change the automatic update download preference."
+        },
+        {
           "description": "Default core plugins set.\n#### This default permission set includes:\n\n- `core:path:default`\n- `core:event:default`\n- `core:window:default`\n- `core:webview:default`\n- `core:app:default`\n- `core:image:default`\n- `core:resources:default`\n- `core:menu:default`\n- `core:tray:default`",
           "type": "string",
           "const": "core:default",
