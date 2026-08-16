@@ -1,11 +1,12 @@
+#[path = "runtime_resolve.rs"]
+mod runtime_resolve;
+
 use std::{
-    collections::HashSet,
-    ffi::OsString,
-    fs::{self, File, OpenOptions},
+    fs::{File, OpenOptions},
     io::{BufRead, BufReader, Read, Write},
     net::{SocketAddr, TcpStream},
-    path::{Path, PathBuf},
-    process::{Command, Stdio},
+    path::PathBuf,
+    process::Stdio,
     sync::{
         Arc, Mutex,
         atomic::{AtomicBool, Ordering},
@@ -24,14 +25,16 @@ use crate::plugin_manager::{
     PluginCommandRequest, PluginCommandResult, PluginInspection, execute_plugin_command,
     inspect_plugin_source,
 };
-use crate::process_termination::{ProcessTree, stop_process_tree};
 #[cfg(windows)]
-use crate::process_termination::{configure_process_tree_command, configure_windowless_command};
+use crate::process_termination::configure_process_tree_command;
+use crate::process_termination::{ProcessTree, stop_process_tree};
 use crate::window_manager::{navigate_to_runtime, restore_bootstrap};
+use runtime_resolve::resolve_runtime;
 
 const START_TIMEOUT: Duration = Duration::from_secs(20);
 const HEALTH_TIMEOUT: Duration = Duration::from_secs(5);
 const STOP_TIMEOUT: Duration = Duration::from_secs(5);
+const FORCE_STOP_WINDOW: Duration = Duration::from_secs(15);
 
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
@@ -162,6 +165,10 @@ impl RuntimeHandle {
             })?
     }
 
+    fn invalidate_shutdown_confirmation(&self) {
+        self.shutdown_confirmed.store(false, Ordering::Release);
+    }
+
     fn update(&self, app: &tauri::AppHandle, status: RuntimeStatus) {
         *self.status.lock().expect("runtime status mutex poisoned") = status.clone();
         let _ = app.emit("runtime-status", status);
@@ -217,8 +224,10 @@ pub fn spawn_worker(
                         .and_then(|(node, entry)| {
                             execute_plugin_command(&app, &request, &node, &entry)
                         });
-                    if should_restart {
+                    if should_restart_after_plugin(should_restart, &result) {
                         running = start_and_publish(&app, &handle);
+                    } else if should_restart {
+                        publish_unrecoverable_profile(&app, &handle, &result);
                     }
                     let _ = reply.send(result);
                 }
@@ -247,11 +256,12 @@ pub fn spawn_worker(
                     handle.shutdown_confirmed.store(true, Ordering::Release);
                     handle.update(&app, RuntimeStatus::default());
                     let _ = ack.send(result);
-                    break;
                 }
                 Err(RecvTimeoutError::Disconnected) => {
-                    if let Some(mut process) = running.take() {
-                        stop_process_tree_until_dead(&mut process.child);
+                    if let Some(mut process) = running.take()
+                        && let Err(error) = stop_process_tree_until_dead(&mut process.child)
+                    {
+                        eprintln!("failed to stop runtime process tree: {error}");
                     }
                     break;
                 }
@@ -261,23 +271,12 @@ pub fn spawn_worker(
             if let Some(process) = running.as_mut() {
                 match process.child.try_wait() {
                     Ok(Some(exit)) => {
-                        match process.child.is_tree_alive() {
-                            Ok(true) => {
-                                publish_shutdown_failed(
-                                    &app,
-                                    &handle,
-                                    "Harness parent exited but its process tree is still alive"
-                                        .to_string(),
-                                );
-                                continue;
-                            }
-                            Err(error) => {
-                                publish_shutdown_failed(&app, &handle, error);
-                                continue;
-                            }
-                            Ok(false) => {}
+                        let mut message = format!("DeepSeek Harness 意外退出（{exit}）。");
+                        if let Err(stop_error) = stop_process_tree_until_dead(&mut process.child) {
+                            message.push_str(&format!(
+                                "其残留子进程未能完全终止，可能需要手动清理：{stop_error}。"
+                            ));
                         }
-                        let message = format!("DeepSeek Harness 意外退出（{exit}）。");
                         running = None;
                         handle.update(
                             &app,
@@ -311,6 +310,7 @@ pub fn spawn_worker(
 }
 
 fn start_and_publish(app: &tauri::AppHandle, handle: &RuntimeHandle) -> Option<RunningRuntime> {
+    handle.invalidate_shutdown_confirmation();
     handle.update(
         app,
         RuntimeStatus {
@@ -333,7 +333,10 @@ fn start_and_publish(app: &tauri::AppHandle, handle: &RuntimeHandle) -> Option<R
                 },
             );
             if let Err(message) = navigate_to_runtime(app, &process.url) {
-                stop_process_tree_until_dead(&mut process.child);
+                let message = match stop_process_tree_until_dead(&mut process.child) {
+                    Ok(()) => message,
+                    Err(stop_error) => format!("{message} 残留进程未能完全终止：{stop_error}"),
+                };
                 handle.update(
                     app,
                     RuntimeStatus {
@@ -370,6 +373,40 @@ fn publish_stopping(app: &tauri::AppHandle, handle: &RuntimeHandle) {
             url: handle.status().url,
             error_code: None,
             message: None,
+        },
+    );
+}
+
+fn should_restart_after_plugin(
+    mutating: bool,
+    result: &Result<PluginCommandResult, String>,
+) -> bool {
+    if !mutating {
+        return false;
+    }
+    !matches!(
+        result,
+        Ok(outcome) if outcome.profile_unrecoverable
+    )
+}
+
+fn publish_unrecoverable_profile(
+    app: &tauri::AppHandle,
+    handle: &RuntimeHandle,
+    result: &Result<PluginCommandResult, String>,
+) {
+    let message = match result {
+        Ok(outcome) if !outcome.stderr.trim().is_empty() => outcome.stderr.clone(),
+        Ok(_) => "插件 Profile 无法恢复，已停止 Harness。".to_string(),
+        Err(error) => error.clone(),
+    };
+    handle.update(
+        app,
+        RuntimeStatus {
+            phase: RuntimePhase::Failed,
+            url: None,
+            error_code: Some("runtime-profile-unrecoverable".to_string()),
+            message: Some(message),
         },
     );
 }
@@ -411,32 +448,33 @@ fn start_runtime(app: &tauri::AppHandle) -> Result<RunningRuntime, RuntimeFailur
         .app_data_dir()
         .map_err(|error| failure("runtime-path-failed", error))?
         .join("harness");
-    fs::create_dir_all(&dsh_home).map_err(|error| failure("runtime-path-failed", error))?;
+    crate::secure_fs::ensure_private_dir(&dsh_home)
+        .map_err(|error| failure("runtime-path-failed", error))?;
 
     let log_dir = diagnostic_dir(app)?;
-    fs::create_dir_all(&log_dir).map_err(|error| failure("runtime-log-failed", error))?;
+    crate::secure_fs::ensure_private_dir(&log_dir)
+        .map_err(|error| failure("runtime-log-failed", error))?;
+    let log_path = log_dir.join("runtime.log");
     let log = OpenOptions::new()
         .create(true)
         .append(true)
-        .open(log_dir.join("runtime.log"))
+        .open(&log_path)
+        .map_err(|error| failure("runtime-log-failed", error))?;
+    crate::secure_fs::restrict_file_permissions(&log_path)
         .map_err(|error| failure("runtime-log-failed", error))?;
     let log = Arc::new(Mutex::new(log));
 
-    let workspace = std::env::var_os("DSH_DESKTOP_WORKSPACE")
-        .map(PathBuf::from)
-        .map(Ok)
-        .unwrap_or_else(|| {
-            app.path()
-                .home_dir()
-                .map_err(|error| failure("runtime-workspace-failed", error))
-        })?;
-
-    if !workspace.is_dir() {
-        return Err(RuntimeFailure {
-            code: "runtime-workspace-failed",
-            message: format!("Harness 工作目录不可用：{}", workspace.display()),
-        });
-    }
+    let workspace = crate::secure_fs::resolve_workspace(
+        std::env::var_os("DSH_DESKTOP_WORKSPACE").map(PathBuf::from),
+        app.path()
+            .app_data_dir()
+            .map_err(|error| failure("runtime-workspace-failed", error))?
+            .join("workspace"),
+    )
+    .map_err(|message| RuntimeFailure {
+        code: "runtime-workspace-failed",
+        message,
+    })?;
 
     write_log(
         &log,
@@ -498,7 +536,12 @@ fn start_runtime(app: &tauri::AppHandle) -> Result<RunningRuntime, RuntimeFailur
             Ok(RuntimeOutput::Stdout(line)) => {
                 if let Some(url) = parse_ready_url(&line) {
                     if let Err(error) = wait_for_health(&url) {
-                        stop_process_tree_until_dead(&mut child);
+                        if let Err(stop_error) = stop_process_tree_until_dead(&mut child) {
+                            return Err(RuntimeFailure {
+                                code: error.code,
+                                message: format!("{} 残留进程未能完全终止：{stop_error}", error.message),
+                            });
+                        }
                         return Err(error);
                     }
                     return Ok(RunningRuntime { child, url });
@@ -510,171 +553,17 @@ fn start_runtime(app: &tauri::AppHandle) -> Result<RunningRuntime, RuntimeFailur
         }
     }
 
-    stop_process_tree_until_dead(&mut child);
-    Err(RuntimeFailure {
+    let timeout = RuntimeFailure {
         code: "runtime-timeout",
         message: "DeepSeek Harness 未在 20 秒内完成启动。".to_string(),
-    })
-}
-
-fn resolve_runtime(app: &tauri::AppHandle) -> Result<(PathBuf, PathBuf), RuntimeFailure> {
-    if let Some(entry) = std::env::var_os("DSH_DESKTOP_RUNTIME_ENTRY") {
-        return Ok((resolve_node(app)?, PathBuf::from(entry)));
-    }
-
-    if let Ok(resource_dir) = app.path().resource_dir() {
-        let bundled_entry = resource_dir.join("runtime/node_modules/@deepseek-ai/dsh/lib/bin.js");
-        let bundled_node = resource_dir.join(if cfg!(windows) {
-            "runtime/node/node.exe"
-        } else {
-            "runtime/node/bin/node"
+    };
+    if let Err(stop_error) = stop_process_tree_until_dead(&mut child) {
+        return Err(RuntimeFailure {
+            code: timeout.code,
+            message: format!("{} 残留进程未能完全终止：{stop_error}", timeout.message),
         });
-        if bundled_entry.is_file() && bundled_node.is_file() {
-            validate_node(&bundled_node)?;
-            return Ok((bundled_node, bundled_entry));
-        }
     }
-
-    if cfg!(debug_assertions) {
-        let project_root = Path::new(env!("CARGO_MANIFEST_DIR"))
-            .parent()
-            .expect("src-tauri must have a parent");
-        let development_entry = project_root.join("node_modules/@deepseek-ai/dsh/lib/bin.js");
-        if development_entry.is_file() {
-            return Ok((resolve_node(app)?, development_entry));
-        }
-    }
-
-    Err(RuntimeFailure {
-        code: "runtime-missing",
-        message: "找不到内置 DeepSeek Harness。请重新安装 DSH Desk。".to_string(),
-    })
-}
-
-fn resolve_node(app: &tauri::AppHandle) -> Result<PathBuf, RuntimeFailure> {
-    if let Some(explicit) = std::env::var_os("DSH_DESKTOP_NODE") {
-        let path = PathBuf::from(explicit);
-        validate_node(&path)?;
-        return Ok(path);
-    }
-
-    let executable_name = if cfg!(windows) { "node.exe" } else { "node" };
-    let mut candidates = Vec::new();
-    let mut seen = HashSet::new();
-
-    if let Some(path) = std::env::var_os("PATH") {
-        for directory in std::env::split_paths(&path) {
-            push_candidate(&mut candidates, &mut seen, directory.join(executable_name));
-        }
-    }
-
-    if let Ok(home) = app.path().home_dir() {
-        push_candidate(
-            &mut candidates,
-            &mut seen,
-            home.join(".local/share/fnm/aliases/default/bin/node"),
-        );
-        push_candidate(
-            &mut candidates,
-            &mut seen,
-            home.join(".nvm/current/bin/node"),
-        );
-        push_candidate(&mut candidates, &mut seen, home.join(".volta/bin/node"));
-    }
-
-    for path in [
-        "/opt/homebrew/bin/node",
-        "/usr/local/bin/node",
-        "/usr/bin/node",
-    ] {
-        push_candidate(&mut candidates, &mut seen, PathBuf::from(path));
-    }
-
-    if let Some(path) = node_from_login_shell() {
-        push_candidate(&mut candidates, &mut seen, path);
-    }
-
-    for candidate in candidates {
-        if candidate.is_file() && validate_node(&candidate).is_ok() {
-            return Ok(candidate);
-        }
-    }
-
-    Err(RuntimeFailure {
-        code: "node-runtime-missing",
-        message: "找不到兼容的 Node.js（需要 22.19+ 或 24+）。可设置 DSH_DESKTOP_NODE 指向 Node 可执行文件。".to_string(),
-    })
-}
-
-fn push_candidate(candidates: &mut Vec<PathBuf>, seen: &mut HashSet<OsString>, path: PathBuf) {
-    if seen.insert(path.as_os_str().to_owned()) {
-        candidates.push(path);
-    }
-}
-
-#[cfg(unix)]
-fn node_from_login_shell() -> Option<PathBuf> {
-    let shell = std::env::var_os("SHELL")
-        .filter(|value| Path::new(value).is_absolute())
-        .unwrap_or_else(|| OsString::from("/bin/zsh"));
-    let output = Command::new(shell)
-        .args(["-lc", "command -v node"])
-        .output()
-        .ok()?;
-    if !output.status.success() {
-        return None;
-    }
-    let value = String::from_utf8(output.stdout).ok()?;
-    let path = value.lines().last()?.trim();
-    (!path.is_empty()).then(|| PathBuf::from(path))
-}
-
-#[cfg(windows)]
-fn node_from_login_shell() -> Option<PathBuf> {
-    let mut command = Command::new("where.exe");
-    command.arg("node.exe");
-    configure_windowless_command(&mut command);
-    let output = command.output().ok()?;
-    if !output.status.success() {
-        return None;
-    }
-    let value = String::from_utf8(output.stdout).ok()?;
-    value
-        .lines()
-        .next()
-        .map(str::trim)
-        .filter(|path| !path.is_empty())
-        .map(PathBuf::from)
-}
-
-fn validate_node(path: &Path) -> Result<(), RuntimeFailure> {
-    let mut command = Command::new(path);
-    command.arg("--version");
-    #[cfg(windows)]
-    configure_windowless_command(&mut command);
-    let output = command.output().map_err(|error| RuntimeFailure {
-        code: "node-runtime-invalid",
-        message: format!("无法运行 Node.js {}：{error}", path.display()),
-    })?;
-    let version = String::from_utf8_lossy(&output.stdout);
-    let mut parts = version.trim().trim_start_matches('v').split('.');
-    let major = parts.next().and_then(|value| value.parse::<u32>().ok());
-    let minor = parts.next().and_then(|value| value.parse::<u32>().ok());
-    let compatible = matches!((major, minor), (Some(22), Some(minor)) if minor >= 19)
-        || matches!(major, Some(major) if major >= 24);
-
-    if output.status.success() && compatible {
-        return Ok(());
-    }
-
-    Err(RuntimeFailure {
-        code: "node-runtime-incompatible",
-        message: format!(
-            "Node.js {} 版本不兼容（检测到 {}，需要 22.19+ 或 24+）。",
-            path.display(),
-            version.trim()
-        ),
-    })
+    Err(timeout)
 }
 
 fn parse_ready_url(line: &str) -> Option<String> {
@@ -750,7 +639,7 @@ fn spawn_output_reader(
 
 fn write_log(log: &Arc<Mutex<File>>, stream: &str, line: &str) {
     if let Ok(mut file) = log.lock() {
-        let _ = writeln!(file, "[{stream}] {line}");
+        let _ = writeln!(file, "[{stream}] {}", crate::log_redact::redact_log_line(line));
     }
 }
 
@@ -761,10 +650,18 @@ pub fn diagnostic_dir(app: &tauri::AppHandle) -> Result<PathBuf, RuntimeFailure>
         .map_err(|error| failure("runtime-log-failed", error))
 }
 
-fn stop_process_tree_until_dead(process: &mut ProcessTree) {
+fn stop_retries_exhausted(elapsed: Duration, window: Duration) -> bool {
+    elapsed >= window
+}
+
+fn stop_process_tree_until_dead(process: &mut ProcessTree) -> Result<(), String> {
+    let started = Instant::now();
     loop {
         match stop_process_tree(process, STOP_TIMEOUT) {
-            Ok(()) => return,
+            Ok(()) => return Ok(()),
+            Err(error) if stop_retries_exhausted(started.elapsed(), FORCE_STOP_WINDOW) => {
+                return Err(error);
+            }
             Err(error) => eprintln!("failed to stop runtime process tree; retrying: {error}"),
         }
         thread::sleep(Duration::from_millis(250));

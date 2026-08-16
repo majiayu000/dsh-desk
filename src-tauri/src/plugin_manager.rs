@@ -5,6 +5,7 @@ use std::{
     io::Read,
     path::{Path, PathBuf},
     process::Command,
+    time::Duration,
 };
 
 use flate2::read::GzDecoder;
@@ -12,12 +13,15 @@ use serde::{Deserialize, Serialize};
 use tauri::Manager;
 
 use crate::harness_command::harness_command;
-#[cfg(windows)]
-use crate::process_termination::configure_windowless_command;
+use crate::process_termination::run_command_with_timeout;
 
 const MAX_PLUGIN_ARCHIVE_BYTES: u64 = 50 * 1024 * 1024;
 const MAX_MANIFEST_BYTES: u64 = 1024 * 1024;
 const PROFILE_STATE_FILES: [&str; 3] = ["package.json", "pnpm-lock.yaml", "cordis.patch.yml"];
+const PLUGIN_COMMAND_TIMEOUT: Duration = Duration::from_secs(300);
+const PLUGIN_VALIDATION_TIMEOUT: Duration = Duration::from_secs(60);
+const PLUGIN_REPAIR_TIMEOUT: Duration = Duration::from_secs(300);
+const PLUGIN_REGISTRY_VIEW_TIMEOUT: Duration = Duration::from_secs(60);
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -66,6 +70,35 @@ pub struct PluginCommandResult {
     pub stdout: String,
     pub stderr: String,
     pub rolled_back: bool,
+    pub profile_unrecoverable: bool,
+}
+
+struct RestoreOutcome {
+    rolled_back: bool,
+    profile_unrecoverable: bool,
+}
+
+fn record_restore_outcome(restore: Result<(), String>, stderr: &mut String) -> RestoreOutcome {
+    match restore {
+        Ok(()) => {
+            stderr.push_str("\nDSH Desk 已恢复操作前的插件 Profile。\n");
+            RestoreOutcome {
+                rolled_back: true,
+                profile_unrecoverable: false,
+            }
+        }
+        Err(error) => {
+            stderr.push_str(
+                "\n插件 Profile 自动恢复失败；已停止 Harness，请勿继续使用当前 Profile。\n",
+            );
+            stderr.push_str(&error);
+            stderr.push('\n');
+            RestoreOutcome {
+                rolled_back: false,
+                profile_unrecoverable: true,
+            }
+        }
+    }
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -153,7 +186,7 @@ impl ProfileBackup {
             return Ok(());
         }
 
-        fs::create_dir_all(&self.profile_dir)
+        crate::secure_fs::ensure_private_dir(&self.profile_dir)
             .map_err(|error| format!("恢复插件 Profile 目录失败：{error}"))?;
         for (name, contents) in &self.files {
             let path = self.profile_dir.join(name);
@@ -175,7 +208,19 @@ fn atomic_write(path: &Path, contents: &[u8]) -> Result<(), String> {
     if path.exists() {
         fs::remove_file(path).map_err(|error| format!("替换回滚文件失败：{error}"))?;
     }
-    fs::rename(&temporary, path).map_err(|error| format!("切换回滚文件失败：{error}"))
+    fs::rename(&temporary, path).map_err(|error| format!("切换回滚文件失败：{error}"))?;
+    crate::secure_fs::restrict_file_permissions(path)
+        .map_err(|error| format!("限制回滚文件权限失败：{error}"))
+}
+
+fn desktop_workspace(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    crate::secure_fs::resolve_workspace(
+        std::env::var_os("DSH_DESKTOP_WORKSPACE").map(PathBuf::from),
+        app.path()
+            .app_data_dir()
+            .map_err(|error| error.to_string())?
+            .join("workspace"),
+    )
 }
 
 pub fn dsh_home(app: &tauri::AppHandle) -> Result<PathBuf, String> {
@@ -252,8 +297,9 @@ pub(crate) fn execute_plugin_command(
     }
 
     let home = dsh_home(app)?;
-    fs::create_dir_all(&home).map_err(|error| format!("创建 Harness 数据目录失败：{error}"))?;
-    let workspace = app.path().home_dir().map_err(|error| error.to_string())?;
+    crate::secure_fs::ensure_private_dir(&home)
+        .map_err(|error| format!("创建 Harness 数据目录失败：{error}"))?;
+    let workspace = desktop_workspace(app)?;
     let path = plugin_path(node, entry)?;
     let profile_dir = home.join("profiles/web");
     let backup = request
@@ -261,27 +307,29 @@ pub(crate) fn execute_plugin_command(
         .then(|| ProfileBackup::capture(profile_dir.clone()))
         .transpose()?;
 
-    let output = harness_command(node, entry)
+    let mut plugin_command = harness_command(node, entry);
+    plugin_command
         .args(["plugin", "--profile", "web", request.action.as_str()])
         .arg(&request.operand)
         .current_dir(&workspace)
         .env("DSH_HOME", &home)
         .env("PATH", &path)
-        .env("NO_COLOR", "1")
-        .output()
+        .env("NO_COLOR", "1");
+    let output = run_command_with_timeout(&mut plugin_command, PLUGIN_COMMAND_TIMEOUT)
         .map_err(|error| format!("无法运行原版 dsh plugin：{error}"))?;
 
     let mut success = output.status.success();
     let mut exit_code = output.status.code();
     let mut stderr = String::from_utf8_lossy(&output.stderr).into_owned();
     if success && request.is_mutating() {
-        let validation = harness_command(node, entry)
+        let mut validation_command = harness_command(node, entry);
+        validation_command
             .args(["--profile", "web", "--dump-config"])
             .current_dir(&workspace)
             .env("DSH_HOME", &home)
             .env("PATH", &path)
-            .env("NO_COLOR", "1")
-            .output();
+            .env("NO_COLOR", "1");
+        let validation = run_command_with_timeout(&mut validation_command, PLUGIN_VALIDATION_TIMEOUT);
         match validation {
             Ok(validation) if !validation.status.success() => {
                 success = false;
@@ -299,26 +347,20 @@ pub(crate) fn execute_plugin_command(
     }
 
     let mut rolled_back = false;
+    let mut profile_unrecoverable = false;
     if !success && let Some(backup) = backup {
-        match backup.restore().and_then(|_| {
-            if backup.existed {
-                repair_profile(node, entry, &profile_dir, &path)
-            } else {
-                Ok(())
-            }
-        }) {
-            Ok(()) => {
-                rolled_back = true;
-                stderr.push_str("\nDSH Desk 已恢复操作前的插件 Profile。\n");
-            }
-            Err(error) => {
-                stderr.push_str(
-                    "\n插件 Profile 自动恢复失败；已停止 Harness，请勿继续使用当前 Profile。\n",
-                );
-                stderr.push_str(&error);
-                stderr.push('\n');
-            }
-        }
+        let outcome = record_restore_outcome(
+            backup.restore().and_then(|_| {
+                if backup.existed {
+                    repair_profile(node, entry, &profile_dir, &path)
+                } else {
+                    Ok(())
+                }
+            }),
+            &mut stderr,
+        );
+        rolled_back = outcome.rolled_back;
+        profile_unrecoverable = outcome.profile_unrecoverable;
     }
 
     Ok(PluginCommandResult {
@@ -327,6 +369,7 @@ pub(crate) fn execute_plugin_command(
         stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
         stderr,
         rolled_back,
+        profile_unrecoverable,
     })
 }
 
@@ -367,10 +410,7 @@ fn repair_profile(
         .current_dir(profile_dir)
         .env("PATH", path)
         .env("NO_COLOR", "1");
-    #[cfg(windows)]
-    configure_windowless_command(&mut command);
-    let output = command
-        .output()
+    let output = run_command_with_timeout(&mut command, PLUGIN_REPAIR_TIMEOUT)
         .map_err(|error| format!("无法重新安装回滚后的插件依赖：{error}"))?;
     if output.status.success() {
         Ok(())
@@ -392,7 +432,7 @@ pub(crate) fn inspect_plugin_source(
     if source.is_empty() {
         return Err("请输入插件包名、地址或路径。".to_string());
     }
-    let workspace = app.path().home_dir().map_err(|error| error.to_string())?;
+    let workspace = desktop_workspace(app)?;
     let (kind, local_path) = classify_source(source, &workspace);
     let manifest = match kind {
         PluginSourceKind::Directory => local_path
@@ -513,10 +553,7 @@ fn read_registry_manifest(
         ])
         .current_dir(workspace)
         .env("NO_COLOR", "1");
-    #[cfg(windows)]
-    configure_windowless_command(&mut command);
-    let output = command
-        .output()
+    let output = run_command_with_timeout(&mut command, PLUGIN_REGISTRY_VIEW_TIMEOUT)
         .map_err(|error| format!("无法查询 npm 插件元数据：{error}"))?;
     if !output.status.success() {
         return Err(format!(
@@ -653,7 +690,7 @@ mod tests {
 
     use super::{
         PluginAction, PluginCommandRequest, PluginRiskLevel, PluginSourceKind, ProfileBackup,
-        build_inspection, classify_source, profile_dependencies,
+        build_inspection, classify_source, profile_dependencies, record_restore_outcome,
     };
 
     #[test]
@@ -740,5 +777,24 @@ mod tests {
         assert_eq!(fs::read(profile.join("package.json")).unwrap(), b"before");
         assert!(!profile.join("pnpm-lock.yaml").exists());
         fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn restore_success_is_not_unrecoverable() {
+        let mut stderr = String::new();
+        let outcome = record_restore_outcome(Ok(()), &mut stderr);
+        assert!(outcome.rolled_back);
+        assert!(!outcome.profile_unrecoverable);
+        assert!(stderr.contains("已恢复操作前的插件 Profile"));
+    }
+
+    #[test]
+    fn restore_failure_marks_the_profile_unrecoverable() {
+        let mut stderr = String::new();
+        let outcome = record_restore_outcome(Err("disk full".to_string()), &mut stderr);
+        assert!(!outcome.rolled_back);
+        assert!(outcome.profile_unrecoverable);
+        assert!(stderr.contains("已停止 Harness，请勿继续使用当前 Profile"));
+        assert!(stderr.contains("disk full"));
     }
 }

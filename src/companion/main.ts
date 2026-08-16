@@ -1,12 +1,12 @@
 import {
   createDeviceIdentity,
   decodePairingFragment,
-  decryptTaskSnapshot,
   deriveSessionKey,
   type EncryptedEnvelope,
   type PairingOffer,
   type TaskSnapshot,
 } from '../cross-device/protocol.ts'
+import { applyEnvelopes } from '../cross-device/feed.ts'
 import './style.css'
 
 interface StoredSession {
@@ -99,6 +99,11 @@ function clearError(): void {
   errorBanner.textContent = ''
 }
 
+function showNotice(message: string): void {
+  errorBanner.textContent = message
+  errorBanner.hidden = false
+}
+
 function formatDuration(seconds: number): string {
   if (seconds < 60) return `${seconds} 秒`
   const minutes = Math.floor(seconds / 60)
@@ -179,22 +184,26 @@ async function poll(): Promise<void> {
     )
     if (!response.ok) throw new Error(`中继读取失败（${response.status}）`)
     const body = await response.json() as { messages: EncryptedEnvelope[] }
-    const messages = [...body.messages].sort((left, right) => left.header.sequence - right.header.sequence)
-    for (const envelope of messages) {
-      const snapshot = await decryptTaskSnapshot(session.key, envelope, {
+    const result = await applyEnvelopes(
+      {
+        key: session.key,
         mailboxId: session.mailboxId,
         senderDeviceId: session.desktopId,
-        afterSequence: session.lastSequence,
-      })
-      tasks.set(snapshot.taskId, snapshot)
-      session.lastSequence = envelope.header.sequence
-    }
-    if (messages.length) {
+        lastSequence: session.lastSequence,
+      },
+      tasks,
+      body.messages,
+    )
+    session.lastSequence = result.lastSequence
+    if (body.messages.length > 0) {
       session.snapshots = [...tasks.values()]
       await writeSession(session)
     }
     clearError()
     setConnection('online', '端到端加密已连接')
+    if (result.skipped > 0) {
+      showNotice(`跳过 ${result.skipped} 条无法解密或已过期的消息。`)
+    }
     renderTasks()
   } catch (error) {
     showError(error)
@@ -235,7 +244,13 @@ installButton.addEventListener('click', async () => {
 })
 
 async function initialize(): Promise<void> {
-  if ('serviceWorker' in navigator) await navigator.serviceWorker.register('/companion-sw.js')
+  if ('serviceWorker' in navigator) {
+    try {
+      await navigator.serviceWorker.register('/companion-sw.js')
+    } catch {
+      // Offline caching is optional; pairing and polling must still start.
+    }
+  }
   try {
     if (location.hash.includes('pair=')) {
       const offer = decodePairingFragment(location.hash)

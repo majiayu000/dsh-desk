@@ -3,5 +3,5 @@
   "identifier": "bootstrap",
   "description": "Minimal permissions for the local startup and recovery page.",
   "windows": ["main"],
-  "permissions": ["core:default"]
+  "permissions": ["core:default", "desktop-bootstrap"]
 }
