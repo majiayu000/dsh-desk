@@ -34,7 +34,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ${{ inputs.release_tag || github.event.release.tag_name }}
+          ref: refs/tags/${{ inputs.release_tag || github.event.release.tag_name }}
           persist-credentials: false
       - name: Install Linux desktop dependencies
         run: >-

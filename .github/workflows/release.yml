@@ -279,7 +279,6 @@ jobs:
       name: production
       url: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}
     permissions:
-      actions: read
       contents: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7

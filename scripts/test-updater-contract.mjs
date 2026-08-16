@@ -209,7 +209,7 @@ assert(
       "if: inputs.release_tag != '' || startsWith(github.event.release.tag_name, 'v')",
     ) &&
     updateChannelWorkflow.includes(
-      "ref: ${{ inputs.release_tag || github.event.release.tag_name }}",
+      "ref: refs/tags/${{ inputs.release_tag || github.event.release.tag_name }}",
     ) &&
     updateChannelWorkflow.includes(
       "RELEASE_TAG: ${{ inputs.release_tag || github.event.release.tag_name }}",
