@@ -19,13 +19,14 @@ use serde::Serialize;
 use tauri::{Emitter, Manager};
 use url::Url;
 
+use crate::harness_command::harness_command;
 use crate::plugin_manager::{
     PluginCommandRequest, PluginCommandResult, PluginInspection, execute_plugin_command,
     inspect_plugin_source,
 };
-#[cfg(windows)]
-use crate::process_termination::configure_process_tree_command;
 use crate::process_termination::{ProcessTree, stop_process_tree};
+#[cfg(windows)]
+use crate::process_termination::{configure_process_tree_command, configure_windowless_command};
 use crate::window_manager::{navigate_to_runtime, restore_bootstrap};
 
 const START_TIMEOUT: Duration = Duration::from_secs(20);
@@ -443,9 +444,8 @@ fn start_runtime(app: &tauri::AppHandle) -> Result<RunningRuntime, RuntimeFailur
         &format!("starting runtime in {}", workspace.display()),
     );
 
-    let mut command = Command::new(&node);
+    let mut command = harness_command(&node, &entry);
     command
-        .arg(&entry)
         .args(["web", "--host", "127.0.0.1", "--port", "0"])
         .current_dir(workspace)
         .env("DSH_HOME", dsh_home)
@@ -631,7 +631,10 @@ fn node_from_login_shell() -> Option<PathBuf> {
 
 #[cfg(windows)]
 fn node_from_login_shell() -> Option<PathBuf> {
-    let output = Command::new("where.exe").arg("node.exe").output().ok()?;
+    let mut command = Command::new("where.exe");
+    command.arg("node.exe");
+    configure_windowless_command(&mut command);
+    let output = command.output().ok()?;
     if !output.status.success() {
         return None;
     }
@@ -645,13 +648,14 @@ fn node_from_login_shell() -> Option<PathBuf> {
 }
 
 fn validate_node(path: &Path) -> Result<(), RuntimeFailure> {
-    let output = Command::new(path)
-        .arg("--version")
-        .output()
-        .map_err(|error| RuntimeFailure {
-            code: "node-runtime-invalid",
-            message: format!("无法运行 Node.js {}：{error}", path.display()),
-        })?;
+    let mut command = Command::new(path);
+    command.arg("--version");
+    #[cfg(windows)]
+    configure_windowless_command(&mut command);
+    let output = command.output().map_err(|error| RuntimeFailure {
+        code: "node-runtime-invalid",
+        message: format!("无法运行 Node.js {}：{error}", path.display()),
+    })?;
     let version = String::from_utf8_lossy(&output.stdout);
     let mut parts = version.trim().trim_start_matches('v').split('.');
     let major = parts.next().and_then(|value| value.parse::<u32>().ok());

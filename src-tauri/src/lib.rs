@@ -1,3 +1,4 @@
+mod harness_command;
 mod plugin_manager;
 mod process_termination;
 mod runtime_supervisor;

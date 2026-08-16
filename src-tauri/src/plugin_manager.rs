@@ -11,6 +11,10 @@ use flate2::read::GzDecoder;
 use serde::{Deserialize, Serialize};
 use tauri::Manager;
 
+use crate::harness_command::harness_command;
+#[cfg(windows)]
+use crate::process_termination::configure_windowless_command;
+
 const MAX_PLUGIN_ARCHIVE_BYTES: u64 = 50 * 1024 * 1024;
 const MAX_MANIFEST_BYTES: u64 = 1024 * 1024;
 const PROFILE_STATE_FILES: [&str; 3] = ["package.json", "pnpm-lock.yaml", "cordis.patch.yml"];
@@ -257,8 +261,7 @@ pub(crate) fn execute_plugin_command(
         .then(|| ProfileBackup::capture(profile_dir.clone()))
         .transpose()?;
 
-    let output = Command::new(node)
-        .arg(entry)
+    let output = harness_command(node, entry)
         .args(["plugin", "--profile", "web", request.action.as_str()])
         .arg(&request.operand)
         .current_dir(&workspace)
@@ -272,8 +275,7 @@ pub(crate) fn execute_plugin_command(
     let mut exit_code = output.status.code();
     let mut stderr = String::from_utf8_lossy(&output.stderr).into_owned();
     if success && request.is_mutating() {
-        let validation = Command::new(node)
-            .arg(entry)
+        let validation = harness_command(node, entry)
             .args(["--profile", "web", "--dump-config"])
             .current_dir(&workspace)
             .env("DSH_HOME", &home)
@@ -358,12 +360,16 @@ fn repair_profile(
         .ancestors()
         .nth(4)
         .ok_or_else(|| "无法定位内置插件运行环境。".to_string())?;
-    let output = Command::new(node)
+    let mut command = Command::new(node);
+    command
         .arg(node_modules.join("pnpm/bin/pnpm.cjs"))
         .args(["install", "--frozen-lockfile"])
         .current_dir(profile_dir)
         .env("PATH", path)
-        .env("NO_COLOR", "1")
+        .env("NO_COLOR", "1");
+    #[cfg(windows)]
+    configure_windowless_command(&mut command);
+    let output = command
         .output()
         .map_err(|error| format!("无法重新安装回滚后的插件依赖：{error}"))?;
     if output.status.success() {
@@ -492,7 +498,8 @@ fn read_registry_manifest(
         .ancestors()
         .nth(4)
         .ok_or_else(|| "无法定位内置插件运行环境。".to_string())?;
-    let output = Command::new(node)
+    let mut command = Command::new(node);
+    command
         .arg(node_modules.join("pnpm/bin/pnpm.cjs"))
         .args([
             "view",
@@ -505,7 +512,10 @@ fn read_registry_manifest(
             "--json",
         ])
         .current_dir(workspace)
-        .env("NO_COLOR", "1")
+        .env("NO_COLOR", "1");
+    #[cfg(windows)]
+    configure_windowless_command(&mut command);
+    let output = command
         .output()
         .map_err(|error| format!("无法查询 npm 插件元数据：{error}"))?;
     if !output.status.success() {

@@ -178,16 +178,12 @@ function notarizeDmg() {
 function verifyDistribution() {
   if (!existsSync(dmgPath)) throw new Error(`Release artifact is missing: ${dmgPath}`);
 
-  let verifiedAppPath = appPath;
-  let mountPath;
+  const mountPath = mkdtempSync(join(tmpdir(), "dsh-desk-verify-"));
   try {
+    run("hdiutil", ["attach", "-nobrowse", "-readonly", "-mountpoint", mountPath, dmgPath]);
+    const verifiedAppPath = join(mountPath, "DSH Desk.app");
     if (!existsSync(verifiedAppPath)) {
-      mountPath = mkdtempSync(join(tmpdir(), "dsh-desk-verify-"));
-      run("hdiutil", ["attach", "-nobrowse", "-readonly", "-mountpoint", mountPath, dmgPath]);
-      verifiedAppPath = join(mountPath, "DSH Desk.app");
-      if (!existsSync(verifiedAppPath)) {
-        throw new Error(`Release application is missing from mounted DMG: ${verifiedAppPath}`);
-      }
+      throw new Error(`Release application is missing from mounted DMG: ${verifiedAppPath}`);
     }
 
     run("codesign", ["--verify", "--deep", "--strict", "--verbose=4", verifiedAppPath]);
@@ -217,12 +213,10 @@ function verifyDistribution() {
     ]);
     console.log(`Verified notarized macOS distribution with ${machOCount} Mach-O binaries`);
   } finally {
-    if (mountPath) {
-      try {
-        run("hdiutil", ["detach", mountPath]);
-      } finally {
-        rmSync(mountPath, { recursive: true, force: true });
-      }
+    try {
+      run("hdiutil", ["detach", mountPath]);
+    } finally {
+      rmSync(mountPath, { recursive: true, force: true });
     }
   }
 }

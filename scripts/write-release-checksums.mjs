@@ -1,21 +1,11 @@
 import { createHash } from "node:crypto";
-import { createReadStream, existsSync, readdirSync, statSync, writeFileSync } from "node:fs";
-import { basename, extname, join, resolve } from "node:path";
+import { createReadStream, writeFileSync } from "node:fs";
+import { basename, resolve } from "node:path";
+import { walkFiles } from "./lib/files.mjs";
+import { isReleaseInstaller } from "./lib/release-artifacts.mjs";
 
 const bundleRoot = resolve(import.meta.dirname, "../src-tauri/target/release/bundle");
-const releaseExtensions = new Set([".dmg", ".exe", ".msi", ".appimage", ".deb", ".rpm"]);
-
-function walk(directory) {
-  if (!existsSync(directory)) return [];
-  return readdirSync(directory).flatMap((name) => {
-    const path = join(directory, name);
-    return statSync(path).isDirectory() ? walk(path) : [path];
-  });
-}
-
-const artifacts = walk(bundleRoot).filter(
-  (path) => releaseExtensions.has(extname(path).toLowerCase()) && !basename(path).startsWith("rw."),
-);
+const artifacts = walkFiles(bundleRoot).filter((path) => isReleaseInstaller(bundleRoot, path));
 if (artifacts.length === 0) throw new Error(`No release artifacts found under ${bundleRoot}`);
 
 for (const artifact of artifacts) {

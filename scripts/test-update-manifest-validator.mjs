@@ -13,6 +13,8 @@ const tag = `v${version}`;
 const targets = [
   "darwin-aarch64",
   "darwin-aarch64-app",
+  "darwin-x86_64",
+  "darwin-x86_64-app",
   "windows-x86_64",
   "windows-x86_64-nsis",
   "linux-x86_64",
@@ -25,6 +27,8 @@ const signature = Buffer.from(
 const targetUrls = {
   "darwin-aarch64": `https://github.com/majiayu000/dsh-desk/releases/download/${tag}/DSH.Desk.app.tar.gz`,
   "darwin-aarch64-app": `https://github.com/majiayu000/dsh-desk/releases/download/${tag}/DSH.Desk.app.tar.gz`,
+  "darwin-x86_64": `https://github.com/majiayu000/dsh-desk/releases/download/${tag}/DSH.Desk.x64.app.tar.gz`,
+  "darwin-x86_64-app": `https://github.com/majiayu000/dsh-desk/releases/download/${tag}/DSH.Desk.x64.app.tar.gz`,
   "windows-x86_64": `https://github.com/majiayu000/dsh-desk/releases/download/${tag}/DSH.Desk-setup.exe`,
   "windows-x86_64-nsis": `https://github.com/majiayu000/dsh-desk/releases/download/${tag}/DSH.Desk-setup.exe`,
   "linux-x86_64": `https://github.com/majiayu000/dsh-desk/releases/download/${tag}/DSH.Desk.AppImage`,
@@ -47,7 +51,7 @@ function manifest(encodedSignature = signature) {
   };
 }
 
-function validate() {
+function validate(env = {}) {
   return spawnSync(
     process.execPath,
     [
@@ -58,7 +62,7 @@ function validate() {
       releasePath,
       currentManifestPath,
     ],
-    { encoding: "utf8" },
+    { encoding: "utf8", env: { ...process.env, ...env } },
   );
 }
 
@@ -81,6 +85,13 @@ try {
   if (valid.status !== 0) throw new Error(valid.stderr || valid.stdout);
   const normalized = JSON.parse(readFileSync(manifestPath, "utf8"));
   if (normalized.version !== version) throw new Error("validator changed the manifest version");
+
+  const publishedRelease = JSON.parse(readFileSync(releasePath, "utf8"));
+  writeFileSync(releasePath, JSON.stringify({ ...publishedRelease, draft: true }));
+  if (validate().status === 0) throw new Error("validator accepted a draft release by default");
+  const allowedDraft = validate({ DSH_ALLOW_DRAFT_RELEASE: "1" });
+  if (allowedDraft.status !== 0) throw new Error(allowedDraft.stderr || allowedDraft.stdout);
+  writeFileSync(releasePath, JSON.stringify(publishedRelease));
 
   writeFileSync(manifestPath, JSON.stringify(manifest("not-a-minisign-signature")));
   const invalidSignature = validate();

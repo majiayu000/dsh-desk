@@ -25,8 +25,13 @@ const stagingRoot = mkdtempSync(join(tmpdir(), "dsh-desk-dmg-"));
 if (process.platform !== "darwin") {
   throw new Error("The macOS release packager must run on macOS");
 }
-if (process.env.DSH_ALLOW_ADHOC !== "1") {
-  throw new Error("Ad-hoc packaging is preview-only. Use pnpm release:macos for a signed release.");
+const adHocPreview = process.env.DSH_ALLOW_ADHOC === "1";
+const preserveSignature = process.env.DSH_PRESERVE_SIGNATURE === "1";
+
+if (!adHocPreview && !preserveSignature) {
+  throw new Error(
+    "Set DSH_ALLOW_ADHOC=1 for a preview or DSH_PRESERVE_SIGNATURE=1 for a signed release.",
+  );
 }
 if (!appPath.endsWith(["bundle", "macos", "DSH Desk.app"].join(sep)) || !existsSync(appPath)) {
   throw new Error(`Built application is missing: ${appPath}`);
@@ -40,7 +45,9 @@ function run(command, args) {
 }
 
 try {
-  run("codesign", ["--force", "--deep", "--sign", "-", appPath]);
+  if (adHocPreview) {
+    run("codesign", ["--force", "--deep", "--sign", "-", appPath]);
+  }
   run("codesign", ["--verify", "--deep", "--strict", "--verbose=2", appPath]);
 
   mkdirSync(dirname(dmgPath), { recursive: true });
@@ -58,6 +65,20 @@ try {
     "UDZO",
     dmgPath,
   ]);
+
+  if (preserveSignature) {
+    if (!process.env.APPLE_SIGNING_IDENTITY) {
+      throw new Error("APPLE_SIGNING_IDENTITY is required to sign a release DMG");
+    }
+    run("codesign", [
+      "--force",
+      "--timestamp",
+      "--sign",
+      process.env.APPLE_SIGNING_IDENTITY,
+      dmgPath,
+    ]);
+    run("codesign", ["--verify", "--strict", "--verbose=2", dmgPath]);
+  }
 
   const hash = createHash("sha256");
   for await (const chunk of createReadStream(dmgPath)) {

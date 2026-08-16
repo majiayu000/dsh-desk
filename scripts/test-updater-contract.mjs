@@ -80,16 +80,63 @@ for (const token of [
   "tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f",
   "TAURI_SIGNING_PRIVATE_KEY",
   "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
-  "updaterJsonPreferNsis: true",
-  "max-parallel: 1",
-  "prerelease: ${{ steps.release.outputs.prerelease }}",
+  "tauri_args: '--bundles app'",
+  "DSH_PRESERVE_SIGNATURE: '1'",
+  "run: node scripts/package-macos.mjs",
+  "id: windows-signing",
+  "steps.windows-signing.outputs.enabled == 'true'",
+  "steps.windows-signing.outputs.config_args",
+  "Verify Windows Authenticode state",
+  "windows-release-metadata.json",
+  "Windows Alpha signing notice",
+  'gh release view "$GITHUB_REF_NAME" --json databaseId',
+  ".browser_download_url = ($prefix + (.name | @uri))",
+  "needs: preflight",
+  "uploadUpdaterJson: false",
+  "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+  "actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c",
+  "merge-multiple: true",
+  "environment:\n      name: production",
+  "pnpm release:artifacts manifest",
+  "DSH_ALLOW_DRAFT_RELEASE: '1'",
+  'gh release edit "$GITHUB_REF_NAME" --draft=false',
+  "publish-update-channel:",
+  "uses: ./.github/workflows/publish-update-channel.yml",
+  "release_tag: ${{ github.ref_name }}",
 ]) {
   assert(workflow.includes(token), `Release workflow is missing ${token}`);
 }
 assert(!workflow.includes("workflow_dispatch:"), "Production releases must be triggered by tags only");
+assert(!workflow.includes("max-parallel: 1"), "Signed platform builds must run in parallel");
+assert(!workflow.includes("tagName:"), "Platform builders must not mutate a shared GitHub Release");
+assert(
+  !workflow.includes("tauri_args: '--bundles nsis --config"),
+  "The Windows matrix must not require an Authenticode config in unsigned mode",
+);
+assert(
+  workflow.match(/pnpm check &&/g)?.length === 1,
+  "The full release verification suite must run exactly once",
+);
 assert(
   !workflow.includes("uses: tauri-apps/tauri-action@v1"),
   "The updater publishing action must be pinned to a reviewed commit",
+);
+assert(
+  !workflow.includes("actions/upload-artifact@v4") &&
+    !workflow.includes("actions/download-artifact@v8"),
+  "Release artifact actions must be pinned to reviewed commits",
+);
+
+const macosRelease = read("scripts/macos-release.mjs");
+assert(
+  macosRelease.includes(
+    'run("hdiutil", ["attach", "-nobrowse", "-readonly", "-mountpoint", mountPath, dmgPath]);',
+  ),
+  "macOS verification must mount the shipped DMG",
+);
+assert(
+  !macosRelease.includes("let verifiedAppPath = appPath"),
+  "macOS verification must assess the app inside the shipped DMG, not the build directory",
 );
 
 const previewConfig = JSON.parse(read("src-tauri/tauri.unsigned-preview.json"));
@@ -101,6 +148,7 @@ assert(
 const previewWorkflow = read(".github/workflows/preview.yml");
 for (const token of [
   "macos-15",
+  "macos-15-intel",
   "windows-2022",
   "ubuntu-22.04",
   "--bundles dmg",
@@ -139,8 +187,12 @@ const updatePreviewWorkflow = read(".github/workflows/update-preview.yml");
 for (const token of [
   "workflow_dispatch:",
   "max-parallel: 1",
+  "macos-x64",
+  "macos-15-intel",
   "preview-v__VERSION__",
   "--bundles app,dmg",
+  "DSH_ALLOW_ADHOC: '1'",
+  "gh release upload \"preview-v${version}\"",
   "src-tauri/tauri.update-preview.json",
   "pnpm check:updater-key",
   "node scripts/validate-update-manifest.mjs",
@@ -158,6 +210,25 @@ assert(
   !updatePreviewWorkflow.includes("uses: tauri-apps/tauri-action@v1") &&
     !updatePreviewWorkflow.includes("uses: softprops/action-gh-release@v2"),
   "Update preview publishing actions must be pinned to reviewed commits",
+);
+
+const updateChannelWorkflow = read(".github/workflows/publish-update-channel.yml");
+assert(
+  updateChannelWorkflow.includes("libwebkit2gtk-4.1-dev") &&
+    updateChannelWorkflow.includes("DSH_VERIFY_UPDATE_ARTIFACTS: '1'") &&
+    updateChannelWorkflow.includes("workflow_dispatch:") &&
+    updateChannelWorkflow.includes("workflow_call:") &&
+    updateChannelWorkflow.includes("queue: max") &&
+    updateChannelWorkflow.includes(
+      "if: inputs.release_tag != '' || startsWith(github.event.release.tag_name, 'v')",
+    ) &&
+    updateChannelWorkflow.includes(
+      "ref: refs/tags/${{ inputs.release_tag || github.event.release.tag_name }}",
+    ) &&
+    updateChannelWorkflow.includes(
+      "RELEASE_TAG: ${{ inputs.release_tag || github.event.release.tag_name }}",
+    ),
+  "Published updater verification must install native Rust test dependencies",
 );
 
 console.log("Updater configuration, signing, release, and capability contracts passed.");
