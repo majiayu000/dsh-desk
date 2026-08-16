@@ -151,6 +151,12 @@ async fn inspect_plugin_source(
         .map_err(|error| error.to_string())?
 }
 
+#[tauri::command]
+fn open_plugin_registry(window: tauri::WebviewWindow) -> Result<(), String> {
+    require_plugin_window(&window)?;
+    window_manager::open_plugin_registry()
+}
+
 pub fn run() {
     let (runtime, command_rx) = RuntimeHandle::new();
     let setup_receiver = Mutex::new(Some(command_rx));
@@ -199,6 +205,7 @@ pub fn run() {
             list_plugins,
             inspect_plugin_source,
             run_plugin_command,
+            open_plugin_registry,
         ])
         .setup(move |app| {
             updater::initialize(app.handle());

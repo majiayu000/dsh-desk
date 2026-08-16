@@ -39,6 +39,26 @@
         <p class="catalog-boundary">目录条目只代表来源与兼容性经过核对，不代表代码无风险。第三方条目必须锁定版本并经过安装审查后才会出现。</p>
       </section>
 
+      <section class="community-card" aria-labelledby="community-title">
+        <div class="community-heading">
+          <div>
+            <p class="plugin-eyebrow">COMMUNITY REGISTRY</p>
+            <h2 id="community-title">社区目录</h2>
+            <p>在 plugin.dshdesk.com 浏览社区插件，复制安装命令后回到这里审查。社区条目不是 Desk 可信目录，不会跳过确认。</p>
+          </div>
+          <button id="open-registry" class="primary-button" type="button">打开社区目录</button>
+        </div>
+        <p id="registry-hint" class="community-hint" hidden>已在系统浏览器打开。复制页面上的 <code>dsh plugin --profile web add …</code>，回到这里会自动识别。</p>
+        <div id="clipboard-offer" class="clipboard-offer" hidden>
+          <p>检测到安装命令 <code id="clipboard-spec"></code></p>
+          <div class="clipboard-actions">
+            <button id="dismiss-clipboard" type="button">忽略</button>
+            <button id="review-clipboard" class="primary-button" type="button">审查并安装</button>
+          </div>
+        </div>
+        <p class="catalog-boundary">社区目录只验证 dsh.bundle 形状，不等于打包运行时验证或安全审计。</p>
+      </section>
+
       <section class="install-card">
         <div class="install-heading">
           <div>
@@ -47,20 +67,21 @@
           </div>
           <span>高级</span>
         </div>
-        <label for="plugin-source">插件包名、GitHub 地址、TGZ 或本地路径</label>
+        <label for="plugin-source">插件包名、GitHub 地址、TGZ、本地路径，或整段 dsh plugin add 命令</label>
         <div class="install-row">
           <input
             id="plugin-source"
             type="text"
             autocomplete="off"
             spellcheck="false"
-            placeholder="例如 @scope/dsh-plugin 或 github:owner/repo"
+            placeholder="粘贴 dsh plugin --profile web add @scope/plugin 或 github:owner/repo"
           />
           <button id="install" class="primary-button" type="button">安装</button>
         </div>
         <div class="source-actions">
           <button id="choose-package" type="button">选择 TGZ</button>
           <button id="choose-directory" type="button">选择本地目录</button>
+          <button id="paste-install" type="button">粘贴并审查</button>
         </div>
       </section>
 

@@ -48,8 +48,26 @@ try {
 }
 
 const client = read("src/plugins.ts");
-for (const token of ["renderCatalog", "beginReview('add', entry.source)", "installedNames.has(entry.package)"]) {
+for (const token of [
+  "renderCatalog",
+  "beginReview('add', entry.source)",
+  "installedNames.has(entry.package)",
+  "open_plugin_registry",
+  "clipboardPluginSource",
+  "parsePluginInstallInput",
+]) {
   assert(client.includes(token), `plugin market client is missing ${token}`);
 }
+
+const page = read("plugins.html");
+for (const token of ["open-registry", "paste-install", "clipboard-offer", "community-title"]) {
+  assert(page.includes(token), `plugin market page is missing ${token}`);
+}
+
+const sourceParser = read("src/plugin-source.ts");
+assert(
+  sourceParser.includes("clipboardPluginSource") && sourceParser.includes("PLUGIN_ADD_COMMAND"),
+  "plugin source parser must recognize copied install commands",
+);
 
 console.log(`Trusted plugin catalog verified: ${catalog.entries.length} pinned entries match Harness ${harnessVersion}.`);
