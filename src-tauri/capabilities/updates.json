@@ -3,5 +3,5 @@
   "identifier": "updates",
   "description": "Minimal permissions for the signed desktop update window.",
   "windows": ["updates"],
-  "permissions": ["core:default"]
+  "permissions": ["core:event:allow-listen", "core:event:allow-unlisten"]
 }

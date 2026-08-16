@@ -1,5 +1,8 @@
 use std::{
-    fs,
+    fs::{self, OpenOptions},
+    io::Write,
+    path::Path,
+    process,
     sync::Mutex,
     time::{SystemTime, UNIX_EPOCH},
 };
@@ -11,6 +14,7 @@ use tauri_plugin_updater::{Update, UpdaterExt};
 use crate::runtime_supervisor::RuntimeHandle;
 
 const UPDATE_EVENT: &str = "update-status";
+const APPLICATION_MENU_ID: &str = "application-menu";
 const UPDATE_MENU_ID: &str = "software-update";
 const PREFERENCES_FILE: &str = "update-preferences.json";
 
@@ -148,6 +152,9 @@ impl UpdateCoordinator {
             .session
             .lock()
             .map_err(|_| "无法保存更新检查结果。".to_string())?;
+        if session.phase != UpdatePhase::Checking {
+            return Ok(false);
+        }
         session.checked_at = Some(now_millis());
         session.error = None;
 
@@ -175,7 +182,11 @@ impl UpdateCoordinator {
             .session
             .lock()
             .map_err(|_| "无法开始下载更新。".to_string())?;
-        if session.phase == UpdatePhase::Downloading || session.phase == UpdatePhase::Installing {
+        if !download_allowed(
+            session.phase,
+            session.update.is_some(),
+            session.bytes.is_some(),
+        ) {
             return Ok(None);
         }
         let Some(update) = session.update.clone() else {
@@ -193,6 +204,9 @@ impl UpdateCoordinator {
 
     fn record_download(&self, chunk: usize, total: Option<u64>) -> bool {
         if let Ok(mut session) = self.session.lock() {
+            if session.phase != UpdatePhase::Downloading {
+                return false;
+            }
             session.downloaded_bytes = session.downloaded_bytes.saturating_add(chunk as u64);
             if total.is_some() {
                 session.total_bytes = total;
@@ -222,6 +236,9 @@ impl UpdateCoordinator {
             .session
             .lock()
             .map_err(|_| "无法保存已验证的更新包。".to_string())?;
+        if session.phase != UpdatePhase::Downloading {
+            return Ok(());
+        }
         session.downloaded_bytes = bytes.len() as u64;
         session.total_bytes = Some(bytes.len() as u64);
         session.bytes = Some(bytes);
@@ -235,7 +252,11 @@ impl UpdateCoordinator {
             .session
             .lock()
             .map_err(|_| "无法开始安装更新。".to_string())?;
-        if session.phase == UpdatePhase::Installing {
+        if !install_allowed(
+            session.phase,
+            session.update.is_some(),
+            session.bytes.is_some(),
+        ) {
             return Ok(None);
         }
         let update = session
@@ -280,17 +301,43 @@ impl UpdateCoordinator {
             session.auto_download = enabled;
         }
     }
+
+    fn is_installing(&self) -> bool {
+        self.session
+            .lock()
+            .map(|session| session.phase == UpdatePhase::Installing)
+            .unwrap_or(true)
+    }
+}
+
+fn download_allowed(phase: UpdatePhase, has_update: bool, has_bytes: bool) -> bool {
+    has_update
+        && matches!(phase, UpdatePhase::Available | UpdatePhase::Error)
+        && !(phase == UpdatePhase::Error && has_bytes)
+}
+
+fn install_allowed(phase: UpdatePhase, has_update: bool, has_bytes: bool) -> bool {
+    has_update && has_bytes && matches!(phase, UpdatePhase::Ready | UpdatePhase::Error)
 }
 
 pub fn initialize(app: &AppHandle) {
-    if let Ok(preferences) = load_preferences(app) {
-        app.state::<UpdateCoordinator>()
-            .load_auto_download(preferences.auto_download);
-    }
+    let auto_download = match load_preferences(app) {
+        Ok(preferences) => preferences.auto_download,
+        Err(error) => {
+            eprintln!("ignoring invalid update preferences and disabling auto-download: {error}");
+            false
+        }
+    };
+    app.state::<UpdateCoordinator>()
+        .load_auto_download(auto_download);
 }
 
 pub fn status(app: &AppHandle) -> Result<UpdateStatus, String> {
     app.state::<UpdateCoordinator>().snapshot(app)
+}
+
+pub fn is_installing(app: &AppHandle) -> bool {
+    app.state::<UpdateCoordinator>().is_installing()
 }
 
 pub fn request_check(app: AppHandle) {
@@ -409,26 +456,24 @@ pub fn request_install(app: AppHandle) {
                 publish(&app, true);
             }
             Err(InstallAfterShutdownError::Install(error)) => {
-                app.state::<UpdateCoordinator>().fail(format!(
-                    "安装更新时发生错误：{error}。应用将重新启动当前版本。"
-                ));
+                app.state::<UpdateCoordinator>()
+                    .restore_download(bytes, format!("安装更新时发生错误：{error}"));
                 publish(&app, true);
-                app.restart();
             }
         }
     });
 }
 
 pub fn set_auto_download(app: &AppHandle, enabled: bool) -> Result<UpdateStatus, String> {
-    let should_download = app
-        .state::<UpdateCoordinator>()
-        .set_auto_download(enabled)?;
     save_preferences(
         app,
         UpdatePreferences {
             auto_download: enabled,
         },
     )?;
+    let should_download = app
+        .state::<UpdateCoordinator>()
+        .set_auto_download(enabled)?;
     publish(app, false);
     if should_download {
         request_download(app.clone());
@@ -453,9 +498,14 @@ fn set_menu_label(app: &AppHandle, status: &UpdateStatus) {
         (UpdatePhase::Ready, Some(version)) => format!("重启以安装 DSH Desk {version}…"),
         _ => "软件更新…".to_string(),
     };
-    if let Some(MenuItemKind::MenuItem(item)) = app.menu().and_then(|menu| menu.get(UPDATE_MENU_ID))
+    if let Some(MenuItemKind::Submenu(application)) =
+        app.menu().and_then(|menu| menu.get(APPLICATION_MENU_ID))
     {
-        let _ = item.set_text(text);
+        if let Some(MenuItemKind::MenuItem(item)) = application.get(UPDATE_MENU_ID) {
+            if let Err(error) = item.set_text(text) {
+                eprintln!("failed to update the software update menu label: {error}");
+            }
+        }
     }
 }
 
@@ -486,7 +536,65 @@ fn save_preferences(app: &AppHandle, preferences: UpdatePreferences) -> Result<(
     fs::create_dir_all(directory).map_err(|error| format!("无法创建更新设置目录：{error}"))?;
     let contents = serde_json::to_vec_pretty(&preferences)
         .map_err(|error| format!("无法序列化更新设置：{error}"))?;
-    fs::write(path, contents).map_err(|error| format!("无法保存更新设置：{error}"))
+    atomic_write(&path, &contents).map_err(|error| format!("无法保存更新设置：{error}"))
+}
+
+fn atomic_write(path: &Path, contents: &[u8]) -> std::io::Result<()> {
+    let temporary = path.with_extension(format!("tmp-{}-{}", process::id(), now_millis()));
+    let result = (|| {
+        let mut file = OpenOptions::new()
+            .create_new(true)
+            .write(true)
+            .open(&temporary)?;
+        file.write_all(contents)?;
+        file.sync_all()?;
+        drop(file);
+        replace_file(&temporary, path)
+    })();
+    if result.is_err() {
+        if let Err(error) = fs::remove_file(&temporary)
+            && error.kind() != std::io::ErrorKind::NotFound
+        {
+            eprintln!("failed to remove temporary update preferences file: {error}");
+        }
+    }
+    result
+}
+
+#[cfg(not(windows))]
+fn replace_file(source: &Path, destination: &Path) -> std::io::Result<()> {
+    fs::rename(source, destination)
+}
+
+#[cfg(windows)]
+fn replace_file(source: &Path, destination: &Path) -> std::io::Result<()> {
+    use std::{iter::once, os::windows::ffi::OsStrExt};
+    use windows_sys::Win32::Storage::FileSystem::{
+        MOVEFILE_REPLACE_EXISTING, MOVEFILE_WRITE_THROUGH, MoveFileExW,
+    };
+
+    let source = source
+        .as_os_str()
+        .encode_wide()
+        .chain(once(0))
+        .collect::<Vec<_>>();
+    let destination = destination
+        .as_os_str()
+        .encode_wide()
+        .chain(once(0))
+        .collect::<Vec<_>>();
+    let result = unsafe {
+        MoveFileExW(
+            source.as_ptr(),
+            destination.as_ptr(),
+            MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH,
+        )
+    };
+    if result == 0 {
+        Err(std::io::Error::last_os_error())
+    } else {
+        Ok(())
+    }
 }
 
 fn now_millis() -> u64 {
@@ -506,10 +614,11 @@ fn install_after_shutdown(
 
 #[cfg(test)]
 mod tests {
-    use std::cell::Cell;
+    use std::{cell::Cell, fs};
 
     use super::{
-        InstallAfterShutdownError, UpdateCoordinator, UpdatePhase, install_after_shutdown,
+        InstallAfterShutdownError, UpdateCoordinator, UpdatePhase, atomic_write, download_allowed,
+        install_after_shutdown, install_allowed, now_millis,
     };
 
     #[test]
@@ -543,6 +652,66 @@ mod tests {
             coordinator.session.lock().expect("session lock").phase,
             UpdatePhase::Idle
         );
+    }
+
+    #[test]
+    fn download_transition_rejects_conflicting_and_stale_phases() {
+        for phase in [
+            UpdatePhase::Idle,
+            UpdatePhase::Checking,
+            UpdatePhase::UpToDate,
+            UpdatePhase::Downloading,
+            UpdatePhase::Ready,
+            UpdatePhase::Installing,
+        ] {
+            assert!(!download_allowed(phase, true, false), "phase: {phase:?}");
+        }
+        assert!(download_allowed(UpdatePhase::Available, true, false));
+        assert!(download_allowed(UpdatePhase::Error, true, false));
+        assert!(!download_allowed(UpdatePhase::Error, true, true));
+        assert!(!download_allowed(UpdatePhase::Available, false, false));
+    }
+
+    #[test]
+    fn install_transition_requires_retained_update_and_bytes() {
+        assert!(install_allowed(UpdatePhase::Ready, true, true));
+        assert!(install_allowed(UpdatePhase::Error, true, true));
+        assert!(!install_allowed(UpdatePhase::Checking, true, true));
+        assert!(!install_allowed(UpdatePhase::Installing, true, true));
+        assert!(!install_allowed(UpdatePhase::Ready, false, true));
+        assert!(!install_allowed(UpdatePhase::Ready, true, false));
+    }
+
+    #[test]
+    fn install_failure_keeps_verified_bytes_for_retry() {
+        let coordinator = UpdateCoordinator::default();
+        coordinator.restore_download(vec![1, 2, 3], "installer failed".to_string());
+        let Ok(session) = coordinator.session.lock() else {
+            panic!("session lock poisoned");
+        };
+
+        assert_eq!(session.phase, UpdatePhase::Error);
+        assert_eq!(session.bytes.as_deref(), Some([1, 2, 3].as_slice()));
+        assert_eq!(session.error.as_deref(), Some("installer failed"));
+    }
+
+    #[test]
+    fn atomic_preferences_write_replaces_an_existing_file() {
+        let directory = std::env::temp_dir().join(format!(
+            "dsh-desk-updater-test-{}-{}",
+            std::process::id(),
+            now_millis()
+        ));
+        assert!(fs::create_dir(&directory).is_ok());
+        let path = directory.join("preferences.json");
+
+        assert!(atomic_write(&path, br#"{"autoDownload":true}"#).is_ok());
+        assert!(atomic_write(&path, br#"{"autoDownload":false}"#).is_ok());
+        assert_eq!(
+            fs::read(&path).ok().as_deref(),
+            Some(br#"{"autoDownload":false}"#.as_slice())
+        );
+        assert!(fs::remove_dir_all(&directory).is_ok());
     }
 
     #[test]

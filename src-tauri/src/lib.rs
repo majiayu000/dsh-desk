@@ -157,7 +157,7 @@ pub fn run() {
             }
         }))
         .menu(|app| {
-            let application = SubmenuBuilder::new(app, "DSH Desk")
+            let application = SubmenuBuilder::with_id(app, "application-menu", "DSH Desk")
                 .about(None)
                 .separator()
                 .text("open-plugins", "插件管理…")
@@ -210,7 +210,15 @@ pub fn run() {
         tauri::RunEvent::Ready if !cfg!(debug_assertions) => {
             updater::request_check(app.clone());
         }
-        tauri::RunEvent::ExitRequested { api, .. } => {
+        tauri::RunEvent::ExitRequested { code, api, .. }
+            if code != Some(tauri::RESTART_EXIT_CODE) && updater::is_installing(app) =>
+        {
+            eprintln!("refusing to exit while a verified update is being installed");
+            api.prevent_exit();
+        }
+        tauri::RunEvent::ExitRequested { code, api, .. }
+            if code != Some(tauri::RESTART_EXIT_CODE) =>
+        {
             if let Err(error) = app.state::<RuntimeHandle>().shutdown_blocking() {
                 eprintln!("refusing to exit while the Harness process tree may be alive: {error}");
                 api.prevent_exit();

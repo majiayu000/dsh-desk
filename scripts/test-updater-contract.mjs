@@ -15,10 +15,15 @@ const updateClient = read("src/update.ts");
 const viteConfig = read("vite.config.ts");
 const cargoPackage = cargoToml.match(/\[package\]\r?\n([\s\S]*?)(?:\r?\n\[|$)/)?.[1];
 const cargoVersion = cargoPackage?.match(/^version\s*=\s*"([^"]+)"\s*$/m)?.[1];
+const fixedWindowsUpdaterRevision = "622f02bf21858f0cff95419fc042ce02b8c6b18b";
 
 assert(cargoVersion === packageJson.version, "Cargo.toml version must match package.json");
 assert(tauriConfig.version === packageJson.version, "tauri.conf.json version must match package.json");
 assert(tauriConfig.bundle?.createUpdaterArtifacts === true, "Tauri updater artifacts must be enabled");
+assert(
+  cargoToml.includes(`rev = "${fixedWindowsUpdaterRevision}"`),
+  "The updater plugin must stay pinned to the upstream ShellExecuteW failure fix",
+);
 
 const updater = tauriConfig.plugins?.updater;
 assert(updater, "Tauri updater configuration is missing");
