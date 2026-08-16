@@ -7,7 +7,9 @@
 - [ ] 干净机器“下载到首任务”不剪切录屏已发布（本文件中 `[视频]` 占位符替换为真实链接）；
 - [x] 推荐版本 Release 完整（安装包、签名、SHA-256、latest.json）：`v0.1.0-alpha.11`
       已完成端到端发布验证，更新通道同步翻转（[Issue #20](https://github.com/majiayu000/dsh-desk/issues/20)）；
-- [ ] 兼容雷达可访问且显示最新运行：<https://majiayu000.github.io/dsh-desk/>。
+- [x] 兼容雷达可访问且显示最新运行：<https://majiayu000.github.io/dsh-desk/>
+      （静态文案已同步 `v0.1.0-alpha.11` 与全平台可用性，Pages 部署
+      [run #31944312603](https://github.com/majiayu000/dsh-desk/actions/runs/31944312603)）；
 
 固定链接：
 
