@@ -54,15 +54,15 @@
 
 | 平台 | 当前状态 | 签名状态 |
 |---|---|---|
-| macOS Apple Silicon 与 Intel | `v0.1.0-alpha.10` DMG（双架构） | Developer ID 签名、公证并 staple |
-| Windows x64 | `v0.1.0-alpha.10` NSIS 安装包 | Alpha 未签名（Release Notes 已说明 SmartScreen）；updater 工件独立签名 |
-| Linux x64 | `v0.1.0-alpha.10` AppImage / deb | 含 updater 签名 |
+| macOS Apple Silicon 与 Intel | `v0.1.0-alpha.11` DMG（双架构） | Developer ID 签名、公证并 staple |
+| Windows x64 | `v0.1.0-alpha.11` NSIS 安装包 | Alpha 未签名（Release Notes 已说明 SmartScreen）；updater 工件独立签名 |
+| Linux x64 | `v0.1.0-alpha.11` AppImage / deb | 含 updater 签名 |
 
-[`v0.1.0-alpha.10` 发布运行](https://github.com/majiayu000/dsh-desk/actions/runs/31919809876)的四个平台打包 job 全部通过（含 macOS 签名、公证与 DMG 内容验证）；最后的 `Publish atomic release` 步骤失败，修复后的链路将由全新 `v0.1.0-alpha.11` 标签端到端验证（[Issue #20](https://github.com/majiayu000/dsh-desk/issues/20)）。Release 工作流缺少生产证书时会直接失败，不会把未签名资产伪装成正式版。最新事实以[兼容矩阵](docs/compatibility.md)和具体 [Actions 运行记录](https://github.com/majiayu000/dsh-desk/actions)为准。
+[`v0.1.0-alpha.11` 发布运行](https://github.com/majiayu000/dsh-desk/actions/runs/31937135348)的六个 job 全部通过（含 macOS 签名、公证、DMG 内容验证与最后的 `Publish atomic release` 步骤），共发布 18 个安装包、updater、签名、SHA-256 与 `latest.json` 资产；更新通道随后原子重发布，并完成清单与全部唯一 updater 资产的验签（[通道运行](https://github.com/majiayu000/dsh-desk/actions/runs/31941091678)，验收证据见 [Issue #20](https://github.com/majiayu000/dsh-desk/issues/20)）。上一个 `v0.1.0-alpha.10` 标签四个打包 job 通过但发布步骤失败，修复后的链路已由 alpha.11 端到端验证。Release 工作流缺少生产证书时会直接失败，不会把未签名资产伪装成正式版。最新事实以[兼容矩阵](docs/compatibility.md)和具体 [Actions 运行记录](https://github.com/majiayu000/dsh-desk/actions)为准。
 
 ## 快速开始
 
-1. 从 [Releases](https://github.com/majiayu000/dsh-desk/releases) 下载对应平台安装包（当前推荐 `v0.1.0-alpha.10`）。
+1. 从 [Releases](https://github.com/majiayu000/dsh-desk/releases) 下载对应平台安装包（当前推荐 `v0.1.0-alpha.11`）。
 2. 安装并启动 DSH Desk；应用自动验证并启动内置 Harness。
 3. 官方 Harness 首次启动弹窗会要求配置可用模型；填写 API Key 并点击“保存并继续”，即可发送第一条任务。
 
@@ -72,7 +72,7 @@ DSH Desk 不读取或保存模型 API Key；首次启动弹窗通过 Harness 官
 
 ## 当前限制
 
-- 公开下载已覆盖 macOS 双架构、Windows 与 Linux（`v0.1.0-alpha.10`），仍处 Alpha；发布链路的端到端验证由 [Issue #20](https://github.com/majiayu000/dsh-desk/issues/20) 跟踪；
+- 公开下载已覆盖 macOS 双架构、Windows 与 Linux（`v0.1.0-alpha.11`），仍处 Alpha；发布链路已由 `v0.1.0-alpha.11` 端到端验证（[Issue #20](https://github.com/majiayu000/dsh-desk/issues/20)）；
 - Windows 安装包未做 Authenticode 签名，SmartScreen 提示属预期，安装前请核对 SHA-256；
 - 离线包包含固定 Node.js 与完整 Harness runtime，当前 DMG 约 215 MB；
 - DeepSeek Harness 仍处于快速变化阶段，每日兼容测试只能发现漂移，不能保证未来永不发生破坏性变更；

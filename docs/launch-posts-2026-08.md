@@ -5,8 +5,8 @@
 发布门禁（沿用 [launch-kit.md](launch-kit.md)，未满足前不发）：
 
 - [ ] 干净机器“下载到首任务”不剪切录屏已发布（本文件中 `[视频]` 占位符替换为真实链接）；
-- [ ] 推荐版本 Release 完整（安装包、签名、SHA-256、latest.json）；当前为 `v0.1.0-alpha.10`，
-      若发帖前 `v0.1.0-alpha.11`（[Issue #20](https://github.com/majiayu000/dsh-desk/issues/20)）已发布则整体替换；
+- [x] 推荐版本 Release 完整（安装包、签名、SHA-256、latest.json）：`v0.1.0-alpha.11`
+      已完成端到端发布验证，更新通道同步翻转（[Issue #20](https://github.com/majiayu000/dsh-desk/issues/20)）；
 - [ ] 兼容雷达可访问且显示最新运行：<https://majiayu000.github.io/dsh-desk/>。
 
 固定链接：
@@ -30,7 +30,7 @@
 >
 > Plugins get the same treatment: install review shows source, integrity, and lifecycle scripts before anything runs, with profile backup and rollback.
 >
-> `v0.1.0-alpha.10` is out for macOS (Developer ID signed + notarized), Windows (unsigned alpha; checksums and provenance attached), and Linux. Current limitations: Windows is not Authenticode-signed yet, and the "60 seconds to first task" figure is a target, not a benchmark — the clean-machine recording is the next launch gate.
+> `v0.1.0-alpha.11` is out for macOS (Developer ID signed + notarized), Windows (unsigned alpha; checksums and provenance attached), and Linux. Current limitations: Windows is not Authenticode-signed yet, and the "60 seconds to first task" figure is a target, not a benchmark — the clean-machine recording is the next launch gate.
 >
 > This is a community project, not an official DeepSeek product. I'd especially value clean-machine install reports and criticism of the update/security model.
 
