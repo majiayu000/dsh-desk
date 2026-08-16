@@ -3,25 +3,38 @@ name: Publish verified update channel
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Published v* release tag to verify and publish
+        required: true
+        type: string
+  workflow_call:
+    inputs:
+      release_tag:
+        description: Published v* release tag to verify and publish
+        required: true
+        type: string
 
 concurrency:
   group: release-update-channel
+  queue: max
   cancel-in-progress: false
 
 jobs:
   validate:
-    if: startsWith(github.event.release.tag_name, 'v')
+    if: inputs.release_tag != '' || startsWith(github.event.release.tag_name, 'v')
     runs-on: ubuntu-24.04
     outputs:
       channel-branch: ${{ steps.channel.outputs.branch }}
     permissions:
       contents: read
     env:
-      RELEASE_TAG: ${{ github.event.release.tag_name }}
+      RELEASE_TAG: ${{ inputs.release_tag || github.event.release.tag_name }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ${{ github.event.release.tag_name }}
+          ref: refs/tags/${{ inputs.release_tag || github.event.release.tag_name }}
           persist-credentials: false
       - name: Install Linux desktop dependencies
         run: >-
@@ -89,7 +102,7 @@ jobs:
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       CHANNEL_BRANCH: ${{ needs.validate.outputs.channel-branch }}
-      RELEASE_TAG: ${{ github.event.release.tag_name }}
+      RELEASE_TAG: ${{ inputs.release_tag || github.event.release.tag_name }}
     steps:
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:

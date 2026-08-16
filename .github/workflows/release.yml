@@ -279,7 +279,6 @@ jobs:
       name: production
       url: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}
     permissions:
-      actions: read
       contents: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -364,3 +363,12 @@ jobs:
           pnpm validate:update-manifest \
             release-staging/latest.json "$VERSION" "$GITHUB_REF_NAME" \
             release-staging/release.json
+
+  publish-update-channel:
+    name: Publish verified update channel
+    needs: publish
+    permissions:
+      contents: write
+    uses: ./.github/workflows/publish-update-channel.yml
+    with:
+      release_tag: ${{ github.ref_name }}

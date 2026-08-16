@@ -86,6 +86,9 @@ for (const token of [
   "pnpm release:artifacts manifest",
   "DSH_ALLOW_DRAFT_RELEASE: '1'",
   'gh release edit "$GITHUB_REF_NAME" --draft=false',
+  "publish-update-channel:",
+  "uses: ./.github/workflows/publish-update-channel.yml",
+  "release_tag: ${{ github.ref_name }}",
 ]) {
   assert(workflow.includes(token), `Release workflow is missing ${token}`);
 }
@@ -198,7 +201,19 @@ assert(
 const updateChannelWorkflow = read(".github/workflows/publish-update-channel.yml");
 assert(
   updateChannelWorkflow.includes("libwebkit2gtk-4.1-dev") &&
-    updateChannelWorkflow.includes("DSH_VERIFY_UPDATE_ARTIFACTS: '1'"),
+    updateChannelWorkflow.includes("DSH_VERIFY_UPDATE_ARTIFACTS: '1'") &&
+    updateChannelWorkflow.includes("workflow_dispatch:") &&
+    updateChannelWorkflow.includes("workflow_call:") &&
+    updateChannelWorkflow.includes("queue: max") &&
+    updateChannelWorkflow.includes(
+      "if: inputs.release_tag != '' || startsWith(github.event.release.tag_name, 'v')",
+    ) &&
+    updateChannelWorkflow.includes(
+      "ref: refs/tags/${{ inputs.release_tag || github.event.release.tag_name }}",
+    ) &&
+    updateChannelWorkflow.includes(
+      "RELEASE_TAG: ${{ inputs.release_tag || github.event.release.tag_name }}",
+    ),
   "Published updater verification must install native Rust test dependencies",
 );
 
