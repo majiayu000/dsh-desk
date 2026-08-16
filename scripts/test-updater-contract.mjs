@@ -75,6 +75,8 @@ for (const token of [
   "Verify Windows Authenticode state",
   "windows-release-metadata.json",
   "Windows Alpha signing notice",
+  'gh release view "$GITHUB_REF_NAME" --json databaseId',
+  ".browser_download_url = ($prefix + (.name | @uri))",
   "needs: preflight",
   "uploadUpdaterJson: false",
   "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
@@ -191,6 +193,13 @@ assert(
   !updatePreviewWorkflow.includes("uses: tauri-apps/tauri-action@v1") &&
     !updatePreviewWorkflow.includes("uses: softprops/action-gh-release@v2"),
   "Update preview publishing actions must be pinned to reviewed commits",
+);
+
+const updateChannelWorkflow = read(".github/workflows/publish-update-channel.yml");
+assert(
+  updateChannelWorkflow.includes("libwebkit2gtk-4.1-dev") &&
+    updateChannelWorkflow.includes("DSH_VERIFY_UPDATE_ARTIFACTS: '1'"),
+  "Published updater verification must install native Rust test dependencies",
 );
 
 console.log("Updater configuration, signing, release, and capability contracts passed.");

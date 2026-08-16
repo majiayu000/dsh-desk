@@ -63,7 +63,8 @@ try {
   });
   if (
     !stagedMac.some((file) => file.endsWith(`_${version}_aarch64.app.tar.gz`)) ||
-    !stagedMac.some((file) => file.endsWith(`_${version}_aarch64.app.tar.gz.sig`))
+    !stagedMac.some((file) => file.endsWith(`_${version}_aarch64.app.tar.gz.sig`)) ||
+    stagedMac.some((file) => basename(file).includes(" "))
   ) {
     throw new Error("macOS updater artifacts were not architecture-qualified before publishing");
   }

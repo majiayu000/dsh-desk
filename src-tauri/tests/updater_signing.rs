@@ -6,6 +6,27 @@ use minisign_verify::{PublicKey, Signature};
 #[test]
 #[ignore = "requires release signing secrets and is run by pnpm check:updater-key"]
 fn configured_public_key_verifies_the_release_signing_key() {
+    assert_private_key_is_not_exposed();
+    let payload_path = env::var("DSH_UPDATER_TEST_PAYLOAD")
+        .expect("DSH_UPDATER_TEST_PAYLOAD is required for the release key gate");
+    let signature_path = env::var("DSH_UPDATER_TEST_SIGNATURE")
+        .expect("DSH_UPDATER_TEST_SIGNATURE must accompany the updater test payload");
+    let encoded_signature = fs::read_to_string(signature_path).expect("signature must be readable");
+    verify_payload(&payload_path, &encoded_signature);
+}
+
+#[test]
+#[ignore = "downloads and verifies published updater artifacts"]
+fn provided_update_artifact_has_valid_signature() {
+    assert_private_key_is_not_exposed();
+    let payload_path = env::var("DSH_UPDATER_ARTIFACT")
+        .expect("DSH_UPDATER_ARTIFACT is required for published artifact verification");
+    let encoded_signature = env::var("DSH_UPDATER_ARTIFACT_SIGNATURE")
+        .expect("DSH_UPDATER_ARTIFACT_SIGNATURE must accompany the published artifact");
+    verify_payload(&payload_path, &encoded_signature);
+}
+
+fn assert_private_key_is_not_exposed() {
     for name in [
         "TAURI_SIGNING_PRIVATE_KEY",
         "TAURI_SIGNING_PRIVATE_KEY_PATH",
@@ -16,11 +37,9 @@ fn configured_public_key_verifies_the_release_signing_key() {
             "{name} must not be exposed to Cargo tests"
         );
     }
-    let payload_path = env::var("DSH_UPDATER_TEST_PAYLOAD")
-        .expect("DSH_UPDATER_TEST_PAYLOAD is required for the release key gate");
-    let signature_path = env::var("DSH_UPDATER_TEST_SIGNATURE")
-        .expect("DSH_UPDATER_TEST_SIGNATURE must accompany the updater test payload");
+}
 
+fn verify_payload(payload_path: &str, encoded_signature: &str) {
     let config: serde_json::Value = serde_json::from_str(include_str!("../tauri.conf.json"))
         .expect("tauri.conf.json must be valid JSON");
     let encoded_public_key = config
@@ -34,7 +53,6 @@ fn configured_public_key_verifies_the_release_signing_key() {
         std::str::from_utf8(&public_key_text).expect("decoded updater public key must be UTF-8"),
     )
     .expect("decoded updater public key must be valid minisign data");
-    let encoded_signature = fs::read_to_string(signature_path).expect("signature must be readable");
     let signature_text = STANDARD
         .decode(encoded_signature.trim())
         .expect("updater signature must use valid base64");
@@ -42,7 +60,7 @@ fn configured_public_key_verifies_the_release_signing_key() {
         std::str::from_utf8(&signature_text).expect("decoded updater signature must be UTF-8"),
     )
     .expect("signature must be valid minisign data");
-    let payload = fs::read(payload_path).expect("signed updater test payload must be readable");
+    let payload = fs::read(payload_path).expect("signed updater payload must be readable");
 
     public_key
         .verify(&payload, &signature, false)

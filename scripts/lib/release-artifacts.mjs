@@ -67,10 +67,11 @@ export function stageReleaseArtifacts(platform, bundleRoot, outputDirectory, opt
         `${platform} release requires exactly one ${suffix} artifact, found ${matches.length}`,
       );
     }
-    const destinationName =
+    const destinationName = (
       platform === "macos" && suffix.startsWith(".app.tar.gz")
         ? `DSH Desk_${version}_${macArchitecture}${suffix}`
-        : basename(matches[0]);
+        : basename(matches[0])
+    ).replaceAll(" ", ".");
     const destination = join(destinationRoot, destinationName);
     if (existsSync(destination)) {
       throw new Error(`Refusing to overwrite staged release artifact: ${destination}`);
