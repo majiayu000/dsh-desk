@@ -43,6 +43,8 @@ for (const token of [
   "record_download",
   "download_ready",
   "auto_download",
+  ".updater_builder()",
+  ".on_before_exit(|| {})",
 ]) {
   assert(updaterSource.includes(token), `Updater state machine is missing ${token}`);
 }

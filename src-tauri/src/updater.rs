@@ -354,8 +354,14 @@ pub fn request_check(app: AppHandle) {
 
     tauri::async_runtime::spawn(async move {
         let result = async {
+            // The pinned upstream revision validates ShellExecuteW, but its default Tauri cleanup
+            // hook still runs before that validation. Keep the hook non-destructive so a failed
+            // Windows installer launch can return to the retry UI; a successful launch exits the
+            // process immediately and lets Windows release the process resources.
             let update = app
-                .updater()
+                .updater_builder()
+                .on_before_exit(|| {})
+                .build()
                 .map_err(|error| format!("无法初始化更新器：{error}"))?
                 .check()
                 .await
