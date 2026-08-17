@@ -100,7 +100,7 @@ for (const token of [
   ".browser_download_url = ($prefix + (.name | @uri))",
   "needs: preflight",
   "uploadUpdaterJson: false",
-  "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+  "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a",
   "actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c",
   "merge-multiple: true",
   "environment:\n      name: production",
@@ -130,6 +130,7 @@ assert(
 );
 assert(
   !workflow.includes("actions/upload-artifact@v4") &&
+    !workflow.includes("actions/upload-artifact@v7") &&
     !workflow.includes("actions/download-artifact@v8"),
   "Release artifact actions must be pinned to reviewed commits",
 );
@@ -175,7 +176,8 @@ assert(
   "Unsigned preview builds must not consume repository secrets",
 );
 assert(
-  !previewWorkflow.includes("actions/upload-artifact@v4"),
+  !previewWorkflow.includes("actions/upload-artifact@v4") &&
+    !previewWorkflow.includes("actions/upload-artifact@v7"),
   "Preview artifact upload action must be pinned to a reviewed commit",
 );
 
@@ -205,6 +207,7 @@ for (const token of [
   "node scripts/validate-update-manifest.mjs",
   "tag_name: preview-channel",
   "overwrite_files: true",
+  "softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228",
 ]) {
   assert(updatePreviewWorkflow.includes(token), `Update preview workflow is missing ${token}`);
 }
@@ -215,7 +218,8 @@ assert(
 );
 assert(
   !updatePreviewWorkflow.includes("uses: tauri-apps/tauri-action@v1") &&
-    !updatePreviewWorkflow.includes("uses: softprops/action-gh-release@v2"),
+    !updatePreviewWorkflow.includes("uses: softprops/action-gh-release@v2") &&
+    !updatePreviewWorkflow.includes("uses: softprops/action-gh-release@v3"),
   "Update preview publishing actions must be pinned to reviewed commits",
 );
 
