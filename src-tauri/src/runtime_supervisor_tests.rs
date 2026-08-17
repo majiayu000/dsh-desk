@@ -84,7 +84,11 @@ fn confirmed_shutdown_remains_successful_after_the_worker_stops() {
     assert_eq!(handle.shutdown_blocking(), Ok(()));
 }
 
-fn plugin_result(success: bool, rolled_back: bool, profile_unrecoverable: bool) -> PluginCommandResult {
+fn plugin_result(
+    success: bool,
+    rolled_back: bool,
+    profile_unrecoverable: bool,
+) -> PluginCommandResult {
     PluginCommandResult {
         success,
         exit_code: None,
@@ -113,6 +117,18 @@ fn successful_rollback_still_restarts_the_restored_profile() {
 
 #[test]
 fn unrecoverable_profile_does_not_restart_the_runtime() {
+    assert!(!should_restart_after_plugin(
+        true,
+        &Ok(plugin_result(false, false, true)),
+    ));
+}
+
+#[test]
+fn helper_timeouts_must_surface_as_plugin_results_not_supervisor_errors() {
+    assert!(
+        should_restart_after_plugin(true, &Err("helper timed out".to_string())),
+        "Err still restarts a possibly dirty profile; timeouts must return Ok with restore flags"
+    );
     assert!(!should_restart_after_plugin(
         true,
         &Ok(plugin_result(false, false, true)),
@@ -156,9 +172,29 @@ fn starting_a_new_runtime_requires_a_fresh_shutdown_handshake() {
 }
 
 #[test]
+fn restart_invalidates_a_stale_shutdown_confirmation() {
+    let (handle, command_rx) = RuntimeHandle::new();
+    handle
+        .shutdown_confirmed
+        .store(true, std::sync::atomic::Ordering::Release);
+    handle
+        .restart()
+        .expect("restart must queue while the supervisor channel is open");
+    assert_eq!(
+        handle.shutdown_blocking_with_timeout(Duration::ZERO),
+        Err("runtime supervisor did not accept shutdown before the deadline".to_string()),
+        "a queued restart must not let app quit skip the process-tree handshake"
+    );
+    drop(command_rx);
+}
+
+#[test]
 fn force_stop_retries_exhaust_at_the_deadline() {
     let window = Duration::from_secs(15);
     assert!(!stop_retries_exhausted(Duration::from_secs(14), window));
     assert!(stop_retries_exhausted(window, window));
-    assert!(stop_retries_exhausted(window + Duration::from_millis(1), window));
+    assert!(stop_retries_exhausted(
+        window + Duration::from_millis(1),
+        window
+    ));
 }

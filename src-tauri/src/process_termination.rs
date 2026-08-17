@@ -1,5 +1,6 @@
 use std::{
     process::Child,
+    sync::mpsc,
     thread,
     time::{Duration, Instant},
 };
@@ -150,8 +151,8 @@ pub(crate) fn run_command_with_timeout(
         .stderr
         .take()
         .expect("piped stderr missing from helper process");
-    let stdout = thread::spawn(move || read_all(stdout));
-    let stderr = thread::spawn(move || read_all(stderr));
+    let stdout_rx = spawn_output_reader(stdout);
+    let stderr_rx = spawn_output_reader(stderr);
 
     let mut tree = ProcessTree::attach(child)?;
     let deadline = Instant::now() + timeout;
@@ -172,19 +173,47 @@ pub(crate) fn run_command_with_timeout(
         }
     };
 
-    let stdout = stdout
-        .join()
-        .map_err(|_| "helper stdout reader panicked".to_string())?
-        .map_err(|error| format!("failed to read helper stdout: {error}"))?;
-    let stderr = stderr
-        .join()
-        .map_err(|_| "helper stderr reader panicked".to_string())?
-        .map_err(|error| format!("failed to read helper stderr: {error}"))?;
+    let _ = stop_process_tree(&mut tree, Duration::from_secs(1));
+    let stdout = recv_helper_output(stdout_rx, deadline, "stdout")?;
+    let stderr = recv_helper_output(stderr_rx, deadline, "stderr")?;
     Ok(std::process::Output {
         status,
         stdout,
         stderr,
     })
+}
+
+fn spawn_output_reader(
+    reader: impl std::io::Read + Send + 'static,
+) -> mpsc::Receiver<std::io::Result<Vec<u8>>> {
+    let (tx, rx) = mpsc::channel();
+    thread::spawn(move || {
+        let _ = tx.send(read_all(reader));
+    });
+    rx
+}
+
+fn recv_helper_output(
+    rx: mpsc::Receiver<std::io::Result<Vec<u8>>>,
+    deadline: Instant,
+    label: &str,
+) -> Result<Vec<u8>, String> {
+    let remaining = deadline.saturating_duration_since(Instant::now());
+    let wait = if remaining.is_zero() {
+        Duration::from_millis(100)
+    } else {
+        remaining
+    };
+    match rx.recv_timeout(wait) {
+        Ok(Ok(bytes)) => Ok(bytes),
+        Ok(Err(error)) => Err(format!("failed to read helper {label}: {error}")),
+        Err(mpsc::RecvTimeoutError::Timeout) => Err(format!(
+            "helper {label} drain exceeded the command deadline"
+        )),
+        Err(mpsc::RecvTimeoutError::Disconnected) => Err(format!(
+            "helper {label} reader stopped before producing output"
+        )),
+    }
 }
 
 fn read_all(mut reader: impl std::io::Read) -> std::io::Result<Vec<u8>> {
@@ -466,6 +495,22 @@ mod tests {
         assert!(output.status.success());
         assert_eq!(String::from_utf8_lossy(&output.stdout), "out\n");
         assert_eq!(String::from_utf8_lossy(&output.stderr), "err\n");
+    }
+
+    #[test]
+    fn timed_helper_does_not_block_on_inherited_pipes() {
+        let mut command = Command::new("sh");
+        command.args(["-c", "(sleep 30) & exit 0"]);
+
+        let started = Instant::now();
+        let output = run_command_with_timeout(&mut command, Duration::from_secs(5))
+            .expect("the direct helper child already exited");
+
+        assert!(output.status.success());
+        assert!(
+            started.elapsed() < Duration::from_secs(4),
+            "inherited descendant pipes must not block the supervisor thread"
+        );
     }
 
     #[test]

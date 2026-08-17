@@ -186,15 +186,32 @@ export function assertTaskSnapshot(value: TaskSnapshot): void {
   if (value.errorCode !== undefined && !/^[a-z0-9-]{1,64}$/u.test(value.errorCode)) throw new Error('Invalid errorCode')
 }
 
-function assertHeader(header: EnvelopeHeader, now: number): void {
+export class AuthenticatedEnvelopeRejectedError extends Error {
+  readonly sequence: number
+
+  constructor(sequence: number, message: string) {
+    super(message)
+    this.name = 'AuthenticatedEnvelopeRejectedError'
+    this.sequence = sequence
+  }
+}
+
+function assertHeaderStructure(header: EnvelopeHeader): void {
   if (header.protocolVersion !== 1 || header.kind !== 'task.snapshot') throw new Error('Invalid envelope kind')
   identifier(header.messageId, 'messageId')
   identifier(header.mailboxId, 'mailboxId')
   identifier(header.senderDeviceId, 'senderDeviceId')
   if (!Number.isSafeInteger(header.sequence) || header.sequence < 1) throw new Error('Invalid sequence')
-  const createdAt = isoTimestamp(header.createdAt, 'createdAt')
-  const expiresAt = isoTimestamp(header.expiresAt, 'expiresAt')
-  if (expiresAt <= now || expiresAt - createdAt > 300_000) throw new Error('Envelope is expired or too long')
+  isoTimestamp(header.createdAt, 'createdAt')
+  isoTimestamp(header.expiresAt, 'expiresAt')
+}
+
+function assertHeaderLifetime(header: EnvelopeHeader, now: number): void {
+  const createdAt = Date.parse(header.createdAt)
+  const expiresAt = Date.parse(header.expiresAt)
+  if (expiresAt <= now || expiresAt - createdAt > 300_000) {
+    throw new AuthenticatedEnvelopeRejectedError(header.sequence, 'Envelope is expired or too long')
+  }
 }
 
 export async function encryptTaskSnapshot(
@@ -214,7 +231,8 @@ export async function encryptTaskSnapshot(
     createdAt: new Date(now).toISOString(),
     expiresAt: new Date(now + 120_000).toISOString(),
   }
-  assertHeader(header, now)
+  assertHeaderStructure(header)
+  assertHeaderLifetime(header, now)
   const iv = crypto.getRandomValues(new Uint8Array(12))
   const ciphertext = await crypto.subtle.encrypt(
     { name: 'AES-GCM', iv, additionalData: encoder.encode(canonicalHeader(header)), tagLength: 128 },
@@ -230,7 +248,7 @@ export async function decryptTaskSnapshot(
   expected: { mailboxId: string; senderDeviceId: string; afterSequence: number },
   now = Date.now(),
 ): Promise<TaskSnapshot> {
-  assertHeader(envelope.header, now)
+  assertHeaderStructure(envelope.header)
   if (envelope.header.mailboxId !== expected.mailboxId || envelope.header.senderDeviceId !== expected.senderDeviceId) {
     throw new Error('Envelope identity mismatch')
   }
@@ -242,6 +260,13 @@ export async function decryptTaskSnapshot(
     tagLength: 128,
   }, key, decodeBase64Url(envelope.ciphertext))
   const snapshot = JSON.parse(decoder.decode(plaintext)) as TaskSnapshot
-  assertTaskSnapshot(snapshot)
+  try {
+    assertTaskSnapshot(snapshot)
+    assertHeaderLifetime(envelope.header, now)
+  } catch (error) {
+    if (error instanceof AuthenticatedEnvelopeRejectedError) throw error
+    const message = error instanceof Error ? error.message : 'Authenticated envelope was rejected'
+    throw new AuthenticatedEnvelopeRejectedError(envelope.header.sequence, message)
+  }
   return snapshot
 }

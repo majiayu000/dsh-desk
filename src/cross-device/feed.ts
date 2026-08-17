@@ -1,4 +1,5 @@
 import {
+  AuthenticatedEnvelopeRejectedError,
   decryptTaskSnapshot,
   type EncryptedEnvelope,
   type TaskSnapshot,
@@ -43,10 +44,13 @@ export async function applyEnvelopes(
       )
       tasks.set(snapshot.taskId, snapshot)
       accepted += 1
-    } catch {
+      lastSequence = envelope.header.sequence
+    } catch (error) {
       skipped += 1
+      if (error instanceof AuthenticatedEnvelopeRejectedError) {
+        lastSequence = error.sequence
+      }
     }
-    lastSequence = envelope.header.sequence
   }
   return { lastSequence, accepted, skipped }
 }

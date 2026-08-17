@@ -70,6 +70,37 @@ test('an expired envelope no longer wedges the poll cursor', async () => {
   assert.equal(tasks.get('task-identity-feed00002')?.alias, '有效快照')
 })
 
+test('an unauthenticated high sequence does not move the durable cursor', async () => {
+  const session = await establishSession('feed00')
+  const forged: EncryptedEnvelope = {
+    ...(await encryptTaskSnapshot(session.desktopKey, snapshot('task-identity-feed00000', '伪造游标'), {
+      mailboxId: session.mailboxId,
+      senderDeviceId: session.desktopId,
+      sequence: 2,
+    }, now)),
+  }
+  forged.header = { ...forged.header, sequence: 9_999 }
+  forged.ciphertext = `A${forged.ciphertext.slice(1)}`
+  const valid = await encryptTaskSnapshot(session.desktopKey, snapshot('task-identity-feed00009', '真实快照'), {
+    mailboxId: session.mailboxId,
+    senderDeviceId: session.desktopId,
+    sequence: 2,
+  }, now)
+
+  const tasks = new Map<string, TaskSnapshot>()
+  const result = await applyEnvelopes(
+    { key: session.phoneKey, mailboxId: session.mailboxId, senderDeviceId: session.desktopId, lastSequence: 1 },
+    tasks,
+    [forged, valid],
+    now + 1_000,
+  )
+
+  assert.equal(result.accepted, 1)
+  assert.equal(result.skipped, 1)
+  assert.equal(result.lastSequence, 2, 'a forged header sequence must not hide later authentic messages')
+  assert.equal(tasks.get('task-identity-feed00009')?.alias, '真实快照')
+})
+
 test('a tampered envelope is skipped without starving newer messages', async () => {
   const session = await establishSession('feed02')
   const poisoned: EncryptedEnvelope = {
