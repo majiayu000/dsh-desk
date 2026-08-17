@@ -50,7 +50,7 @@ fn redact_label(line: &str, label: &str) -> String {
     let mut index = 0;
     while let Some(relative) = lower[index..].find(label) {
         let start = index + relative;
-        let before = start.checked_sub(1).and_then(|offset| line[offset..].chars().next());
+        let before = line[..start].chars().next_back();
         if !is_label_boundary(before) {
             output.push_str(&line[index..start + label.len()]);
             index = start + label.len();
@@ -78,7 +78,8 @@ fn redact_label(line: &str, label: &str) -> String {
         output.push(separator);
         output.push_str(&after_separator[..padding_len]);
         output.push_str(redacted_value.expect("checked above"));
-        index = start + label.len() + separator_offset + separator.len_utf8() + padding_len + consumed;
+        index =
+            start + label.len() + separator_offset + separator.len_utf8() + padding_len + consumed;
     }
     output.push_str(&line[index..]);
     output
@@ -102,13 +103,12 @@ fn take_secret_value(value: &str) -> (Option<&'static str>, usize) {
         let rest = &value[mark.len_utf8()..];
         let end = rest.find(mark).unwrap_or(rest.len());
         let closing = usize::from(rest.get(end..).is_some_and(|tail| tail.starts_with(mark)));
-        return (
-            Some(r#""[redacted]""#),
-            mark.len_utf8() + end + closing,
-        );
+        return (Some(r#""[redacted]""#), mark.len_utf8() + end + closing);
     }
     let end = value
-        .find(|character: char| character.is_whitespace() || matches!(character, ',' | ';' | '}' | ']'))
+        .find(|character: char| {
+            character.is_whitespace() || matches!(character, ',' | ';' | '}' | ']')
+        })
         .unwrap_or(value.len());
     if end == 0 {
         (None, 0)
@@ -152,7 +152,10 @@ mod tests {
         let line = "Authorization: Bearer secret-token-value api_key=sk-abcdefghijklmnopqrstuvwxyz";
         let redacted = redact_log_line(line);
         assert!(!redacted.contains("secret-token-value"), "{redacted}");
-        assert!(!redacted.contains("sk-abcdefghijklmnopqrstuvwxyz"), "{redacted}");
+        assert!(
+            !redacted.contains("sk-abcdefghijklmnopqrstuvwxyz"),
+            "{redacted}"
+        );
         assert!(redacted.contains("[redacted]"), "{redacted}");
     }
 
@@ -170,6 +173,13 @@ mod tests {
         let redacted = redact_log_line(&line);
         assert!(redacted.contains("[redacted long output]"));
         assert!(redacted.len() < line.len());
+    }
+
+    #[test]
+    fn redacts_secret_labels_after_multibyte_characters() {
+        let redacted = redact_log_line("密token=super-secret");
+        assert!(!redacted.contains("super-secret"), "{redacted}");
+        assert!(redacted.contains("[redacted]"), "{redacted}");
     }
 
     #[test]

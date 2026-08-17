@@ -315,12 +315,21 @@ pub(crate) fn execute_plugin_command(
         .env("DSH_HOME", &home)
         .env("PATH", &path)
         .env("NO_COLOR", "1");
-    let output = run_command_with_timeout(&mut plugin_command, PLUGIN_COMMAND_TIMEOUT)
-        .map_err(|error| format!("无法运行原版 dsh plugin：{error}"))?;
-
-    let mut success = output.status.success();
-    let mut exit_code = output.status.code();
-    let mut stderr = String::from_utf8_lossy(&output.stderr).into_owned();
+    let command_result = run_command_with_timeout(&mut plugin_command, PLUGIN_COMMAND_TIMEOUT);
+    let (mut success, mut exit_code, stdout, mut stderr) = match command_result {
+        Ok(output) => (
+            output.status.success(),
+            output.status.code(),
+            String::from_utf8_lossy(&output.stdout).into_owned(),
+            String::from_utf8_lossy(&output.stderr).into_owned(),
+        ),
+        Err(error) => (
+            false,
+            None,
+            String::new(),
+            format!("无法运行原版 dsh plugin：{error}"),
+        ),
+    };
     if success && request.is_mutating() {
         let mut validation_command = harness_command(node, entry);
         validation_command
@@ -329,7 +338,8 @@ pub(crate) fn execute_plugin_command(
             .env("DSH_HOME", &home)
             .env("PATH", &path)
             .env("NO_COLOR", "1");
-        let validation = run_command_with_timeout(&mut validation_command, PLUGIN_VALIDATION_TIMEOUT);
+        let validation =
+            run_command_with_timeout(&mut validation_command, PLUGIN_VALIDATION_TIMEOUT);
         match validation {
             Ok(validation) if !validation.status.success() => {
                 success = false;
@@ -366,7 +376,7 @@ pub(crate) fn execute_plugin_command(
     Ok(PluginCommandResult {
         success,
         exit_code,
-        stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
+        stdout,
         stderr,
         rolled_back,
         profile_unrecoverable,

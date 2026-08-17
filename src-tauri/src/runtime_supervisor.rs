@@ -104,6 +104,7 @@ impl RuntimeHandle {
     }
 
     pub fn restart(&self) -> Result<(), String> {
+        self.invalidate_shutdown_confirmation();
         self.command_tx
             .send(RuntimeCommand::Restart)
             .map_err(|_| "runtime supervisor is not running".to_string())
@@ -276,22 +277,32 @@ pub fn spawn_worker(
                             message.push_str(&format!(
                                 "其残留子进程未能完全终止，可能需要手动清理：{stop_error}。"
                             ));
+                            handle.update(
+                                &app,
+                                RuntimeStatus {
+                                    phase: RuntimePhase::Failed,
+                                    url: None,
+                                    error_code: Some("runtime-exited".to_string()),
+                                    message: Some(message),
+                                },
+                            );
+                            let _ = restore_bootstrap(&app, handle.clone());
+                        } else {
+                            running = None;
+                            handle.update(
+                                &app,
+                                RuntimeStatus {
+                                    phase: RuntimePhase::Failed,
+                                    url: None,
+                                    error_code: Some("runtime-exited".to_string()),
+                                    message: Some(message),
+                                },
+                            );
+                            let _ = restore_bootstrap(&app, handle.clone());
                         }
-                        running = None;
-                        handle.update(
-                            &app,
-                            RuntimeStatus {
-                                phase: RuntimePhase::Failed,
-                                url: None,
-                                error_code: Some("runtime-exited".to_string()),
-                                message: Some(message),
-                            },
-                        );
-                        let _ = restore_bootstrap(&app, handle.clone());
                     }
                     Ok(None) => {}
                     Err(error) => {
-                        running = None;
                         handle.update(
                             &app,
                             RuntimeStatus {
@@ -539,7 +550,10 @@ fn start_runtime(app: &tauri::AppHandle) -> Result<RunningRuntime, RuntimeFailur
                         if let Err(stop_error) = stop_process_tree_until_dead(&mut child) {
                             return Err(RuntimeFailure {
                                 code: error.code,
-                                message: format!("{} 残留进程未能完全终止：{stop_error}", error.message),
+                                message: format!(
+                                    "{} 残留进程未能完全终止：{stop_error}",
+                                    error.message
+                                ),
                             });
                         }
                         return Err(error);
@@ -639,7 +653,11 @@ fn spawn_output_reader(
 
 fn write_log(log: &Arc<Mutex<File>>, stream: &str, line: &str) {
     if let Ok(mut file) = log.lock() {
-        let _ = writeln!(file, "[{stream}] {}", crate::log_redact::redact_log_line(line));
+        let _ = writeln!(
+            file,
+            "[{stream}] {}",
+            crate::log_redact::redact_log_line(line)
+        );
     }
 }
 
