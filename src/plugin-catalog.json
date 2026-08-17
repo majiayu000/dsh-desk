@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "harnessVersion": "0.1.0-rc.6",
-  "desktopVersion": "0.1.0-alpha.11",
+  "desktopVersion": "0.1.0-alpha.12",
   "entries": [
     {
       "id": "web-search",
