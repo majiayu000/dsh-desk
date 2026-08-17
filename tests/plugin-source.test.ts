@@ -36,6 +36,24 @@ test('a raw package spec is left unchanged', () => {
   assert.deepEqual(parsePluginInstallInput('  '), { operand: '', fromCommand: false })
 })
 
+test('quoted local paths keep spaces inside the operand', () => {
+  assert.deepEqual(
+    parsePluginInstallInput('dsh plugin add "file:/Users/Alice Smith/plugin"'),
+    { operand: 'file:/Users/Alice Smith/plugin', fromCommand: true },
+  )
+  assert.equal(
+    parsePluginInstallInput("dsh plugin --profile web add 'file:/Users/Alice Smith/plugin'").operand,
+    'file:/Users/Alice Smith/plugin',
+  )
+})
+
+test('lookbehind-free matching still rejects a prefixed identifier', () => {
+  assert.deepEqual(
+    parsePluginInstallInput('notdsh plugin add @scope/plugin'),
+    { operand: 'notdsh plugin add @scope/plugin', fromCommand: false },
+  )
+})
+
 test('clipboard detection only fires for an explicit plugin add command', () => {
   assert.equal(clipboardPluginSource('dsh plugin --profile web add @scope/plugin'), '@scope/plugin')
   assert.equal(clipboardPluginSource('@scope/plugin'), null)
