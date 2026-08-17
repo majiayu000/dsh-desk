@@ -34,6 +34,11 @@ description = "Run an original dsh plugin add, update, remove, or why command."
 commands.allow = ["run_plugin_command"]
 
 [[permission]]
+identifier = "allow-open-plugin-registry"
+description = "Open the public community plugin registry in the system browser."
+commands.allow = ["open_plugin_registry"]
+
+[[permission]]
 identifier = "allow-get-update-status"
 description = "Read signed desktop update status."
 commands.allow = ["get_update_status"]
@@ -75,6 +80,7 @@ permissions = [
   "allow-list-plugins",
   "allow-inspect-plugin-source",
   "allow-run-plugin-command",
+  "allow-open-plugin-registry",
 ]
 
 [[set]]

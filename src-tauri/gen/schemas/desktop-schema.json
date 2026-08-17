@@ -183,10 +183,10 @@
           "markdownDescription": "Commands for the local startup and recovery page.\n#### This permission set includes:\n\n- `allow-get-runtime-status`\n- `allow-restart-runtime`\n- `allow-open-diagnostic-folder`\n- `allow-get-desktop-version`"
         },
         {
-          "description": "Commands for the local plugin manager window.\n#### This permission set includes:\n\n- `allow-list-plugins`\n- `allow-inspect-plugin-source`\n- `allow-run-plugin-command`",
+          "description": "Commands for the local plugin manager window.\n#### This permission set includes:\n\n- `allow-list-plugins`\n- `allow-inspect-plugin-source`\n- `allow-run-plugin-command`\n- `allow-open-plugin-registry`",
           "type": "string",
           "const": "desktop-plugins",
-          "markdownDescription": "Commands for the local plugin manager window.\n#### This permission set includes:\n\n- `allow-list-plugins`\n- `allow-inspect-plugin-source`\n- `allow-run-plugin-command`"
+          "markdownDescription": "Commands for the local plugin manager window.\n#### This permission set includes:\n\n- `allow-list-plugins`\n- `allow-inspect-plugin-source`\n- `allow-run-plugin-command`\n- `allow-open-plugin-registry`"
         },
         {
           "description": "Commands for the local software update window.\n#### This permission set includes:\n\n- `allow-get-update-status`\n- `allow-check-for-updates`\n- `allow-download-update`\n- `allow-install-update`\n- `allow-set-update-auto-download`",
@@ -247,6 +247,12 @@
           "type": "string",
           "const": "allow-open-diagnostic-folder",
           "markdownDescription": "Open the local diagnostic log folder."
+        },
+        {
+          "description": "Open the public community plugin registry in the system browser.",
+          "type": "string",
+          "const": "allow-open-plugin-registry",
+          "markdownDescription": "Open the public community plugin registry in the system browser."
         },
         {
           "description": "Restart the bundled Harness runtime.",
