@@ -9,23 +9,22 @@ DSH Desk 将桌面壳、Node、DeepSeek Harness 和 Web UI 作为一个固定版
 
 | DSH Desk | DeepSeek Harness | Node | macOS arm64 | Windows x64 | Linux x64 |
 |---|---|---|---|---|---|
-| `0.1.0-alpha.11` | `0.1.0-rc.6` | `24.x` | 已验证 | 已验证 | 已验证 |
+| `0.1.0-alpha.12` | `0.1.0-rc.6` | `24.x` | 已验证 | 已验证 | 已验证 |
 
 这里的“已验证”指该固定组合通过三平台 CI 契约：TypeScript/Rust 构建、固定 DSH 版本、严格
-loopback 健康检查、离线 runtime 与插件 parity。最近一次公开运行（2026-08-16，含 PR #23）：
-[GitHub Actions #31941075574](https://github.com/majiayu000/dsh-desk/actions/runs/31941075574)。
+loopback 健康检查、离线 runtime 与插件 parity。最近一次公开运行（2026-08-17，版本准备 PR #35）：
+[GitHub Actions #31998521392](https://github.com/majiayu000/dsh-desk/actions/runs/31998521392)。
 每日兼容检查（含 npm `latest` 候选）最近一次成功运行：
-[GitHub Actions #31923751715](https://github.com/majiayu000/dsh-desk/actions/runs/31923751715)。
+[GitHub Actions #31990498493](https://github.com/majiayu000/dsh-desk/actions/runs/31990498493)。
 
-`v0.1.0-alpha.11` 已完成端到端发布验证：Release 运行的六个 job（preflight、macOS arm64/x64、
-Windows x64、Linux x64、`Publish atomic release`）全部成功，共发布 18 个安装包、updater、签名、
-SHA-256 与 `latest.json` 资产；随后更新通道工作流原子更新 manifest，并对全部唯一 updater 资产
-完成下载与验签：
-[Release v0.1.0-alpha.11](https://github.com/majiayu000/dsh-desk/releases/tag/v0.1.0-alpha.11) ·
-[Release Actions #31937135348](https://github.com/majiayu000/dsh-desk/actions/runs/31937135348) ·
-[Channel Actions #31941091678](https://github.com/majiayu000/dsh-desk/actions/runs/31941091678)。
+`v0.1.0-alpha.12` 已完成端到端发布验证：preflight、macOS arm64/x64、Windows x64、Linux x64、
+`Publish atomic release` 以及嵌套的 update-channel validate/publish 全部成功，共发布 18 个安装包、
+updater、签名、SHA-256 与 `latest.json` 资产；`update-channel-alpha` 原子更新到
+`0.1.0-alpha.12`（提交 `69d55f51c94765c8fea7b0c5ada4c852211a8cbc`），通道含 9 个平台键：
+[Release v0.1.0-alpha.12](https://github.com/majiayu000/dsh-desk/releases/tag/v0.1.0-alpha.12) ·
+[Release Actions #31999103490](https://github.com/majiayu000/dsh-desk/actions/runs/31999103490)。
 macOS 含 Developer ID 签名、notarization 与 DMG 内容验证；Windows 为无签名的 Alpha 安装包。
-验收清单见 [Issue #20](https://github.com/majiayu000/dsh-desk/issues/20)。
+验收清单见 [Issue #34](https://github.com/majiayu000/dsh-desk/issues/34)。
 
 ### 历史证据
 

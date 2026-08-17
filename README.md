@@ -51,11 +51,11 @@ DeepSeek Harness already provides the agent runtime, web UI, sessions, tools, ap
 
 | Platform | Public status | Signing status |
 |---|---|---|
-| macOS Apple Silicon & Intel | `v0.1.0-alpha.11` DMG (both architectures) | Developer ID signed, notarized, stapled |
-| Windows x64 | `v0.1.0-alpha.11` NSIS installer | Unsigned alpha (SmartScreen notice); updater payloads independently signed |
-| Linux x64 | `v0.1.0-alpha.11` AppImage & deb | Updater signatures included |
+| macOS Apple Silicon & Intel | `v0.1.0-alpha.12` DMG (both architectures) | Developer ID signed, notarized, stapled |
+| Windows x64 | `v0.1.0-alpha.12` NSIS installer | Unsigned alpha (SmartScreen notice); updater payloads independently signed |
+| Linux x64 | `v0.1.0-alpha.12` AppImage & deb | Updater signatures included |
 
-The [`v0.1.0-alpha.11` release run](https://github.com/majiayu000/dsh-desk/actions/runs/31937135348) completed all six jobs — preflight, the four platform bundles (including macOS signing, notarization, and verify-from-DMG), and the final `Publish atomic release` step — and published 18 installer, updater, signature, SHA-256, and `latest.json` assets. The update channel was then republished atomically with manifest and full payload verification ([channel run](https://github.com/majiayu000/dsh-desk/actions/runs/31941091678), acceptance evidence in [issue #20](https://github.com/majiayu000/dsh-desk/issues/20)). The previous `v0.1.0-alpha.10` run had passed all four bundle jobs but failed its publish step; the repaired pipeline is now verified end to end. Windows alpha releases may be published without Authenticode and say so in their Release Notes. See the live [compatibility radar](https://majiayu000.github.io/dsh-desk/), [compatibility evidence](docs/compatibility.md), and individual [Actions runs](https://github.com/majiayu000/dsh-desk/actions) for the latest facts.
+The [`v0.1.0-alpha.12` release run](https://github.com/majiayu000/dsh-desk/actions/runs/31999103490) completed preflight, the four platform bundles (including macOS signing, notarization, and verify-from-DMG), `Publish atomic release`, and the nested update-channel validate/publish jobs. It published 18 installer, updater, signature, SHA-256, and `latest.json` assets; the alpha channel was then updated atomically to `0.1.0-alpha.12`. Acceptance evidence is in [issue #34](https://github.com/majiayu000/dsh-desk/issues/34). Windows alpha releases may be published without Authenticode and say so in their Release Notes. See the live [compatibility radar](https://majiayu000.github.io/dsh-desk/), [compatibility evidence](docs/compatibility.md), and individual [Actions runs](https://github.com/majiayu000/dsh-desk/actions) for the latest facts.
 
 ## What is different
 
