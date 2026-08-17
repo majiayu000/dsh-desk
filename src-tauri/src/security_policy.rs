@@ -38,6 +38,7 @@ fn allowed_commands_for_window(window_label: &str) -> &'static [&'static str] {
             "list_plugins",
             "inspect_plugin_source",
             "run_plugin_command",
+            "open_plugin_registry",
         ],
         "updates" => &[
             "get_update_status",
@@ -84,6 +85,7 @@ mod tests {
     fn each_window_can_only_invoke_its_own_commands() {
         assert!(window_can_invoke("main", "restart_runtime"));
         assert!(window_can_invoke("plugins", "run_plugin_command"));
+        assert!(window_can_invoke("plugins", "open_plugin_registry"));
         assert!(window_can_invoke("updates", "install_update"));
         assert!(!window_can_invoke("plugins", "restart_runtime"));
         assert!(!window_can_invoke("updates", "run_plugin_command"));

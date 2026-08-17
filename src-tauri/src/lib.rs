@@ -153,7 +153,7 @@ async fn inspect_plugin_source(
 
 #[tauri::command]
 fn open_plugin_registry(window: tauri::WebviewWindow) -> Result<(), String> {
-    require_plugin_window(&window)?;
+    require_command_window(&window, "open_plugin_registry")?;
     window_manager::open_plugin_registry()
 }
 
