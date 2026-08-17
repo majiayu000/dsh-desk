@@ -66,8 +66,12 @@ for (const token of ["open-registry", "paste-install", "clipboard-offer", "commu
 
 const sourceParser = read("src/plugin-source.ts");
 assert(
-  sourceParser.includes("clipboardPluginSource") && sourceParser.includes("PLUGIN_ADD_COMMAND"),
-  "plugin source parser must recognize copied install commands",
+  sourceParser.includes("clipboardPluginSource") &&
+    sourceParser.includes("PLUGIN_ADD_PREFIX") &&
+    sourceParser.includes("parseAddOperand") &&
+    !sourceParser.includes("(?<!") &&
+    !sourceParser.includes("(?<="),
+  "plugin source parser must recognize copied install commands without lookbehind",
 );
 
 console.log(`Trusted plugin catalog verified: ${catalog.entries.length} pinned entries match Harness ${harnessVersion}.`);

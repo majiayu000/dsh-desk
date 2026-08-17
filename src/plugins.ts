@@ -155,6 +155,7 @@ async function detectClipboardOffer(): Promise<void> {
   try {
     const operand = clipboardPluginSource(await navigator.clipboard.readText())
     if (operand) showClipboardOffer(operand)
+    else hideClipboardOffer()
   } catch {
     // Clipboard permission is optional; the paste button remains available.
   }
@@ -406,7 +407,6 @@ openRegistry.addEventListener('click', () => {
       registryHint.hidden = false
       source.placeholder = '粘贴刚才复制的 dsh plugin --profile web add …'
       source.focus()
-      void detectClipboardOffer()
     } catch (error) {
       showOperation('打开社区目录', '失败', String(error))
     } finally {
@@ -490,4 +490,3 @@ chooseDirectory.addEventListener('click', async () => {
 
 renderCatalog()
 void loadPlugins()
-void detectClipboardOffer()
