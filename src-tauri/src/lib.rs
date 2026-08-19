@@ -197,7 +197,7 @@ pub fn run() {
                     .paste()
                     .select_all()
                     .build()?;
-                return menu.item(&edit).build();
+                menu.item(&edit).build()
             }
 
             #[cfg(not(target_os = "macos"))]
@@ -206,10 +206,10 @@ pub fn run() {
         .on_menu_event(|app, event| {
             if event.id() == "open-plugins" {
                 let _ = window_manager::open_plugin_window(app);
-            } else if event.id() == "software-update" {
-                if window_manager::open_update_window(app).is_ok() {
-                    updater::request_check_if_idle(app.clone());
-                }
+            } else if event.id() == "software-update"
+                && window_manager::open_update_window(app).is_ok()
+            {
+                updater::request_check_if_idle(app.clone());
             }
         })
         .manage(runtime.clone())

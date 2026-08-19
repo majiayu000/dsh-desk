@@ -513,12 +513,10 @@ fn set_menu_label(app: &AppHandle, status: &UpdateStatus) {
     };
     if let Some(MenuItemKind::Submenu(application)) =
         app.menu().and_then(|menu| menu.get(APPLICATION_MENU_ID))
+        && let Some(MenuItemKind::MenuItem(item)) = application.get(UPDATE_MENU_ID)
+        && let Err(error) = item.set_text(text)
     {
-        if let Some(MenuItemKind::MenuItem(item)) = application.get(UPDATE_MENU_ID) {
-            if let Err(error) = item.set_text(text) {
-                eprintln!("failed to update the software update menu label: {error}");
-            }
-        }
+        eprintln!("failed to update the software update menu label: {error}");
     }
 }
 
@@ -567,12 +565,11 @@ fn atomic_write(path: &Path, contents: &[u8]) -> std::io::Result<()> {
         drop(file);
         replace_file(&temporary, path)
     })();
-    if result.is_err() {
-        if let Err(error) = fs::remove_file(&temporary)
-            && error.kind() != std::io::ErrorKind::NotFound
-        {
-            eprintln!("failed to remove temporary update preferences file: {error}");
-        }
+    if result.is_err()
+        && let Err(error) = fs::remove_file(&temporary)
+        && error.kind() != std::io::ErrorKind::NotFound
+    {
+        eprintln!("failed to remove temporary update preferences file: {error}");
     }
     result
 }

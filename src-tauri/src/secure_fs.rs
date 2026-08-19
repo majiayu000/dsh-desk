@@ -113,7 +113,11 @@ mod tests {
         let resolved = resolve_workspace(None, default.clone()).expect("default workspace");
         assert_eq!(resolved, default);
         assert!(default.is_dir());
-        let mode = fs::metadata(&default).expect("metadata").permissions().mode() & 0o777;
+        let mode = fs::metadata(&default)
+            .expect("metadata")
+            .permissions()
+            .mode()
+            & 0o777;
         assert_eq!(mode, 0o700);
         fs::remove_dir_all(root).ok();
     }

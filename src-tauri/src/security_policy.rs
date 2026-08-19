@@ -111,12 +111,14 @@ mod tests {
         let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("capabilities")
             .join(name);
-        let value: serde_json::Value = serde_json::from_slice(
-            &std::fs::read(&path).unwrap_or_else(|error| {
-                panic!("capability file {} must be readable: {error}", path.display())
-            }),
-        )
-        .unwrap_or_else(|error| panic!("capability file {name} must be JSON: {error}"));
+        let value: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(&path).unwrap_or_else(|error| {
+                panic!(
+                    "capability file {} must be readable: {error}",
+                    path.display()
+                )
+            }))
+            .unwrap_or_else(|error| panic!("capability file {name} must be JSON: {error}"));
         value
             .get("permissions")
             .and_then(serde_json::Value::as_array)
