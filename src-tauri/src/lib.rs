@@ -25,7 +25,9 @@ fn require_command_window(window: &tauri::WebviewWindow, command: &str) -> Resul
     if window_can_invoke(window.label(), command) {
         Ok(())
     } else {
-        Err(format!("{command} is available only in its assigned window"))
+        Err(format!(
+            "{command} is available only in its assigned window"
+        ))
     }
 }
 
@@ -71,7 +73,10 @@ fn open_diagnostic_folder(
 }
 
 #[tauri::command]
-fn get_desktop_version(window: tauri::WebviewWindow, app: tauri::AppHandle) -> Result<String, String> {
+fn get_desktop_version(
+    window: tauri::WebviewWindow,
+    app: tauri::AppHandle,
+) -> Result<String, String> {
     require_command_window(&window, "get_desktop_version")?;
     Ok(app.package_info().version.to_string())
 }
@@ -179,7 +184,24 @@ pub fn run() {
                 .separator()
                 .quit()
                 .build()?;
-            MenuBuilder::new(app).item(&application).build()
+            let menu = MenuBuilder::new(app).item(&application);
+
+            #[cfg(target_os = "macos")]
+            {
+                let edit = SubmenuBuilder::new(app, "编辑")
+                    .undo()
+                    .redo()
+                    .separator()
+                    .cut()
+                    .copy()
+                    .paste()
+                    .select_all()
+                    .build()?;
+                return menu.item(&edit).build();
+            }
+
+            #[cfg(not(target_os = "macos"))]
+            menu.build()
         })
         .on_menu_event(|app, event| {
             if event.id() == "open-plugins" {
