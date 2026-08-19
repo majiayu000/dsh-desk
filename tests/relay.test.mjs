@@ -107,3 +107,39 @@ test('relay rejects an expired one-time pairing capability', async (context) => 
   })
   assert.equal(response.status, 401)
 })
+
+test('relay bounds mailbox storage and reclaims idle capacity', async (context) => {
+  let currentTime = 1_000
+  const server = createRelayServer({
+    maxMailboxes: 2,
+    mailboxIdleTtlMs: 1_000,
+    now: () => currentTime,
+  })
+  server.listen(0, '127.0.0.1')
+  await once(server, 'listening')
+  context.after(() => server.close())
+  const address = server.address()
+  assert(address && typeof address === 'object')
+  const base = `http://127.0.0.1:${address.port}`
+
+  const first = await request(base, '/v1/mailboxes', { method: 'POST' })
+  const second = await request(base, '/v1/mailboxes', { method: 'POST' })
+  assert.equal(first.status, 201)
+  assert.equal(second.status, 201)
+  assert.deepEqual(
+    await request(base, '/v1/mailboxes', { method: 'POST' }),
+    { status: 503, body: { error: 'mailbox-capacity-reached' } },
+  )
+
+  currentTime += 1_000
+  assert.equal((await request(base, '/v1/mailboxes', { method: 'POST' })).status, 201)
+  assert.equal((await request(base, `/v1/mailboxes/${first.body.mailboxId}/messages`)).status, 404)
+  assert.equal((await request(base, `/v1/pairings/${second.body.pairingId}/response`)).status, 404)
+})
+
+test('relay rejects invalid resource limits before listening', () => {
+  assert.throws(() => createRelayServer({ maxMailboxes: 0 }), /maxMailboxes/u)
+  assert.throws(() => createRelayServer({ mailboxIdleTtlMs: 0 }), /mailboxIdleTtlMs/u)
+  assert.throws(() => createRelayServer({ pairingTtlMs: 0 }), /pairingTtlMs/u)
+  assert.throws(() => createRelayServer({ now: 1 }), /now/u)
+})

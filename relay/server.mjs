@@ -4,6 +4,9 @@ import { pathToFileURL } from 'node:url'
 
 const BODY_LIMIT = 80 * 1024
 const RETENTION_MS = 10 * 60 * 1000
+const DEFAULT_MAILBOX_IDLE_TTL_MS = 15 * 60 * 1000
+const DEFAULT_MAX_MAILBOXES = 1024
+const MAX_SWEEP_INTERVAL_MS = 60 * 1000
 const idPattern = /^[A-Za-z0-9_-]{16,128}$/u
 const tokenPattern = /^[A-Za-z0-9_-]{32,256}$/u
 
@@ -48,7 +51,7 @@ function validPublicKey(value) {
     && typeof value.x === 'string' && typeof value.y === 'string' && value.d === undefined
 }
 
-function validEnvelope(value, mailboxId) {
+function validEnvelope(value, mailboxId, currentTime) {
   if (!value || typeof value !== 'object'
     || !Object.keys(value).every((key) => ['header', 'iv', 'ciphertext'].includes(key))) return false
   const header = value.header
@@ -60,7 +63,7 @@ function validEnvelope(value, mailboxId) {
   const created = Date.parse(header.createdAt)
   const expires = Date.parse(header.expiresAt)
   if (!Number.isFinite(created) || !Number.isFinite(expires)
-    || expires <= Date.now() || expires - created > 300_000) return false
+    || expires <= currentTime || expires - created > 300_000) return false
   return typeof value.iv === 'string' && /^[A-Za-z0-9_-]{16,32}$/u.test(value.iv)
     && typeof value.ciphertext === 'string' && /^[A-Za-z0-9_-]{16,100000}$/u.test(value.ciphertext)
 }
@@ -69,10 +72,38 @@ export function createRelayServer({
   allowedOrigin = 'http://localhost:1420',
   adminToken = null,
   pairingTtlMs = 120_000,
+  mailboxIdleTtlMs = DEFAULT_MAILBOX_IDLE_TTL_MS,
+  maxMailboxes = DEFAULT_MAX_MAILBOXES,
+  now = Date.now,
 } = {}) {
+  if (!Number.isSafeInteger(pairingTtlMs) || pairingTtlMs < 1) throw new Error('pairingTtlMs must be a positive integer')
+  if (!Number.isSafeInteger(mailboxIdleTtlMs) || mailboxIdleTtlMs < 1) {
+    throw new Error('mailboxIdleTtlMs must be a positive integer')
+  }
+  if (!Number.isSafeInteger(maxMailboxes) || maxMailboxes < 1) throw new Error('maxMailboxes must be a positive integer')
+  if (typeof now !== 'function') throw new Error('now must be a function')
+
   const mailboxes = new Map()
+  const mailboxIdByPairingId = new Map()
+  const sweepIntervalMs = Math.min(mailboxIdleTtlMs, MAX_SWEEP_INTERVAL_MS)
+  let lastSweepAt = now()
+
+  function deleteMailbox(mailboxId, mailbox) {
+    mailboxes.delete(mailboxId)
+    mailboxIdByPairingId.delete(mailbox.pairingId)
+  }
+
+  function sweepExpiredMailboxes(currentTime, force = false) {
+    if (!force && currentTime - lastSweepAt < sweepIntervalMs) return
+    lastSweepAt = currentTime
+    for (const [mailboxId, mailbox] of mailboxes) {
+      if (currentTime - mailbox.lastAccessedAt >= mailboxIdleTtlMs) deleteMailbox(mailboxId, mailbox)
+    }
+  }
 
   return createServer(async (request, response) => {
+    const currentTime = now()
+    sweepExpiredMailboxes(currentTime)
     const requestOrigin = request.headers.origin ?? null
     if (requestOrigin && requestOrigin !== allowedOrigin) {
       return sendJson(response, 403, { error: 'origin-not-allowed' })
@@ -98,6 +129,12 @@ export function createRelayServer({
         if (adminToken && !authorized(request, digest(adminToken))) {
           return sendJson(response, 401, { error: 'unauthorized' }, requestOrigin)
         }
+        if (mailboxes.size >= maxMailboxes) {
+          sweepExpiredMailboxes(currentTime, true)
+          if (mailboxes.size >= maxMailboxes) {
+            return sendJson(response, 503, { error: 'mailbox-capacity-reached' }, requestOrigin)
+          }
+        }
         const mailboxId = randomUUID()
         const pairingId = randomUUID()
         const readToken = capability()
@@ -105,7 +142,8 @@ export function createRelayServer({
         const pairingToken = capability()
         mailboxes.set(mailboxId, {
           pairingId,
-          pairingExpiresAt: Date.now() + pairingTtlMs,
+          pairingExpiresAt: currentTime + pairingTtlMs,
+          lastAccessedAt: currentTime,
           readDigest: digest(readToken),
           writeDigest: digest(writeToken),
           pairingDigest: digest(pairingToken),
@@ -113,6 +151,7 @@ export function createRelayServer({
           pairingResponse: null,
           messages: [],
         })
+        mailboxIdByPairingId.set(pairingId, mailboxId)
         return sendJson(response, 201, { mailboxId, pairingId, readToken, writeToken, pairingToken }, requestOrigin)
       }
 
@@ -124,17 +163,19 @@ export function createRelayServer({
         if (request.method === 'POST') {
           if (!authorized(request, mailbox.writeDigest)) return sendJson(response, 401, { error: 'unauthorized' }, requestOrigin)
           const envelope = await readJson(request)
-          if (!validEnvelope(envelope, mailboxId)) return sendJson(response, 400, { error: 'invalid-envelope' }, requestOrigin)
-          const cutoff = Date.now() - RETENTION_MS
+          if (!validEnvelope(envelope, mailboxId, currentTime)) return sendJson(response, 400, { error: 'invalid-envelope' }, requestOrigin)
+          mailbox.lastAccessedAt = currentTime
+          const cutoff = currentTime - RETENTION_MS
           mailbox.messages = mailbox.messages.filter((item) => item.receivedAt > cutoff).slice(-99)
-          mailbox.messages.push({ envelope, receivedAt: Date.now() })
+          mailbox.messages.push({ envelope, receivedAt: currentTime })
           return sendJson(response, 202, { accepted: true, messageId: envelope.header.messageId }, requestOrigin)
         }
         if (request.method === 'GET') {
           if (!authorized(request, mailbox.readDigest)) return sendJson(response, 401, { error: 'unauthorized' }, requestOrigin)
           const after = Number(url.searchParams.get('after') ?? 0)
           if (!Number.isSafeInteger(after) || after < 0) return sendJson(response, 400, { error: 'invalid-cursor' }, requestOrigin)
-          const cutoff = Date.now() - RETENTION_MS
+          mailbox.lastAccessedAt = currentTime
+          const cutoff = currentTime - RETENTION_MS
           mailbox.messages = mailbox.messages.filter((item) => item.receivedAt > cutoff)
           const messages = mailbox.messages.map((item) => item.envelope)
             .filter((item) => item.header.sequence > after)
@@ -144,11 +185,12 @@ export function createRelayServer({
 
       const pairingRoute = /^\/v1\/pairings\/([^/]+)\/response$/u.exec(url.pathname)
       if (pairingRoute) {
-        const mailbox = [...mailboxes.values()].find((item) => item.pairingId === pairingRoute[1])
+        const mailboxId = mailboxIdByPairingId.get(pairingRoute[1])
+        const mailbox = mailboxId ? mailboxes.get(mailboxId) : null
         if (!mailbox) return sendJson(response, 404, { error: 'pairing-not-found' }, requestOrigin)
         if (request.method === 'POST') {
           if (!authorized(request, mailbox.pairingDigest) || mailbox.pairingUsed
-            || Date.now() >= mailbox.pairingExpiresAt) {
+            || currentTime >= mailbox.pairingExpiresAt) {
             return sendJson(response, 401, { error: 'pairing-capability-invalid' }, requestOrigin)
           }
           const body = await readJson(request)
@@ -157,12 +199,14 @@ export function createRelayServer({
             || typeof body.deviceName !== 'string' || body.deviceName.length < 1 || body.deviceName.length > 80) {
             return sendJson(response, 400, { error: 'invalid-pairing-response' }, requestOrigin)
           }
+          mailbox.lastAccessedAt = currentTime
           mailbox.pairingUsed = true
           mailbox.pairingResponse = body
           return sendJson(response, 202, { accepted: true }, requestOrigin)
         }
         if (request.method === 'GET') {
           if (!authorized(request, mailbox.writeDigest)) return sendJson(response, 401, { error: 'unauthorized' }, requestOrigin)
+          mailbox.lastAccessedAt = currentTime
           if (!mailbox.pairingResponse) return sendJson(response, 204, {}, requestOrigin)
           const body = mailbox.pairingResponse
           mailbox.pairingResponse = null
