@@ -21,6 +21,9 @@ use tauri::{
     menu::{MenuBuilder, SubmenuBuilder},
 };
 
+#[cfg(target_os = "macos")]
+const EDIT_MENU_ID: &str = "edit-menu";
+
 fn require_command_window(window: &tauri::WebviewWindow, command: &str) -> Result<(), String> {
     if window_can_invoke(window.label(), command) {
         Ok(())
@@ -179,7 +182,21 @@ pub fn run() {
                 .separator()
                 .quit()
                 .build()?;
-            MenuBuilder::new(app).item(&application).build()
+            let menu = MenuBuilder::new(app).item(&application);
+
+            #[cfg(target_os = "macos")]
+            {
+                let edit = SubmenuBuilder::with_id(app, EDIT_MENU_ID, "Edit")
+                    .cut()
+                    .copy()
+                    .paste()
+                    .select_all()
+                    .build()?;
+                menu.item(&edit).build()
+            }
+
+            #[cfg(not(target_os = "macos"))]
+            menu.build()
         })
         .on_menu_event(|app, event| {
             if event.id() == "open-plugins" {
