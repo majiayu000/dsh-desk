@@ -77,7 +77,7 @@ impl ProcessTree {
                 let _ = child.wait();
                 return Err(error);
             }
-            return Ok(Self { child, job });
+            Ok(Self { child, job })
         }
 
         #[cfg(not(windows))]
