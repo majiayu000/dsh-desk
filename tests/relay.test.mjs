@@ -143,3 +143,60 @@ test('relay rejects invalid resource limits before listening', () => {
   assert.throws(() => createRelayServer({ pairingTtlMs: 0 }), /pairingTtlMs/u)
   assert.throws(() => createRelayServer({ now: 1 }), /now/u)
 })
+
+test('relay validates envelope expiry after the request body completes', async (context) => {
+  const times = [0, 1_000, 1_400, 1_600]
+  const server = createRelayServer({ now: () => times.shift() ?? 1_600 })
+  server.listen(0, '127.0.0.1')
+  await once(server, 'listening')
+  context.after(() => server.close())
+  const address = server.address()
+  assert(address && typeof address === 'object')
+  const base = `http://127.0.0.1:${address.port}`
+  const created = await request(base, '/v1/mailboxes', { method: 'POST' })
+  const envelope = {
+    header: {
+      protocolVersion: 1,
+      messageId: 'message-identity-0002',
+      mailboxId: created.body.mailboxId,
+      senderDeviceId: 'desktop-identity-0002',
+      sequence: 1,
+      kind: 'task.snapshot',
+      createdAt: new Date(1_000).toISOString(),
+      expiresAt: new Date(1_500).toISOString(),
+    },
+    iv: 'a'.repeat(16),
+    ciphertext: 'b'.repeat(64),
+  }
+
+  const response = await request(base, `/v1/mailboxes/${created.body.mailboxId}/messages`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${created.body.writeToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(envelope),
+  })
+  assert.deepEqual(response, { status: 400, body: { error: 'invalid-envelope' } })
+})
+
+test('relay rechecks one-time pairing expiry after the request body completes', async (context) => {
+  const times = [0, 1_000, 1_100, 1_300]
+  const server = createRelayServer({ pairingTtlMs: 200, now: () => times.shift() ?? 1_300 })
+  server.listen(0, '127.0.0.1')
+  await once(server, 'listening')
+  context.after(() => server.close())
+  const address = server.address()
+  assert(address && typeof address === 'object')
+  const base = `http://127.0.0.1:${address.port}`
+  const created = await request(base, '/v1/mailboxes', { method: 'POST' })
+
+  const response = await request(base, `/v1/pairings/${created.body.pairingId}/response`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${created.body.pairingToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      deviceId: 'phone-identity-00003',
+      deviceName: 'Late phone',
+      fingerprint: 'fingerprint-00000003',
+      publicKey: { kty: 'EC', crv: 'P-256', x: 'x'.repeat(43), y: 'y'.repeat(43) },
+    }),
+  })
+  assert.deepEqual(response, { status: 401, body: { error: 'pairing-capability-invalid' } })
+})

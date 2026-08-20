@@ -163,11 +163,13 @@ export function createRelayServer({
         if (request.method === 'POST') {
           if (!authorized(request, mailbox.writeDigest)) return sendJson(response, 401, { error: 'unauthorized' }, requestOrigin)
           const envelope = await readJson(request)
-          if (!validEnvelope(envelope, mailboxId, currentTime)) return sendJson(response, 400, { error: 'invalid-envelope' }, requestOrigin)
-          mailbox.lastAccessedAt = currentTime
-          const cutoff = currentTime - RETENTION_MS
+          const completedAt = now()
+          if (mailboxes.get(mailboxId) !== mailbox) return sendJson(response, 404, { error: 'mailbox-not-found' }, requestOrigin)
+          if (!validEnvelope(envelope, mailboxId, completedAt)) return sendJson(response, 400, { error: 'invalid-envelope' }, requestOrigin)
+          mailbox.lastAccessedAt = completedAt
+          const cutoff = completedAt - RETENTION_MS
           mailbox.messages = mailbox.messages.filter((item) => item.receivedAt > cutoff).slice(-99)
-          mailbox.messages.push({ envelope, receivedAt: currentTime })
+          mailbox.messages.push({ envelope, receivedAt: completedAt })
           return sendJson(response, 202, { accepted: true, messageId: envelope.header.messageId }, requestOrigin)
         }
         if (request.method === 'GET') {
@@ -194,12 +196,17 @@ export function createRelayServer({
             return sendJson(response, 401, { error: 'pairing-capability-invalid' }, requestOrigin)
           }
           const body = await readJson(request)
+          const completedAt = now()
+          if (mailboxes.get(mailboxId) !== mailbox) return sendJson(response, 404, { error: 'pairing-not-found' }, requestOrigin)
+          if (mailbox.pairingUsed || completedAt >= mailbox.pairingExpiresAt) {
+            return sendJson(response, 401, { error: 'pairing-capability-invalid' }, requestOrigin)
+          }
           if (!idPattern.test(body.deviceId ?? '') || !validPublicKey(body.publicKey)
             || typeof body.fingerprint !== 'string' || body.fingerprint.length > 64
             || typeof body.deviceName !== 'string' || body.deviceName.length < 1 || body.deviceName.length > 80) {
             return sendJson(response, 400, { error: 'invalid-pairing-response' }, requestOrigin)
           }
-          mailbox.lastAccessedAt = currentTime
+          mailbox.lastAccessedAt = completedAt
           mailbox.pairingUsed = true
           mailbox.pairingResponse = body
           return sendJson(response, 202, { accepted: true }, requestOrigin)
