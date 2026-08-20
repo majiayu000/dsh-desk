@@ -28,7 +28,9 @@ fn require_command_window(window: &tauri::WebviewWindow, command: &str) -> Resul
     if window_can_invoke(window.label(), command) {
         Ok(())
     } else {
-        Err(format!("{command} is available only in its assigned window"))
+        Err(format!(
+            "{command} is available only in its assigned window"
+        ))
     }
 }
 
@@ -74,7 +76,10 @@ fn open_diagnostic_folder(
 }
 
 #[tauri::command]
-fn get_desktop_version(window: tauri::WebviewWindow, app: tauri::AppHandle) -> Result<String, String> {
+fn get_desktop_version(
+    window: tauri::WebviewWindow,
+    app: tauri::AppHandle,
+) -> Result<String, String> {
     require_command_window(&window, "get_desktop_version")?;
     Ok(app.package_info().version.to_string())
 }
@@ -201,10 +206,10 @@ pub fn run() {
         .on_menu_event(|app, event| {
             if event.id() == "open-plugins" {
                 let _ = window_manager::open_plugin_window(app);
-            } else if event.id() == "software-update" {
-                if window_manager::open_update_window(app).is_ok() {
-                    updater::request_check_if_idle(app.clone());
-                }
+            } else if event.id() == "software-update"
+                && window_manager::open_update_window(app).is_ok()
+            {
+                updater::request_check_if_idle(app.clone());
             }
         })
         .manage(runtime.clone())

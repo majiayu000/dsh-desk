@@ -14,7 +14,9 @@ use crate::process_termination::run_command_with_timeout;
 const NODE_PROBE_TIMEOUT: Duration = Duration::from_secs(15);
 const LOGIN_SHELL_PROBE_TIMEOUT: Duration = Duration::from_secs(10);
 
-pub(super) fn resolve_runtime(app: &tauri::AppHandle) -> Result<(PathBuf, PathBuf), RuntimeFailure> {
+pub(super) fn resolve_runtime(
+    app: &tauri::AppHandle,
+) -> Result<(PathBuf, PathBuf), RuntimeFailure> {
     if let Some(entry) = std::env::var_os("DSH_DESKTOP_RUNTIME_ENTRY") {
         return Ok((resolve_node(app)?, PathBuf::from(entry)));
     }
