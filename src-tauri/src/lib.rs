@@ -21,6 +21,9 @@ use tauri::{
     menu::{MenuBuilder, SubmenuBuilder},
 };
 
+#[cfg(target_os = "macos")]
+const EDIT_MENU_ID: &str = "edit-menu";
+
 fn require_command_window(window: &tauri::WebviewWindow, command: &str) -> Result<(), String> {
     if window_can_invoke(window.label(), command) {
         Ok(())
@@ -188,10 +191,7 @@ pub fn run() {
 
             #[cfg(target_os = "macos")]
             {
-                let edit = SubmenuBuilder::new(app, "编辑")
-                    .undo()
-                    .redo()
-                    .separator()
+                let edit = SubmenuBuilder::with_id(app, EDIT_MENU_ID, "Edit")
                     .cut()
                     .copy()
                     .paste()

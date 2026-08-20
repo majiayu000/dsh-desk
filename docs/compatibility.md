@@ -51,7 +51,8 @@ Developer ID 或 Windows Authenticode 签名。
 3. 固定 DSH 的 CLI 版本、严格 loopback URL 与 HTTP 健康检查；
 4. 组装不依赖系统 Node 的离线 runtime；
 5. 使用打包 runtime 再跑同一契约；
-6. 插件 add/why/update/remove 与原版 DSH parity。
+6. 插件 add/why/update/remove 与原版 DSH parity；
+7. macOS 自定义应用菜单保留原生 Edit command，确保 `⌘X/C/V/A` 交给当前 WebView。
 
 每日任务还会查询 npm `latest`，在临时 CI 工作区安装候选版本并执行同一套测试。候选失败只表示“尚未兼容最新上游”，不会修改仓库锁定版本或用户机器。
 

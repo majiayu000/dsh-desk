@@ -41,6 +41,8 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Verify public growth surfaces
         run: pnpm test:doc-links && pnpm test:status-page
+      - name: Enforce Rust formatting and lints
+        run: pnpm check:rust
       - name: Build frontend and check Rust
         run: pnpm check
       - name: Run Rust tests
