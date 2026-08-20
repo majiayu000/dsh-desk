@@ -42,7 +42,10 @@ jobs:
       - name: Verify public growth surfaces
         run: pnpm test:doc-links && pnpm test:status-page
       - name: Enforce Rust formatting and lints
-        run: pnpm check:rust
+        run: >-
+          cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check &&
+          cargo clippy --manifest-path src-tauri/Cargo.toml
+          --all-targets --all-features -- -D warnings
       - name: Build frontend and check Rust
         run: pnpm check
       - name: Run Rust tests
