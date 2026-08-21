@@ -5,6 +5,29 @@ const root = resolve(import.meta.dirname, '..')
 const read = createContractReader(root)
 const desktopSource = read('src-tauri/src/lib.rs')
 
+assert(
+  desktopSource.includes('.about(Some(about_metadata))'),
+  'the About menu must receive metadata so Windows and Linux open a native dialog',
+)
+assert(
+  !desktopSource.includes('.about(None)'),
+  'the About menu must not silently no-op on Windows or Linux',
+)
+for (const field of ['name', 'version', 'authors', 'comments', 'license', 'website']) {
+  assert(
+    desktopSource.includes(`.${field}(Some(`),
+    `the native About dialog must include ${field} metadata`,
+  )
+}
+assert(
+  desktopSource.includes('show_menu_action_error(app, "打开插件管理窗口", error)'),
+  'plugin management menu failures must be shown to the user',
+)
+assert(
+  desktopSource.includes('show_menu_action_error(app, "打开软件更新窗口", error)'),
+  'software update menu failures must be shown to the user',
+)
+
 const editMenu = desktopSource.match(
   /#\[cfg\(target_os = "macos"\)\]\s*\{([\s\S]*?)\}\s*#\[cfg\(not\(target_os = "macos"\)\)\]/u,
 )?.[1]
@@ -29,4 +52,4 @@ assert(
   'the native Edit submenu must be attached to the application menu',
 )
 
-console.log('macOS native Edit menu contract passed.')
+console.log('Desktop menu contracts passed.')
