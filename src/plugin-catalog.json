@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "harnessVersion": "0.1.0-rc.6",
+  "harnessVersion": "0.1.0-rc.8",
   "desktopVersion": "0.1.0-alpha.13",
   "entries": [
     {
       "id": "web-search",
       "title": "联网搜索",
       "package": "@deepseek-ai/dsh-tool-web",
-      "version": "0.1.0-rc.6",
-      "source": "@deepseek-ai/dsh-tool-web@0.1.0-rc.6",
+      "version": "0.1.0-rc.8",
+      "source": "@deepseek-ai/dsh-tool-web@0.1.0-rc.8",
       "summary": "为 Agent 提供网页搜索工具，并沿用 Harness 的工具审批流程。",
       "category": "tools",
       "categoryLabel": "工具",
@@ -17,16 +17,16 @@
       "platforms": ["macOS", "Windows", "Linux"],
       "trust": {
         "label": "随固定 Harness 提供",
-        "reviewedAt": "2026-08-15",
-        "evidence": ["包名属于 @deepseek-ai scope", "已在固定 Web Profile 中挂载"]
+        "reviewedAt": "2026-08-26",
+        "evidence": ["包名属于 @deepseek-ai scope", "已在 rc.8 固定 Web Profile 中挂载"]
       }
     },
     {
       "id": "session-export",
       "title": "会话日志导出",
       "package": "@deepseek-ai/dsh-session-log-export",
-      "version": "0.1.0-rc.6",
-      "source": "@deepseek-ai/dsh-session-log-export@0.1.0-rc.6",
+      "version": "0.1.0-rc.8",
+      "source": "@deepseek-ai/dsh-session-log-export@0.1.0-rc.8",
       "summary": "将会话日志导出为可携带文件，便于备份、复盘和问题报告。",
       "category": "data",
       "categoryLabel": "数据",
@@ -35,16 +35,16 @@
       "platforms": ["macOS", "Windows", "Linux"],
       "trust": {
         "label": "随固定 Harness 提供",
-        "reviewedAt": "2026-08-15",
-        "evidence": ["包名属于 @deepseek-ai scope", "已在固定 Web Profile 中挂载"]
+        "reviewedAt": "2026-08-26",
+        "evidence": ["包名属于 @deepseek-ai scope", "已在 rc.8 固定 Web Profile 中挂载"]
       }
     },
     {
       "id": "ralph-loop",
       "title": "Ralph 长任务循环",
       "package": "@deepseek-ai/dsh-tool-ralph",
-      "version": "0.1.0-rc.6",
-      "source": "@deepseek-ai/dsh-tool-ralph@0.1.0-rc.6",
+      "version": "0.1.0-rc.8",
+      "source": "@deepseek-ai/dsh-tool-ralph@0.1.0-rc.8",
       "summary": "为需要反复推进和检查的任务提供循环工具能力。",
       "category": "workflow",
       "categoryLabel": "工作流",
@@ -53,16 +53,16 @@
       "platforms": ["macOS", "Windows", "Linux"],
       "trust": {
         "label": "随固定 Harness 提供",
-        "reviewedAt": "2026-08-15",
-        "evidence": ["包名属于 @deepseek-ai scope", "已在固定 Web Profile 中挂载"]
+        "reviewedAt": "2026-08-26",
+        "evidence": ["包名属于 @deepseek-ai scope", "已在 rc.8 固定 Web Profile 中挂载"]
       }
     },
     {
       "id": "filesystem-skills",
       "title": "本地 Skills",
       "package": "@deepseek-ai/dsh-skill-filesystem",
-      "version": "0.1.0-rc.6",
-      "source": "@deepseek-ai/dsh-skill-filesystem@0.1.0-rc.6",
+      "version": "0.1.0-rc.8",
+      "source": "@deepseek-ai/dsh-skill-filesystem@0.1.0-rc.8",
       "summary": "从本地文件系统发现并加载 Harness Skills。",
       "category": "tools",
       "categoryLabel": "工具",
@@ -71,8 +71,8 @@
       "platforms": ["macOS", "Windows", "Linux"],
       "trust": {
         "label": "随固定 Harness 提供",
-        "reviewedAt": "2026-08-15",
-        "evidence": ["包名属于 @deepseek-ai scope", "已在固定 Web Profile 中挂载"]
+        "reviewedAt": "2026-08-26",
+        "evidence": ["包名属于 @deepseek-ai scope", "已在 rc.8 固定 Web Profile 中挂载"]
       }
     }
   ]
