@@ -62,7 +62,7 @@
     "@deepseek-ai/dsh": "0.1.0-rc.8",
     "@tauri-apps/api": "2.11.1",
     "@tauri-apps/plugin-dialog": "2.7.2",
-    "pnpm": "11.22.0"
+    "pnpm": "11.24.0"
   },
   "devDependencies": {
     "@tauri-apps/cli": "2.11.4",
