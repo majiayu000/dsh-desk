@@ -41,5 +41,9 @@ for (const [name, source] of [
   assert(!source.includes("pnpm.cjs"), `${name} must not launch the pnpm 11 CLI entry`);
   assert(source.includes("pnpm/bin/pnpm.mjs"), `${name} must launch pnpm 12 through bin/pnpm.mjs`);
 }
+assert(
+  runtimeLauncher.includes("jsCli") && runtimeLauncher.includes("runPnpm"),
+  "prepare:runtime must spawn pnpm 12's native CLI directly instead of feeding it to Node",
+);
 
 console.log(`pnpm toolchain pin ${pnpmVersion} is aligned across package.json, CI, and runtime launchers.`);

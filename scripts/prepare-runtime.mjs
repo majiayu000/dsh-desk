@@ -85,7 +85,7 @@ function pruneIncompatibleNativeVariants(modulesRoot) {
   return [relative(modulesRoot, muslVariant).split(sep).join("/")];
 }
 
-try {
+function runPnpm(args, options) {
   const pnpmCli = process.env.npm_execpath;
   if (!pnpmCli || !existsSync(pnpmCli)) {
     throw new Error(
@@ -93,10 +93,14 @@ try {
     );
   }
 
-  const deploy = spawnSync(
-    process.execPath,
+  // pnpm 12's npm_execpath is a native binary. Feeding it to Node parses Mach-O/PE as JS.
+  const jsCli = /\.(cjs|js|mjs)$/i.test(pnpmCli);
+  return spawnSync(jsCli ? process.execPath : pnpmCli, jsCli ? [pnpmCli, ...args] : args, options);
+}
+
+try {
+  const deploy = runPnpm(
     [
-      pnpmCli,
       "--config.node-linker=hoisted",
       "--filter",
       "dsh-desk",
