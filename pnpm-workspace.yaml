@@ -4,6 +4,10 @@ allowBuilds:
   '@google/genai': true
   koffi: true
   node-pty: true
+  # pnpm 12's wrapper runs install.js to link the platform native binary.
+  # The packaged runtime launches that binary through bin/pnpm.mjs and must
+  # not download it on first use.
+  pnpm: true
   protobufjs: true
 minimumReleaseAgeExclude:
   - '@deepseek-ai/dsh-agent-default-model@0.1.0-rc.6'

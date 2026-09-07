@@ -146,18 +146,41 @@ try {
   if (process.platform === "win32") {
     writeFileSync(
       join(toolsBin, "pnpm.cmd"),
-      '@echo off\r\n"%~dp0\\..\\..\\node\\node.exe" "%~dp0\\..\\..\\node_modules\\pnpm\\bin\\pnpm.cjs" %*\r\n',
+      '@echo off\r\n"%~dp0\\..\\..\\node\\node.exe" "%~dp0\\..\\..\\node_modules\\pnpm\\bin\\pnpm.mjs" %*\r\n',
     );
   } else {
     const pnpmLauncher = join(toolsBin, "pnpm");
     writeFileSync(
       pnpmLauncher,
-      '#!/bin/sh\nSCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)\nexec "$SCRIPT_DIR/../../node/bin/node" "$SCRIPT_DIR/../../node_modules/pnpm/bin/pnpm.cjs" "$@"\n',
+      '#!/bin/sh\nSCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)\nexec "$SCRIPT_DIR/../../node/bin/node" "$SCRIPT_DIR/../../node_modules/pnpm/bin/pnpm.mjs" "$@"\n',
     );
     chmodSync(pnpmLauncher, 0o755);
   }
 
   const packageJson = JSON.parse(readFileSync(join(projectRoot, "package.json"), "utf8"));
+  const pnpmEntry = join(bundledModules, "pnpm", "bin", "pnpm.mjs");
+  if (!existsSync(pnpmEntry)) {
+    throw new Error(`Bundled pnpm entry missing: ${pnpmEntry}`);
+  }
+  const pnpmCheck = spawnSync(bundledNode, [pnpmEntry, "--version"], {
+    env: { ...env, COREPACK_ENABLE_NETWORK: "0" },
+    encoding: "utf8",
+  });
+  if (pnpmCheck.error) {
+    throw new Error(`Bundled pnpm could not start: ${pnpmCheck.error.message}`);
+  }
+  if (pnpmCheck.status !== 0) {
+    throw new Error(
+      `Bundled pnpm is not usable offline: ${(pnpmCheck.stderr || pnpmCheck.stdout).trim()}`,
+    );
+  }
+  const bundledPnpmVersion = pnpmCheck.stdout.trim();
+  if (bundledPnpmVersion !== packageJson.dependencies.pnpm) {
+    throw new Error(
+      `Bundled pnpm reported ${bundledPnpmVersion}, package.json pins ${packageJson.dependencies.pnpm}`,
+    );
+  }
+
   writeFileSync(
     join(runtimeRoot, "runtime-manifest.json"),
     `${JSON.stringify({
