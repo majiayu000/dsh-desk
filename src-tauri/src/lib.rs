@@ -18,11 +18,37 @@ use runtime_supervisor::{RuntimeHandle, RuntimeStatus, diagnostic_dir, spawn_wor
 use security_policy::window_can_invoke;
 use tauri::{
     Manager,
-    menu::{MenuBuilder, SubmenuBuilder},
+    menu::{AboutMetadata, AboutMetadataBuilder, MenuBuilder, SubmenuBuilder},
 };
+use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
+
+const APPLICATION_NAME: &str = "DSH Desk";
+const APPLICATION_WEBSITE: &str = "https://github.com/majiayu000/dsh-desk";
 
 #[cfg(target_os = "macos")]
 const EDIT_MENU_ID: &str = "edit-menu";
+
+fn desktop_about_metadata(version: &str) -> AboutMetadata<'static> {
+    AboutMetadataBuilder::new()
+        .name(Some(APPLICATION_NAME))
+        .version(Some(version))
+        .authors(Some(vec!["DSH Desk contributors".to_string()]))
+        .comments(Some("A lightweight desktop shell for DeepSeek Harness"))
+        .license(Some("MIT"))
+        .website(Some(APPLICATION_WEBSITE))
+        .website_label(Some("DSH Desk on GitHub"))
+        .build()
+}
+
+fn show_menu_action_error(app: &tauri::AppHandle, action: &str, error: impl std::fmt::Display) {
+    let message = format!("{action}失败：{error}");
+    eprintln!("{message}");
+    app.dialog()
+        .message(message)
+        .title(APPLICATION_NAME)
+        .kind(MessageDialogKind::Error)
+        .show(|_| {});
+}
 
 fn require_command_window(window: &tauri::WebviewWindow, command: &str) -> Result<(), String> {
     if window_can_invoke(window.label(), command) {
@@ -179,8 +205,9 @@ pub fn run() {
             }
         }))
         .menu(|app| {
-            let application = SubmenuBuilder::with_id(app, "application-menu", "DSH Desk")
-                .about(None)
+            let about_metadata = desktop_about_metadata(&app.package_info().version.to_string());
+            let application = SubmenuBuilder::with_id(app, "application-menu", APPLICATION_NAME)
+                .about(Some(about_metadata))
                 .separator()
                 .text("open-plugins", "插件管理…")
                 .text("software-update", "软件更新…")
@@ -205,11 +232,14 @@ pub fn run() {
         })
         .on_menu_event(|app, event| {
             if event.id() == "open-plugins" {
-                let _ = window_manager::open_plugin_window(app);
-            } else if event.id() == "software-update"
-                && window_manager::open_update_window(app).is_ok()
-            {
-                updater::request_check_if_idle(app.clone());
+                if let Err(error) = window_manager::open_plugin_window(app) {
+                    show_menu_action_error(app, "打开插件管理窗口", error);
+                }
+            } else if event.id() == "software-update" {
+                match window_manager::open_update_window(app) {
+                    Ok(()) => updater::request_check_if_idle(app.clone()),
+                    Err(error) => show_menu_action_error(app, "打开软件更新窗口", error),
+                }
             }
         })
         .manage(runtime.clone())
@@ -263,4 +293,31 @@ pub fn run() {
         }
         _ => {}
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{APPLICATION_NAME, APPLICATION_WEBSITE, desktop_about_metadata};
+
+    #[test]
+    fn about_metadata_contains_cross_platform_dialog_fields() {
+        let metadata = desktop_about_metadata("0.1.0-test.1");
+
+        assert_eq!(metadata.name.as_deref(), Some(APPLICATION_NAME));
+        assert_eq!(metadata.version.as_deref(), Some("0.1.0-test.1"));
+        assert_eq!(
+            metadata.authors.as_deref(),
+            Some(["DSH Desk contributors".to_string()].as_slice())
+        );
+        assert_eq!(
+            metadata.comments.as_deref(),
+            Some("A lightweight desktop shell for DeepSeek Harness")
+        );
+        assert_eq!(metadata.license.as_deref(), Some("MIT"));
+        assert_eq!(metadata.website.as_deref(), Some(APPLICATION_WEBSITE));
+        assert_eq!(
+            metadata.website_label.as_deref(),
+            Some("DSH Desk on GitHub")
+        );
+    }
 }

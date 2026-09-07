@@ -38,7 +38,7 @@ No system Node.js installation, npm setup, port selection, or terminal command i
 
 DeepSeek Harness already provides the agent runtime, web UI, sessions, tools, approvals, settings, and plugin protocol. DSH Desk does not fork those product surfaces. It owns the desktop responsibilities that should be boring and dependable:
 
-- bundles Node 24 and the exact `@deepseek-ai/dsh@0.1.0-rc.6` runtime;
+- bundles Node 24 and the exact `@deepseek-ai/dsh@0.1.0-rc.8` runtime;
 - isolates state in a private `DSH_HOME` instead of modifying an existing CLI setup;
 - waits for a real HTTP health check on a random loopback port;
 - grants the remote Harness page no Tauri IPC, shell, or filesystem capability;
@@ -94,11 +94,11 @@ A scheduled workflow also installs the newest npm candidate in an isolated CI wo
 
 ## Development
 
-The development toolchain uses pnpm 11.21.0:
+The development toolchain uses pnpm 12.3.4:
 
 ```sh
-npx --yes pnpm@11.21.0 install
-npx --yes pnpm@11.21.0 exec tauri dev
+npx --yes pnpm@12.3.4 install
+npx --yes pnpm@12.3.4 exec tauri dev
 ```
 
 Run the complete local verification suite:

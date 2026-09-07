@@ -52,7 +52,8 @@ function profileFile(home, name) {
 
 function normalizeLockfileImporter(value) {
   const lines = value.replaceAll("\r\n", "\n").split("\n");
-  const importersIndex = lines.indexOf("importers:");
+  // pnpm 12 writes an env lockfile document first; the project graph is last.
+  const importersIndex = lines.lastIndexOf("importers:");
   if (importersIndex === -1) {
     throw new Error("pnpm-lock.yaml does not contain an importers section");
   }
