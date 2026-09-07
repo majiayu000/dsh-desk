@@ -23,6 +23,10 @@ const PLUGIN_VALIDATION_TIMEOUT: Duration = Duration::from_secs(60);
 const PLUGIN_REPAIR_TIMEOUT: Duration = Duration::from_secs(300);
 const PLUGIN_REGISTRY_VIEW_TIMEOUT: Duration = Duration::from_secs(60);
 
+fn bundled_pnpm_cli(node_modules: &Path) -> PathBuf {
+    node_modules.join("pnpm/bin/pnpm.mjs")
+}
+
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum PluginAction {
@@ -415,7 +419,7 @@ fn repair_profile(
         .ok_or_else(|| "无法定位内置插件运行环境。".to_string())?;
     let mut command = Command::new(node);
     command
-        .arg(node_modules.join("pnpm/bin/pnpm.cjs"))
+        .arg(bundled_pnpm_cli(node_modules))
         .args(["install", "--frozen-lockfile"])
         .current_dir(profile_dir)
         .env("PATH", path)
@@ -550,7 +554,7 @@ fn read_registry_manifest(
         .ok_or_else(|| "无法定位内置插件运行环境。".to_string())?;
     let mut command = Command::new(node);
     command
-        .arg(node_modules.join("pnpm/bin/pnpm.cjs"))
+        .arg(bundled_pnpm_cli(node_modules))
         .args([
             "view",
             source,
