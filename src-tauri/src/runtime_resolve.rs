@@ -41,20 +41,16 @@ fn select_runtime_paths(
     development_entry: Option<PathBuf>,
     allow_debug_overrides: bool,
 ) -> RuntimeSelection {
-    if allow_debug_overrides {
-        if let Some(entry) = env_entry {
-            return RuntimeSelection::EnvEntry(entry);
-        }
+    if allow_debug_overrides && let Some(entry) = env_entry {
+        return RuntimeSelection::EnvEntry(entry);
     }
 
     if let Some((node, entry)) = bundled {
         return RuntimeSelection::Bundled { node, entry };
     }
 
-    if allow_debug_overrides {
-        if let Some(entry) = development_entry {
-            return RuntimeSelection::DevelopmentEntry(entry);
-        }
+    if allow_debug_overrides && let Some(entry) = development_entry {
+        return RuntimeSelection::DevelopmentEntry(entry);
     }
 
     RuntimeSelection::Missing
