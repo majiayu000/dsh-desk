@@ -5,6 +5,12 @@ use crate::{runtime_supervisor::RuntimeHandle, security_policy::is_allowed_navig
 
 pub const PLUGIN_REGISTRY_URL: &str = "https://plugin.dshdesk.com/";
 
+/// Secondary privileged windows (plugins / updates) never get a runtime origin —
+/// only tauri/app (and debug localhost) navigations are allowed.
+fn is_allowed_secondary_window_navigation(url: &Url) -> bool {
+    is_allowed_navigation(url, None)
+}
+
 pub fn create_main_window(app: &tauri::AppHandle, runtime: RuntimeHandle) -> tauri::Result<()> {
     if app.get_webview_window("main").is_some() {
         return Ok(());
@@ -36,6 +42,7 @@ pub fn open_plugin_window(app: &tauri::AppHandle) -> tauri::Result<()> {
         .inner_size(820.0, 740.0)
         .min_inner_size(620.0, 560.0)
         .center()
+        .on_navigation(|url| is_allowed_secondary_window_navigation(url))
         .build()?;
 
     Ok(())
@@ -54,6 +61,7 @@ pub fn open_update_window(app: &tauri::AppHandle) -> tauri::Result<()> {
         .min_inner_size(440.0, 570.0)
         .resizable(true)
         .center()
+        .on_navigation(|url| is_allowed_secondary_window_navigation(url))
         .build()?;
 
     Ok(())
@@ -103,7 +111,7 @@ pub fn restore_bootstrap(app: &tauri::AppHandle, runtime: RuntimeHandle) -> Resu
 
 #[cfg(test)]
 mod tests {
-    use super::PLUGIN_REGISTRY_URL;
+    use super::{is_allowed_secondary_window_navigation, PLUGIN_REGISTRY_URL};
     use url::Url;
 
     #[test]
@@ -116,5 +124,28 @@ mod tests {
         assert_eq!(url.port(), None);
         assert_eq!(url.query(), None);
         assert_eq!(url.fragment(), None);
+    }
+
+    #[test]
+    fn secondary_windows_reject_remote_https_origins() {
+        assert!(!is_allowed_secondary_window_navigation(
+            &Url::parse("https://evil.example/").unwrap(),
+        ));
+        assert!(!is_allowed_secondary_window_navigation(
+            &Url::parse("https://plugin.dshdesk.com/").unwrap(),
+        ));
+        assert!(!is_allowed_secondary_window_navigation(
+            &Url::parse("http://127.0.0.1:43123/session").unwrap(),
+        ));
+    }
+
+    #[test]
+    fn secondary_windows_allow_bundled_tauri_origins() {
+        assert!(is_allowed_secondary_window_navigation(
+            &Url::parse("tauri://localhost/plugins.html").unwrap(),
+        ));
+        assert!(is_allowed_secondary_window_navigation(
+            &Url::parse("https://tauri.localhost/update.html").unwrap(),
+        ));
     }
 }
