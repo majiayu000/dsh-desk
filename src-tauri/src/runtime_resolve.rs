@@ -25,7 +25,10 @@ enum RuntimeSelection {
     /// Debug-only: `DSH_DESKTOP_RUNTIME_ENTRY` short-circuit.
     EnvEntry(PathBuf),
     /// Signed/packaged Node + Harness entry under `resource_dir()/runtime`.
-    Bundled { node: PathBuf, entry: PathBuf },
+    Bundled {
+        node: PathBuf,
+        entry: PathBuf,
+    },
     /// Debug-only: repo `node_modules` Harness entry.
     DevelopmentEntry(PathBuf),
     Missing,
@@ -272,7 +275,9 @@ mod tests {
         let selection = select_runtime_paths(
             Some(env_entry),
             Some((bundled_node.clone(), bundled_entry.clone())),
-            Some(PathBuf::from("/repo/node_modules/@deepseek-ai/dsh/lib/bin.js")),
+            Some(PathBuf::from(
+                "/repo/node_modules/@deepseek-ai/dsh/lib/bin.js",
+            )),
             false,
         );
 
@@ -290,7 +295,9 @@ mod tests {
         let selection = select_runtime_paths(
             Some(PathBuf::from("/tmp/attacker/custom-entry.js")),
             None,
-            Some(PathBuf::from("/repo/node_modules/@deepseek-ai/dsh/lib/bin.js")),
+            Some(PathBuf::from(
+                "/repo/node_modules/@deepseek-ai/dsh/lib/bin.js",
+            )),
             false,
         );
         assert_eq!(selection, RuntimeSelection::Missing);
