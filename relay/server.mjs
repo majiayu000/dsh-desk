@@ -68,6 +68,35 @@ function validEnvelope(value, mailboxId, currentTime) {
     && typeof value.ciphertext === 'string' && /^[A-Za-z0-9_-]{16,100000}$/u.test(value.ciphertext)
 }
 
+/** True for loopback-only bind targets safe for token-optional local development. */
+export function isLoopbackBindHost(host) {
+  const normalized = String(host ?? '').trim().toLowerCase()
+  if (normalized === 'localhost' || normalized === '::1' || normalized === '[::1]') return true
+  // IPv4 loopback range 127.0.0.0/8
+  if (/^127(?:\.(?:25[0-5]|2[0-4]\d|1?\d?\d)){3}$/u.test(normalized)) return true
+  return false
+}
+
+/**
+ * Fail closed before listen when binding a non-loopback (incl. 0.0.0.0 / ::) host
+ * without an admin token. RELAY_ALLOW_INSECURE=1 is an explicit escape hatch only;
+ * it does not weaken auth when adminToken is set.
+ */
+export function assertRelayListenSafe({
+  host,
+  adminToken = null,
+  allowInsecure = false,
+} = {}) {
+  if (isLoopbackBindHost(host)) return
+  if (adminToken) return
+  if (allowInsecure) return
+  throw new Error(
+    `Refusing to bind non-loopback host "${host}" without RELAY_ADMIN_TOKEN. `
+      + 'Set RELAY_ADMIN_TOKEN, bind a loopback address (default 127.0.0.1), '
+      + 'or set RELAY_ALLOW_INSECURE=1 for an explicit insecure escape hatch.',
+  )
+}
+
 export function createRelayServer({
   allowedOrigin = 'http://localhost:1420',
   adminToken = null,
@@ -233,10 +262,24 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   const host = process.env.RELAY_HOST ?? '127.0.0.1'
   const port = Number(process.env.RELAY_PORT ?? 8787)
   const allowedOrigin = process.env.RELAY_ALLOWED_ORIGIN ?? 'http://localhost:1420'
-  const server = createRelayServer({ allowedOrigin, adminToken: process.env.RELAY_ADMIN_TOKEN ?? null })
+  const adminToken = process.env.RELAY_ADMIN_TOKEN ?? null
+  const allowInsecure = process.env.RELAY_ALLOW_INSECURE === '1'
+  try {
+    assertRelayListenSafe({ host, adminToken, allowInsecure })
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : error)
+    process.exit(1)
+  }
+  const server = createRelayServer({ allowedOrigin, adminToken })
   server.listen(port, host, () => {
     console.log(`DSH Desk opaque relay listening on http://${host}:${port}`)
     console.log(`Allowed browser origin: ${allowedOrigin}`)
-    if (!process.env.RELAY_ADMIN_TOKEN) console.warn('RELAY_ADMIN_TOKEN is unset; local development only')
+    if (!adminToken) {
+      if (allowInsecure && !isLoopbackBindHost(host)) {
+        console.warn('RELAY_ALLOW_INSECURE=1: listening without RELAY_ADMIN_TOKEN on a non-loopback host')
+      } else {
+        console.warn('RELAY_ADMIN_TOKEN is unset; local development only')
+      }
+    }
   })
 }

@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { once } from 'node:events'
-import { createRelayServer } from '../relay/server.mjs'
+import {
+  assertRelayListenSafe,
+  createRelayServer,
+  isLoopbackBindHost,
+} from '../relay/server.mjs'
 
 async function request(base, path, options = {}) {
   const response = await fetch(`${base}${path}`, options)
@@ -142,6 +146,40 @@ test('relay rejects invalid resource limits before listening', () => {
   assert.throws(() => createRelayServer({ mailboxIdleTtlMs: 0 }), /mailboxIdleTtlMs/u)
   assert.throws(() => createRelayServer({ pairingTtlMs: 0 }), /pairingTtlMs/u)
   assert.throws(() => createRelayServer({ now: 1 }), /now/u)
+})
+
+test('listen safety treats loopback as token-optional and wildcards as non-loopback', () => {
+  assert.equal(isLoopbackBindHost('127.0.0.1'), true)
+  assert.equal(isLoopbackBindHost('127.0.0.2'), true)
+  assert.equal(isLoopbackBindHost('localhost'), true)
+  assert.equal(isLoopbackBindHost('::1'), true)
+  assert.equal(isLoopbackBindHost('[::1]'), true)
+  assert.equal(isLoopbackBindHost('0.0.0.0'), false)
+  assert.equal(isLoopbackBindHost('::'), false)
+  assert.equal(isLoopbackBindHost('192.168.1.10'), false)
+
+  assert.doesNotThrow(() => assertRelayListenSafe({ host: '127.0.0.1', adminToken: null }))
+  assert.doesNotThrow(() => assertRelayListenSafe({
+    host: '0.0.0.0',
+    adminToken: 'a'.repeat(43),
+  }))
+  assert.doesNotThrow(() => assertRelayListenSafe({
+    host: '::',
+    adminToken: null,
+    allowInsecure: true,
+  }))
+  assert.throws(
+    () => assertRelayListenSafe({ host: '0.0.0.0', adminToken: null }),
+    /RELAY_ADMIN_TOKEN/u,
+  )
+  assert.throws(
+    () => assertRelayListenSafe({ host: '::', adminToken: null }),
+    /non-loopback/u,
+  )
+  assert.throws(
+    () => assertRelayListenSafe({ host: '10.0.0.5', adminToken: null }),
+    /RELAY_ALLOW_INSECURE/u,
+  )
 })
 
 test('relay validates envelope expiry after the request body completes', async (context) => {
