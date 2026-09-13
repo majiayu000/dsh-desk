@@ -42,7 +42,7 @@ pub fn open_plugin_window(app: &tauri::AppHandle) -> tauri::Result<()> {
         .inner_size(820.0, 740.0)
         .min_inner_size(620.0, 560.0)
         .center()
-        .on_navigation(|url| is_allowed_secondary_window_navigation(url))
+        .on_navigation(is_allowed_secondary_window_navigation)
         .build()?;
 
     Ok(())
@@ -61,7 +61,7 @@ pub fn open_update_window(app: &tauri::AppHandle) -> tauri::Result<()> {
         .min_inner_size(440.0, 570.0)
         .resizable(true)
         .center()
-        .on_navigation(|url| is_allowed_secondary_window_navigation(url))
+        .on_navigation(is_allowed_secondary_window_navigation)
         .build()?;
 
     Ok(())
@@ -111,7 +111,7 @@ pub fn restore_bootstrap(app: &tauri::AppHandle, runtime: RuntimeHandle) -> Resu
 
 #[cfg(test)]
 mod tests {
-    use super::{is_allowed_secondary_window_navigation, PLUGIN_REGISTRY_URL};
+    use super::{PLUGIN_REGISTRY_URL, is_allowed_secondary_window_navigation};
     use url::Url;
 
     #[test]
