@@ -1,7 +1,7 @@
 {
   "name": "dsh-desk",
   "private": true,
-  "version": "0.1.0-alpha.13",
+  "version": "0.1.0-alpha.14",
   "description": "Installable Tauri desktop distribution for DeepSeek Harness with a bundled runtime and daily compatibility checks.",
   "license": "MIT",
   "homepage": "https://github.com/majiayu000/dsh-desk/releases",
@@ -60,7 +60,7 @@
     "release:macos:preview": "pnpm prepare:runtime && tauri build --bundles app && DSH_ALLOW_ADHOC=1 node scripts/package-macos.mjs"
   },
   "dependencies": {
-    "@deepseek-ai/dsh": "0.1.0-rc.8",
+    "@deepseek-ai/dsh": "0.1.5-rc.2",
     "@tauri-apps/api": "2.11.1",
     "@tauri-apps/plugin-dialog": "2.7.3",
     "pnpm": "12.3.4"

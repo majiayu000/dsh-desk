@@ -24,10 +24,12 @@ const modelsRoot = packageRoot(webAppRequire, '@deepseek-ai/dsh-client-ui-settin
 const readModels = createContractReader(modelsRoot)
 const readWebApp = createContractReader(webAppRoot)
 const modelsPackage = JSON.parse(readModels('package.json'))
+const webAppPackage = JSON.parse(readWebApp('package.json'))
 const webPatch = readWebApp('cordis.patch.yml')
 const client = readModels('lib/client.js')
 const documentation = readModels('README.md')
 
+assert(webAppPackage.version === expectedVersion, 'Web bundle version is not pinned with Harness')
 assert(modelsPackage.version === expectedVersion, 'Models onboarding plugin version is not pinned with Harness')
 for (const token of [
   'id: ui-settings-models',

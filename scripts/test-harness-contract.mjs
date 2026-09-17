@@ -28,6 +28,28 @@ function fail(message) {
   throw new Error(`Harness contract failed: ${message}`);
 }
 
+function isHealthyHarnessStatus(status) {
+  return status >= 200 && status < 400;
+}
+
+function parseReadyUrl(line) {
+  if (!line.startsWith("dsh web: ")) return null;
+  const value = line.slice("dsh web: ".length).split(/\s+/, 1)[0];
+  let url;
+  try {
+    url = new URL(value);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== "http:" || url.hostname !== "127.0.0.1" || !url.port) {
+    fail(`runtime escaped strict loopback policy: ${value}`);
+  }
+  if (!url.searchParams.get("token")) {
+    fail("runtime ready URL is missing the launch token");
+  }
+  return url;
+}
+
 function verifyVersion() {
   const result = spawnSync(node, [entry, "--version"], {
     cwd: projectRoot,
@@ -99,20 +121,12 @@ async function waitForHealthyUrl(child) {
   const readyUrl = new Promise((resolveUrl, rejectUrl) => {
     const lines = createInterface({ input: child.stdout });
     lines.on("line", (line) => {
-      if (!line.startsWith("dsh web: ")) return;
-      const value = line.slice("dsh web: ".length).split(/\s/, 1)[0];
-      let url;
       try {
-        url = new URL(value);
-      } catch {
-        rejectUrl(new Error(`runtime printed an invalid URL: ${value}`));
-        return;
+        const url = parseReadyUrl(line);
+        if (url) resolveUrl(url);
+      } catch (error) {
+        rejectUrl(error);
       }
-      if (url.protocol !== "http:" || url.hostname !== "127.0.0.1" || !url.port) {
-        rejectUrl(new Error(`runtime escaped strict loopback policy: ${value}`));
-        return;
-      }
-      resolveUrl(url);
     });
     child.once("error", rejectUrl);
     child.once("exit", (code, signal) => {
@@ -129,8 +143,11 @@ async function waitForHealthyUrl(child) {
   let lastError = "no response";
   while (Date.now() < deadline) {
     try {
-      const response = await fetch(url, { signal: AbortSignal.timeout(1_500) });
-      if (response.status === 200 && (await response.text()).length > 0) return url;
+      const response = await fetch(url, {
+        redirect: "manual",
+        signal: AbortSignal.timeout(1_500),
+      });
+      if (isHealthyHarnessStatus(response.status)) return url;
       lastError = `HTTP ${response.status}`;
     } catch (error) {
       lastError = String(error);
@@ -144,7 +161,7 @@ let child;
 try {
   verifyPackagedNativeVariants();
   verifyVersion();
-  child = spawn(node, [entry, "web", "--host", "127.0.0.1", "--port", "0"], {
+  child = spawn(node, [entry, "web", "--host", "127.0.0.1", "--port", "0", "--no-open"], {
     cwd: projectRoot,
     detached: process.platform !== "win32",
     stdio: ["ignore", "pipe", "pipe"],

@@ -495,7 +495,7 @@ fn start_runtime(app: &tauri::AppHandle) -> Result<RunningRuntime, RuntimeFailur
 
     let mut command = harness_command(&node, &entry);
     command
-        .args(["web", "--host", "127.0.0.1", "--port", "0"])
+        .args(["web", "--host", "127.0.0.1", "--port", "0", "--no-open"])
         .current_dir(workspace)
         .env("DSH_HOME", dsh_home)
         .env("NO_COLOR", "1")
@@ -589,25 +589,61 @@ fn parse_ready_url(line: &str) -> Option<String> {
     Some(url.to_string())
 }
 
+fn http_request_target(url: &Url) -> String {
+    match url.query() {
+        Some(query) if !query.is_empty() => format!("{}?{query}", url.path()),
+        _ => {
+            let path = url.path();
+            if path.is_empty() {
+                "/".to_string()
+            } else {
+                path.to_string()
+            }
+        }
+    }
+}
+
+fn http_status_is_ready(response: &[u8]) -> bool {
+    let Ok(text) = std::str::from_utf8(response) else {
+        return false;
+    };
+    let Some(first_line) = text.split(['\r', '\n']).next() else {
+        return false;
+    };
+    let mut parts = first_line.split_whitespace();
+    let Some(version) = parts.next() else {
+        return false;
+    };
+    if !version.starts_with("HTTP/") {
+        return false;
+    }
+    let Some(status) = parts.next().and_then(|value| value.parse::<u16>().ok()) else {
+        return false;
+    };
+    (200..400).contains(&status)
+}
+
 fn wait_for_health(value: &str) -> Result<(), RuntimeFailure> {
     let url = Url::parse(value).map_err(|error| failure("runtime-invalid-url", error))?;
     let port = url.port().ok_or_else(|| RuntimeFailure {
         code: "runtime-invalid-url",
         message: "Harness 没有报告有效端口。".to_string(),
     })?;
+    let request_target = http_request_target(&url);
     let address = SocketAddr::from(([127, 0, 0, 1], port));
     let deadline = Instant::now() + HEALTH_TIMEOUT;
 
     while Instant::now() < deadline {
         if let Ok(mut stream) = TcpStream::connect_timeout(&address, Duration::from_millis(300)) {
             let _ = stream.set_read_timeout(Some(Duration::from_millis(500)));
-            let request =
-                format!("GET / HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\nConnection: close\r\n\r\n");
+            let request = format!(
+                "GET {request_target} HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\nConnection: close\r\n\r\n"
+            );
             if stream.write_all(request.as_bytes()).is_ok() {
                 let mut response = [0_u8; 64];
                 if let Ok(size) = stream.read(&mut response)
                     && size > 0
-                    && response[..size].starts_with(b"HTTP/1.1 200")
+                    && http_status_is_ready(&response[..size])
                 {
                     return Ok(());
                 }

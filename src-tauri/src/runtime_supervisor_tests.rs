@@ -1,8 +1,8 @@
 use std::{thread, time::Duration};
 
 use super::{
-    RuntimeCommand, RuntimeHandle, parse_ready_url, should_restart_after_plugin,
-    stop_retries_exhausted,
+    RuntimeCommand, RuntimeHandle, http_request_target, http_status_is_ready, parse_ready_url,
+    should_restart_after_plugin, stop_retries_exhausted,
 };
 use crate::plugin_manager::PluginCommandResult;
 
@@ -12,8 +12,30 @@ fn accepts_only_strict_loopback_ready_lines() {
         parse_ready_url("dsh web: http://127.0.0.1:43210/"),
         Some("http://127.0.0.1:43210/".to_string())
     );
+    assert_eq!(
+        parse_ready_url(
+            "dsh web: http://127.0.0.1:43210/?token=launch-token (LAN: http://10.0.0.8:43210/?token=launch-token)"
+        ),
+        Some("http://127.0.0.1:43210/?token=launch-token".to_string())
+    );
+    assert_eq!(
+        parse_ready_url("dsh web: opening the default browser; pass --no-open to disable"),
+        None
+    );
     assert_eq!(parse_ready_url("dsh web: http://0.0.0.0:43210/"), None);
     assert_eq!(parse_ready_url("prefix dsh web: http://127.0.0.1:1/"), None);
+}
+
+#[test]
+fn health_probe_uses_the_launch_token_and_accepts_redirects() {
+    use url::Url;
+
+    let url = Url::parse("http://127.0.0.1:43210/?token=launch-token").unwrap();
+    assert_eq!(http_request_target(&url), "/?token=launch-token");
+    assert!(http_status_is_ready(b"HTTP/1.1 302 Found\r\n"));
+    assert!(http_status_is_ready(b"HTTP/1.1 200 OK\r\n"));
+    assert!(!http_status_is_ready(b"HTTP/1.1 401 Unauthorized\r\n"));
+    assert!(!http_status_is_ready(b"HTTP/1.1 403 Forbidden\r\n"));
 }
 
 #[test]

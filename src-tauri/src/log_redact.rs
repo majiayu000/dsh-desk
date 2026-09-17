@@ -189,4 +189,11 @@ mod tests {
             "dsh web: http://127.0.0.1:43123"
         );
     }
+
+    #[test]
+    fn redacts_launch_tokens_in_ready_urls() {
+        let redacted = redact_log_line("dsh web: http://127.0.0.1:43123/?token=launch-secret");
+        assert!(!redacted.contains("launch-secret"), "{redacted}");
+        assert!(redacted.contains("token=[redacted]"), "{redacted}");
+    }
 }
