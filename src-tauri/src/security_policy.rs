@@ -79,6 +79,27 @@ mod tests {
             &Url::parse("tauri://localhost/index.html").unwrap(),
             None,
         ));
+        assert!(is_allowed_navigation(
+            &Url::parse("https://tauri.localhost/plugins.html").unwrap(),
+            None,
+        ));
+    }
+
+    #[test]
+    fn rejects_remote_https_when_runtime_url_is_absent() {
+        // Secondary privileged windows pass runtime_url=None; remote origins must fail.
+        assert!(!is_allowed_navigation(
+            &Url::parse("https://evil.example/").unwrap(),
+            None,
+        ));
+        assert!(!is_allowed_navigation(
+            &Url::parse("https://plugin.dshdesk.com/").unwrap(),
+            None,
+        ));
+        assert!(!is_allowed_navigation(
+            &Url::parse("https://example.com/path").unwrap(),
+            None,
+        ));
     }
 
     #[test]
