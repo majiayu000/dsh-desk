@@ -1,7 +1,7 @@
 # DeepSeek Harness Desktop 架构设计
 
 > 状态：设计基线，可开始 P0 技术验证
-> 调研快照：2026-08-14；上游 `master` 为 `47f943859bef60e4160492346772ded9b24f765a`，npm 查询到 `@deepseek-ai/dsh@0.1.0-rc.6`。构建时必须重新核对并锁定同一份发布物。
+> 调研快照：2026-09-17；本仓库锁定 `@deepseek-ai/dsh@0.1.5-rc.2`（npm `next`；`latest` 仍为 `0.1.5-rc.1`）。构建时必须重新核对并锁定同一份发布物。
 
 ## 1. 目标
 
@@ -55,7 +55,7 @@ Tauri Rust core（可信边界）
           │ 启动/停止、stdout/stderr、健康探测
           ▼
 Harness sidecar（固定 Node runtime + 同版本 dsh）
-└─ @deepseek-ai/dsh web --host 127.0.0.1 --port 0
+└─ @deepseek-ai/dsh web --host 127.0.0.1 --port 0 --no-open
    ├─ Cordis plugin tree
    ├─ API Proxy
    ├─ session/settings/credentials persistence
@@ -132,9 +132,9 @@ tests/
 
 1. Tauri core 获取单实例锁；第二实例只激活已有窗口。
 2. 校验 runtime manifest、入口文件与完整性；任何不一致直接进入 `failed`，不联网补装。
-3. 创建 Desktop 专用 `DSH_HOME`，通过受限的 Tauri sidecar 启动固定 Node runtime 与 dsh：`dsh web --host 127.0.0.1 --port 0`。
-4. 最多等待 20 秒读取严格格式的 `dsh web: http://127.0.0.1:<port>`；拒绝非 loopback host。
-5. 对 origin 执行健康探测，再由 WebView 完成 `host.describe` 兼容检查。
+3. 创建 Desktop 专用 `DSH_HOME`，通过受限的 Tauri sidecar 启动固定 Node runtime 与 dsh：`dsh web --host 127.0.0.1 --port 0 --no-open`。
+4. 最多等待 20 秒读取严格格式的 `dsh web: http://127.0.0.1:<port>/?token=...`；拒绝非 loopback host；不把 LAN URL 当作桌面导航目标。
+5. 对启动 token URL 执行不跟随跳转的 HTTP 健康探测（接受 2xx/3xx，拒绝 401），再由 WebView 打开同一 URL 完成 cookie 兑换。
 6. 只有探测通过才导航主窗口；否则展示可复制的错误码、runtime 版本和日志路径。
 
 ### 6.2 失败策略

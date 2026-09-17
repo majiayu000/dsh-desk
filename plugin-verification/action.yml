@@ -13,7 +13,7 @@ inputs:
     required: false
   harness-version:
     description: Exact @deepseek-ai/dsh version to verify.
-    default: 0.1.0-rc.6
+    default: 0.1.5-rc.2
     required: false
 
 outputs:
@@ -28,7 +28,7 @@ runs:
   using: composite
   steps:
     - name: Use the DSH Desk verification Node version
-      uses: actions/setup-node@v6
+      uses: actions/setup-node@v7
       with:
         node-version: 24
     - name: Exercise plugin lifecycle in an isolated DSH profile

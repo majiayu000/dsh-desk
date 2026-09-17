@@ -38,9 +38,10 @@ No system Node.js installation, npm setup, port selection, or terminal command i
 
 DeepSeek Harness already provides the agent runtime, web UI, sessions, tools, approvals, settings, and plugin protocol. DSH Desk does not fork those product surfaces. It owns the desktop responsibilities that should be boring and dependable:
 
-- bundles Node 24 and the exact `@deepseek-ai/dsh@0.1.0-rc.8` runtime;
+- bundles Node 24 and the exact `@deepseek-ai/dsh@0.1.5-rc.2` runtime;
 - isolates state in a private `DSH_HOME` instead of modifying an existing CLI setup;
-- waits for a real HTTP health check on a random loopback port;
+- waits for a real HTTP health check on the launch-token loopback URL;
+- grants the remote Harness page no Tauri IPC, shell, or filesystem capability;
 - grants the remote Harness page no Tauri IPC, shell, or filesystem capability;
 - constrains navigation to the exact runtime origin and opens external links in the system browser;
 - supervises only the process group it started;
@@ -49,13 +50,13 @@ DeepSeek Harness already provides the agent runtime, web UI, sessions, tools, ap
 
 ## Current availability
 
-| Platform | Public status | Signing status |
+| Platform | Latest published download | Signing status |
 |---|---|---|
-| macOS Apple Silicon & Intel | `v0.1.0-alpha.12` DMG (both architectures) | Developer ID signed, notarized, stapled |
-| Windows x64 | `v0.1.0-alpha.12` NSIS installer | Unsigned alpha (SmartScreen notice); updater payloads independently signed |
-| Linux x64 | `v0.1.0-alpha.12` AppImage & deb | Updater signatures included |
+| macOS Apple Silicon & Intel | `v0.1.0-alpha.13` DMG (both architectures) | Developer ID signed, notarized, stapled |
+| Windows x64 | `v0.1.0-alpha.13` NSIS installer | Unsigned alpha (SmartScreen notice); updater payloads independently signed |
+| Linux x64 | `v0.1.0-alpha.13` AppImage & deb | Updater signatures included |
 
-The [`v0.1.0-alpha.12` release run](https://github.com/majiayu000/dsh-desk/actions/runs/31999103490) completed preflight, the four platform bundles (including macOS signing, notarization, and verify-from-DMG), `Publish atomic release`, and the nested update-channel validate/publish jobs. It published 18 installer, updater, signature, SHA-256, and `latest.json` assets; the alpha channel was then updated atomically to `0.1.0-alpha.12`. Acceptance evidence is in [issue #34](https://github.com/majiayu000/dsh-desk/issues/34). Windows alpha releases may be published without Authenticode and say so in their Release Notes. See the live [compatibility radar](https://majiayu000.github.io/dsh-desk/), [compatibility evidence](docs/compatibility.md), and individual [Actions runs](https://github.com/majiayu000/dsh-desk/actions) for the latest facts.
+This repository now pins **DSH Desk `0.1.0-alpha.14`** with `@deepseek-ai/dsh@0.1.5-rc.2`. That combination is what CI verifies. GitHub Releases still serve `v0.1.0-alpha.13` (`@deepseek-ai/dsh@0.1.0-rc.6`) until the signed `v0.1.0-alpha.14` pipeline publishes. Windows alpha releases may be published without Authenticode and say so in their Release Notes. See the live [compatibility radar](https://majiayu000.github.io/dsh-desk/), [compatibility evidence](docs/compatibility.md), and individual [Actions runs](https://github.com/majiayu000/dsh-desk/actions) for the latest facts.
 
 ## What is different
 

@@ -43,8 +43,8 @@
 
 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 已经拥有 Agent runtime、Web UI、会话、工具、审批、设置和插件协议。DSH Desk 不复制这些业务能力，只负责桌面产品必须可靠拥有的部分：
 
-- 固定并携带 Node 24 与 `@deepseek-ai/dsh@0.1.0-rc.6`，普通用户不安装 Node、不敲命令；
-- 随机 loopback 端口、真实 HTTP 健康检查和受监管的进程生命周期；
+- 固定并携带 Node 24 与 `@deepseek-ai/dsh@0.1.5-rc.2`，普通用户不安装 Node、不敲命令；
+- 随机 loopback 端口、携带启动 token 的 HTTP 健康检查和受监管的进程生命周期；
 - 精确 origin 导航限制，远端 Harness 页面没有 Tauri IPC、shell 或文件系统权限；
 - 独立 `DSH_HOME`，不污染已有 CLI 环境；
 - 插件安装前检查来源、integrity 和生命周期脚本，失败后恢复原 Profile；
@@ -52,17 +52,17 @@
 
 ## 当前下载状态
 
-| 平台 | 当前状态 | 签名状态 |
+| 平台 | 已发布下载 | 签名状态 |
 |---|---|---|
-| macOS Apple Silicon 与 Intel | `v0.1.0-alpha.12` DMG（双架构） | Developer ID 签名、公证并 staple |
-| Windows x64 | `v0.1.0-alpha.12` NSIS 安装包 | Alpha 未签名（Release Notes 已说明 SmartScreen）；updater 工件独立签名 |
-| Linux x64 | `v0.1.0-alpha.12` AppImage / deb | 含 updater 签名 |
+| macOS Apple Silicon 与 Intel | `v0.1.0-alpha.13` DMG（双架构） | Developer ID 签名、公证并 staple |
+| Windows x64 | `v0.1.0-alpha.13` NSIS 安装包 | Alpha 未签名（Release Notes 已说明 SmartScreen）；updater 工件独立签名 |
+| Linux x64 | `v0.1.0-alpha.13` AppImage / deb | 含 updater 签名 |
 
-[`v0.1.0-alpha.12` 发布运行](https://github.com/majiayu000/dsh-desk/actions/runs/31999103490)完成了 preflight、四个平台打包（含 macOS 签名、公证、DMG 内容验证）、`Publish atomic release`，以及嵌套的更新通道 validate/publish。共发布 18 个安装包、updater、签名、SHA-256 与 `latest.json` 资产；alpha 通道随后原子更新到 `0.1.0-alpha.12`。验收证据见 [Issue #34](https://github.com/majiayu000/dsh-desk/issues/34)。Release 工作流缺少生产证书时会直接失败，不会把未签名资产伪装成正式版。最新事实以[兼容矩阵](docs/compatibility.md)和具体 [Actions 运行记录](https://github.com/majiayu000/dsh-desk/actions)为准。
+本仓库当前固定 **DSH Desk `0.1.0-alpha.14`** 与 `@deepseek-ai/dsh@0.1.5-rc.2`，由 CI 契约验证。GitHub Releases 在签名发布完成前仍提供 `v0.1.0-alpha.13`（Harness `0.1.0-rc.6`）。Release 工作流缺少生产证书时会直接失败，不会把未签名资产伪装成正式版。最新事实以[兼容矩阵](docs/compatibility.md)和具体 [Actions 运行记录](https://github.com/majiayu000/dsh-desk/actions)为准。
 
 ## 快速开始
 
-1. 从 [Releases](https://github.com/majiayu000/dsh-desk/releases) 下载对应平台安装包（当前推荐 `v0.1.0-alpha.12`）。
+1. 从 [Releases](https://github.com/majiayu000/dsh-desk/releases) 下载对应平台安装包（当前公开包为 `v0.1.0-alpha.13`；下一版为 `v0.1.0-alpha.14`）。
 2. 安装并启动 DSH Desk；应用自动验证并启动内置 Harness。
 3. 官方 Harness 首次启动弹窗会要求配置可用模型；填写 API Key 并点击“保存并继续”，即可发送第一条任务。
 
@@ -72,7 +72,7 @@ DSH Desk 不读取或保存模型 API Key；首次启动弹窗通过 Harness 官
 
 ## 当前限制
 
-- 公开下载已覆盖 macOS 双架构、Windows 与 Linux（`v0.1.0-alpha.12`），仍处 Alpha；发布链路已由 `v0.1.0-alpha.12` 端到端验证（[Issue #34](https://github.com/majiayu000/dsh-desk/issues/34)）；
+- 公开下载已覆盖 macOS 双架构、Windows 与 Linux（`v0.1.0-alpha.13`），仍处 Alpha；下一固定组合是 `0.1.0-alpha.14` × `@deepseek-ai/dsh@0.1.5-rc.2`；
 - Windows 安装包未做 Authenticode 签名，SmartScreen 提示属预期，安装前请核对 SHA-256；
 - 离线包包含固定 Node.js 与完整 Harness runtime，当前 DMG 约 215 MB；
 - DeepSeek Harness 仍处于快速变化阶段，每日兼容测试只能发现漂移，不能保证未来永不发生破坏性变更；
@@ -107,7 +107,7 @@ DSH Desk 当前不宣称安装包最小：完整离线 runtime 会显著增加�
 每次提交在 macOS arm64、Windows x64、Linux x64 运行：
 
 - TypeScript 构建、Rust check 与单元测试；
-- 真实启动 DSH，验证严格 loopback URL 和 HTTP 200；
+- 真实启动 DSH，验证严格 loopback URL、启动 token 和 HTTP 2xx/3xx 健康检查；
 - 组装不依赖系统 Node 的离线 runtime，再跑同一契约；
 - 验证插件 add/why/update/remove 与官方 CLI parity。
 

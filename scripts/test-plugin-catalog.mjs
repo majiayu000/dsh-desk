@@ -15,6 +15,13 @@ assert(catalog.harnessVersion === harnessVersion, "plugin catalog must match the
 assert(catalog.desktopVersion === packageJson.version, "plugin catalog must match the desktop version");
 assert(Array.isArray(catalog.entries) && catalog.entries.length > 0, "plugin catalog must not be empty");
 
+const verificationAction = read("plugin-verification/action.yml");
+assert(
+  verificationAction.includes(`default: ${harnessVersion}`),
+  "plugin candidate action default Harness version must match the pinned runtime",
+);
+assert(verificationAction.includes("actions/setup-node@v7"), "plugin candidate action must use setup-node@v7");
+
 const ids = new Set();
 const sources = new Set();
 for (const entry of catalog.entries) {

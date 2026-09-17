@@ -23,11 +23,11 @@ jobs:
   verify:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: majiayu000/dsh-desk/plugin-verification@main
         with:
           plugin-path: .
-          harness-version: 0.1.0-rc.6
+          harness-version: 0.1.5-rc.2
 ```
 
 Pin the action to a commit SHA before relying on it as a release gate. `@main` is shown only while DSH Desk has no stable action tag.
