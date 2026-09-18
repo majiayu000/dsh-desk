@@ -42,7 +42,6 @@ DeepSeek Harness already provides the agent runtime, web UI, sessions, tools, ap
 - isolates state in a private `DSH_HOME` instead of modifying an existing CLI setup;
 - waits for a real HTTP health check on the launch-token loopback URL;
 - grants the remote Harness page no Tauri IPC, shell, or filesystem capability;
-- grants the remote Harness page no Tauri IPC, shell, or filesystem capability;
 - constrains navigation to the exact runtime origin and opens external links in the system browser;
 - supervises only the process group it started;
 - checks the pinned version and the newest upstream candidate every day;
