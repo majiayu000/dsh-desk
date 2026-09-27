@@ -60,7 +60,7 @@
     "release:macos:preview": "pnpm prepare:runtime && tauri build --bundles app && DSH_ALLOW_ADHOC=1 node scripts/package-macos.mjs"
   },
   "dependencies": {
-    "@deepseek-ai/dsh": "0.1.5-rc.2",
+    "@deepseek-ai/dsh": "0.1.5-rc.3",
     "@tauri-apps/api": "2.11.1",
     "@tauri-apps/plugin-dialog": "2.7.3",
     "pnpm": "12.3.4"
