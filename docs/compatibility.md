@@ -9,11 +9,11 @@ DSH Desk 将桌面壳、Node、DeepSeek Harness 和 Web UI 作为一个固定版
 
 | DSH Desk | DeepSeek Harness | Node | macOS arm64 | Windows x64 | Linux x64 |
 |---|---|---|---|---|---|
-| `0.1.0-alpha.14` | `0.1.5-rc.2` | `24.x` | 本仓库契约 | 本仓库契约 | 本仓库契约 |
+| `0.1.0-alpha.14` | `0.1.5-rc.3` | `24.x` | 本仓库契约 | 本仓库契约 | 本仓库契约 |
 
 这里的“已验证 / 本仓库契约”指该固定组合通过三平台 CI：TypeScript/Rust 构建、固定 DSH 版本、严格 loopback 就绪 URL（含启动 token）、HTTP 2xx/3xx 健康检查、离线 runtime 与插件 parity。合入后的公开运行以 [CI workflow](https://github.com/majiayu000/dsh-desk/actions/workflows/ci.yml) 为准。
 
-npm `latest` 自 2026-09-04 起与旧健康检查不兼容：`0.1.2-rc.1` 开始 Web 根路径需要一次性 launch token，无 token 的 `GET /` 返回 HTTP 401。桌面壳现在解析 `dsh web:` 行中的 token URL，并对该 URL 做不跟随跳转的健康探测。本仓库锁定 npm `next` `0.1.5-rc.2`，与 Web 包家族一致；`latest` 仍是 `0.1.5-rc.1`，每日候选检查会继续探测它。`alpha` `0.1.6-alpha.1` 不会被自动采用。
+npm `latest` 自 2026-09-04 起与旧健康检查不兼容：`0.1.2-rc.1` 开始 Web 根路径需要一次性 launch token，无 token 的 `GET /` 返回 HTTP 401。桌面壳现在解析 `dsh web:` 行中的 token URL，并对该 URL 做不跟随跳转的健康探测。本仓库锁定 `0.1.5-rc.3`，与 Web 包家族一致。npm `latest` 与 `next` 现为 `0.1.7-rc.2`，每日候选检查会继续探测 `latest`，不会因此改写锁定版本。`alpha` `0.1.7-alpha.2` 不会被自动采用。
 
 GitHub Releases 当前公开安装包仍是 [`v0.1.0-alpha.13`](https://github.com/majiayu000/dsh-desk/releases/tag/v0.1.0-alpha.13)（Harness `0.1.0-rc.6`）。`0.1.0-alpha.14` 需要走同一套签名发布链路后才会替换下载入口。
 

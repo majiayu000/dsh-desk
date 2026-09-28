@@ -1,7 +1,7 @@
 # DeepSeek Harness Desktop 架构设计
 
 > 状态：设计基线，可开始 P0 技术验证
-> 调研快照：2026-09-17；本仓库锁定 `@deepseek-ai/dsh@0.1.5-rc.2`（npm `next`；`latest` 仍为 `0.1.5-rc.1`）。构建时必须重新核对并锁定同一份发布物。
+> 调研快照：2026-09-17；本仓库锁定 `@deepseek-ai/dsh@0.1.5-rc.3`（npm `latest` 与 `next` 现为 `0.1.7-rc.2`）。构建时必须重新核对并锁定同一份发布物。
 
 ## 1. 目标
 

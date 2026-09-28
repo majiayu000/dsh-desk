@@ -13,7 +13,7 @@ inputs:
     required: false
   harness-version:
     description: Exact @deepseek-ai/dsh version to verify.
-    default: 0.1.5-rc.2
+    default: 0.1.5-rc.3
     required: false
 
 outputs:
