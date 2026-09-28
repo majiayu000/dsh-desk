@@ -53,6 +53,10 @@ Tauri 使用 Hardened Runtime 完成签名并先提交 `.app` 公证。DMG 生�
 
 Linux AppImage 与 deb 会生成 SHA-256，并由 GitHub OIDC artifact attestation 记录构建来源。它不等同于发行版仓库的 GPG 签名；进入 apt/rpm 仓库时必须再按仓库密钥和元数据规范签名。
 
+Linux 构建在 Tauri 打包前将官方 `AppRun-x86_64` 缓存设置为 `0755`。当前 bundler 下载时使用的 `0770` 会被复制到 `AppRun.wrapped`，导致 root 挂载、普通用户运行的 Firejail/AppImage 目录测试返回 `Permission denied`，详见 [Tauri #16155](https://github.com/tauri-apps/tauri/issues/16155)。权限修复发生在打包和 updater 签名前，不修改已签名安装包。
+
+正式 Release 与 unsigned preview 在上传前运行 `scripts/test-appimage.sh`：以 root 解包成品，再由普通用户检查启动器与内置 Node，并在 Xvfb 中确认窗口出现且程序持续运行。失败会阻止后续校验和生成与上传。此检查需要 Linux x86_64、免密 sudo、squashfs-tools、xvfb、x11-utils 和 dbus-x11；它覆盖安装包启动，不替代模型配置和首次任务的人工验收。
+
 ## 发布前人工检查
 
 1. 在无 Node/npm/pnpm 的全新系统用户下安装。

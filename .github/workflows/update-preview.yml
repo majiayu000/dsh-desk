@@ -69,6 +69,19 @@ jobs:
           pnpm test:packaged-runtime &&
           pnpm test:plugin-parity &&
           pnpm test:plugin-catalog
+      - name: Prepare AppImage launcher permissions
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          # Tauri copies this cached launcher into AppRun.wrapped, preserving its mode.
+          # https://github.com/tauri-apps/tauri/issues/16155
+          cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/tauri"
+          mkdir -p "$cache_dir"
+          curl --fail --location --retry 3 \
+            https://github.com/tauri-apps/binary-releases/releases/download/apprun-old/AppRun-x86_64 \
+            --output "$cache_dir/AppRun-x86_64.download"
+          chmod 755 "$cache_dir/AppRun-x86_64.download"
+          mv "$cache_dir/AppRun-x86_64.download" "$cache_dir/AppRun-x86_64"
       - name: Build unsigned OS package and signed updater artifact
         uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f # v1
         env:

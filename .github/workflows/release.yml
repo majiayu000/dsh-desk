@@ -90,7 +90,7 @@ jobs:
         if: runner.os == 'Linux'
         run: >-
           sudo apt-get update && sudo apt-get install -y
-          libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf libfuse2
+          libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf libfuse2 squashfs-tools xvfb x11-utils dbus-x11
       - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
         with:
           version: 12.3.4
@@ -185,6 +185,19 @@ jobs:
         env:
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
         run: pnpm release:macos:sign-runtime
+      - name: Prepare AppImage launcher permissions
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          # Tauri copies this cached launcher into AppRun.wrapped, preserving its mode.
+          # https://github.com/tauri-apps/tauri/issues/16155
+          cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/tauri"
+          mkdir -p "$cache_dir"
+          curl --fail --location --retry 3 \
+            https://github.com/tauri-apps/binary-releases/releases/download/apprun-old/AppRun-x86_64 \
+            --output "$cache_dir/AppRun-x86_64.download"
+          chmod 755 "$cache_dir/AppRun-x86_64.download"
+          mv "$cache_dir/AppRun-x86_64.download" "$cache_dir/AppRun-x86_64"
       - name: Build platform bundle
         uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f # v1
         env:
@@ -236,6 +249,9 @@ jobs:
               throw "Expected unsigned Windows alpha installer $($installer.Name), got $($signature.Status)."
             }
           }
+      - name: Verify finished AppImage as a different user
+        if: runner.os == 'Linux'
+        run: bash scripts/test-appimage.sh src-tauri/target/release/bundle/appimage/*.AppImage
       - name: Write SHA-256 checksums
         run: pnpm release:checksums
       - name: Stage immutable release artifacts
