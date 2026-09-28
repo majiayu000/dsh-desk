@@ -38,7 +38,7 @@ No system Node.js installation, npm setup, port selection, or terminal command i
 
 DeepSeek Harness already provides the agent runtime, web UI, sessions, tools, approvals, settings, and plugin protocol. DSH Desk does not fork those product surfaces. It owns the desktop responsibilities that should be boring and dependable:
 
-- bundles Node 24 and the exact `@deepseek-ai/dsh@0.1.5-rc.2` runtime;
+- bundles Node 24 and the exact `@deepseek-ai/dsh@0.1.5-rc.3` runtime;
 - isolates state in a private `DSH_HOME` instead of modifying an existing CLI setup;
 - waits for a real HTTP health check on the launch-token loopback URL;
 - grants the remote Harness page no Tauri IPC, shell, or filesystem capability;
@@ -55,7 +55,7 @@ DeepSeek Harness already provides the agent runtime, web UI, sessions, tools, ap
 | Windows x64 | `v0.1.0-alpha.13` NSIS installer | Unsigned alpha (SmartScreen notice); updater payloads independently signed |
 | Linux x64 | `v0.1.0-alpha.13` AppImage & deb | Updater signatures included |
 
-This repository now pins **DSH Desk `0.1.0-alpha.14`** with `@deepseek-ai/dsh@0.1.5-rc.2`. That combination is what CI verifies. GitHub Releases still serve `v0.1.0-alpha.13` (`@deepseek-ai/dsh@0.1.0-rc.6`) until the signed `v0.1.0-alpha.14` pipeline publishes. Windows alpha releases may be published without Authenticode and say so in their Release Notes. See the live [compatibility radar](https://majiayu000.github.io/dsh-desk/), [compatibility evidence](docs/compatibility.md), and individual [Actions runs](https://github.com/majiayu000/dsh-desk/actions) for the latest facts.
+This repository now pins **DSH Desk `0.1.0-alpha.14`** with `@deepseek-ai/dsh@0.1.5-rc.3`. That combination is what CI verifies. GitHub Releases still serve `v0.1.0-alpha.13` (`@deepseek-ai/dsh@0.1.0-rc.6`) until the signed `v0.1.0-alpha.14` pipeline publishes. Windows alpha releases may be published without Authenticode and say so in their Release Notes. See the live [compatibility radar](https://majiayu000.github.io/dsh-desk/), [compatibility evidence](docs/compatibility.md), and individual [Actions runs](https://github.com/majiayu000/dsh-desk/actions) for the latest facts.
 
 ## What is different
 

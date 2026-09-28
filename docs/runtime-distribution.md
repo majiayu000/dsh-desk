@@ -56,8 +56,8 @@
 ```json
 {
   "schemaVersion": 1,
-  "releaseId": "dsh-0.1.5-rc.2-node-24.x-r1",
-  "harnessVersion": "0.1.5-rc.2",
+  "releaseId": "dsh-0.1.5-rc.3-node-24.x-r1",
+  "harnessVersion": "0.1.5-rc.3",
   "nodeVersion": "24.x",
   "desktopVersionRange": ">=0.1.0 <0.2.0",
   "publishedAt": "2026-08-14T00:00:00Z",

@@ -43,7 +43,7 @@
 
 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 已经拥有 Agent runtime、Web UI、会话、工具、审批、设置和插件协议。DSH Desk 不复制这些业务能力，只负责桌面产品必须可靠拥有的部分：
 
-- 固定并携带 Node 24 与 `@deepseek-ai/dsh@0.1.5-rc.2`，普通用户不安装 Node、不敲命令；
+- 固定并携带 Node 24 与 `@deepseek-ai/dsh@0.1.5-rc.3`，普通用户不安装 Node、不敲命令；
 - 随机 loopback 端口、携带启动 token 的 HTTP 健康检查和受监管的进程生命周期；
 - 精确 origin 导航限制，远端 Harness 页面没有 Tauri IPC、shell 或文件系统权限；
 - 独立 `DSH_HOME`，不污染已有 CLI 环境；
@@ -58,7 +58,7 @@
 | Windows x64 | `v0.1.0-alpha.13` NSIS 安装包 | Alpha 未签名（Release Notes 已说明 SmartScreen）；updater 工件独立签名 |
 | Linux x64 | `v0.1.0-alpha.13` AppImage / deb | 含 updater 签名 |
 
-本仓库当前固定 **DSH Desk `0.1.0-alpha.14`** 与 `@deepseek-ai/dsh@0.1.5-rc.2`，由 CI 契约验证。GitHub Releases 在签名发布完成前仍提供 `v0.1.0-alpha.13`（Harness `0.1.0-rc.6`）。Release 工作流缺少生产证书时会直接失败，不会把未签名资产伪装成正式版。最新事实以[兼容矩阵](docs/compatibility.md)和具体 [Actions 运行记录](https://github.com/majiayu000/dsh-desk/actions)为准。
+本仓库当前固定 **DSH Desk `0.1.0-alpha.14`** 与 `@deepseek-ai/dsh@0.1.5-rc.3`，由 CI 契约验证。GitHub Releases 在签名发布完成前仍提供 `v0.1.0-alpha.13`（Harness `0.1.0-rc.6`）。Release 工作流缺少生产证书时会直接失败，不会把未签名资产伪装成正式版。最新事实以[兼容矩阵](docs/compatibility.md)和具体 [Actions 运行记录](https://github.com/majiayu000/dsh-desk/actions)为准。
 
 ## 快速开始
 
@@ -72,7 +72,7 @@ DSH Desk 不读取或保存模型 API Key；首次启动弹窗通过 Harness 官
 
 ## 当前限制
 
-- 公开下载已覆盖 macOS 双架构、Windows 与 Linux（`v0.1.0-alpha.13`），仍处 Alpha；下一固定组合是 `0.1.0-alpha.14` × `@deepseek-ai/dsh@0.1.5-rc.2`；
+- 公开下载已覆盖 macOS 双架构、Windows 与 Linux（`v0.1.0-alpha.13`），仍处 Alpha；下一固定组合是 `0.1.0-alpha.14` × `@deepseek-ai/dsh@0.1.5-rc.3`；
 - Windows 安装包未做 Authenticode 签名，SmartScreen 提示属预期，安装前请核对 SHA-256；
 - 离线包包含固定 Node.js 与完整 Harness runtime，当前 DMG 约 215 MB；
 - DeepSeek Harness 仍处于快速变化阶段，每日兼容测试只能发现漂移，不能保证未来永不发生破坏性变更；
