@@ -1,43 +1,43 @@
 {
-  "version": "0.1.0-alpha.13",
+  "version": "0.1.0-alpha.14",
   "notes": "See the GitHub release for details.",
-  "pub_date": "2026-08-21T19:07:14.968Z",
+  "pub_date": "2026-09-28T18:09:39.476Z",
   "platforms": {
     "darwin-aarch64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSTHVTOHlFUmg4V3VVMkozQmNRaHVMNkxFdTc2elBrRXYxMkozVUcwNnRiNTl6ZmlZMjVrVnV4L05UZkFQcm5nb0VFWEdYRG5rK29VV1NFcHdnS0ZSaTkrWWY4allNZlFNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg3MzM2NDM4CWZpbGU6RFNIIERlc2suYXBwLnRhci5negpudnZ5OEx5U1JZZ0E5WTBDZ1NPQzZYcU5GcUNuS21TM0dMKzJpdjU2YmsvM3NaQXkvTlY1YnptR0VLMjgrRy9JSjcxQm1RNjdmZW4wYklPSDVScWZCdz09Cg==",
-      "url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.13/DSH.Desk_0.1.0-alpha.13_aarch64.app.tar.gz"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSTHVTOHlFUmg4V3RETWdXK1lFdHFkZzJlREVhaWZPak85a2x4MlhQNWk4ZUtBaVdyd21tdFhoNndFelpLTEZqdUtFcGE1bjZYTlMxVHN0ZVNkOHl6dWRBNklscVpnK3dvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkwNjE3NDg5CWZpbGU6RFNIIERlc2suYXBwLnRhci5negpkSy9Sa292MzJSdVI3SW90MGtSYXZJZ2EvUGJ6QXU1K2I1OWEwSkUxeHkyam1wQlVWc3k5UlVHMlhEck5oby9vZGZhR01tZXk3VDQyTEdEay9NVDlCUT09Cg==",
+      "url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_aarch64.app.tar.gz"
     },
     "darwin-aarch64-app": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSTHVTOHlFUmg4V3VVMkozQmNRaHVMNkxFdTc2elBrRXYxMkozVUcwNnRiNTl6ZmlZMjVrVnV4L05UZkFQcm5nb0VFWEdYRG5rK29VV1NFcHdnS0ZSaTkrWWY4allNZlFNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg3MzM2NDM4CWZpbGU6RFNIIERlc2suYXBwLnRhci5negpudnZ5OEx5U1JZZ0E5WTBDZ1NPQzZYcU5GcUNuS21TM0dMKzJpdjU2YmsvM3NaQXkvTlY1YnptR0VLMjgrRy9JSjcxQm1RNjdmZW4wYklPSDVScWZCdz09Cg==",
-      "url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.13/DSH.Desk_0.1.0-alpha.13_aarch64.app.tar.gz"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSTHVTOHlFUmg4V3RETWdXK1lFdHFkZzJlREVhaWZPak85a2x4MlhQNWk4ZUtBaVdyd21tdFhoNndFelpLTEZqdUtFcGE1bjZYTlMxVHN0ZVNkOHl6dWRBNklscVpnK3dvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkwNjE3NDg5CWZpbGU6RFNIIERlc2suYXBwLnRhci5negpkSy9Sa292MzJSdVI3SW90MGtSYXZJZ2EvUGJ6QXU1K2I1OWEwSkUxeHkyam1wQlVWc3k5UlVHMlhEck5oby9vZGZhR01tZXk3VDQyTEdEay9NVDlCUT09Cg==",
+      "url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_aarch64.app.tar.gz"
     },
     "darwin-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSTHVTOHlFUmg4V2o0Y01LcitYaDU2cFRoTTl4WWx1N2VLR2xSaGIyekE1dXFVNXRhNVh6Vll6WDd2MEZMZHZKQ3ZRaWxETzNxcGRvRjBhTHVTWm5jSnFUUEM4RkJuZ3dNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg3MzM3NzI0CWZpbGU6RFNIIERlc2suYXBwLnRhci5negp5SnFJMFYyYmpSbFV5ZUNaM3JPNFlsT0xTUjEydE9GT1VxTjhUaVJLVUJweVBEOVZCRFI5TTlpNUVmRGVaT0hmRDI1RWpBMmxValMrZmx3WlAxQ3ZCZz09Cg==",
-      "url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.13/DSH.Desk_0.1.0-alpha.13_x64.app.tar.gz"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSTHVTOHlFUmg4V3NMOXd0UnhFVXdqY3hsaFl3MTEvWWRNdzB1TVVucEYvQzhhc3M2dTUxYWNPanpTTjdwREdCNUNoRzNwN2I1K3BzYkdiL3hOU29oeW9oZzhzSUZLV2dvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkwNjE4MzM3CWZpbGU6RFNIIERlc2suYXBwLnRhci5negpuTlV2djJ1YlNDd25PSmxjdmhzWVU5MXRUNUd4d25CTGJ2R2NUOUgyMnlvRm9nd0g5WkdHWFcxUWdqcHpub1FMVVAvR2VYVTNRYVdSOGlWd1hNVGtDZz09Cg==",
+      "url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_x64.app.tar.gz"
     },
     "darwin-x86_64-app": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSTHVTOHlFUmg4V2o0Y01LcitYaDU2cFRoTTl4WWx1N2VLR2xSaGIyekE1dXFVNXRhNVh6Vll6WDd2MEZMZHZKQ3ZRaWxETzNxcGRvRjBhTHVTWm5jSnFUUEM4RkJuZ3dNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg3MzM3NzI0CWZpbGU6RFNIIERlc2suYXBwLnRhci5negp5SnFJMFYyYmpSbFV5ZUNaM3JPNFlsT0xTUjEydE9GT1VxTjhUaVJLVUJweVBEOVZCRFI5TTlpNUVmRGVaT0hmRDI1RWpBMmxValMrZmx3WlAxQ3ZCZz09Cg==",
-      "url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.13/DSH.Desk_0.1.0-alpha.13_x64.app.tar.gz"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSTHVTOHlFUmg4V3NMOXd0UnhFVXdqY3hsaFl3MTEvWWRNdzB1TVVucEYvQzhhc3M2dTUxYWNPanpTTjdwREdCNUNoRzNwN2I1K3BzYkdiL3hOU29oeW9oZzhzSUZLV2dvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkwNjE4MzM3CWZpbGU6RFNIIERlc2suYXBwLnRhci5negpuTlV2djJ1YlNDd25PSmxjdmhzWVU5MXRUNUd4d25CTGJ2R2NUOUgyMnlvRm9nd0g5WkdHWFcxUWdqcHpub1FMVVAvR2VYVTNRYVdSOGlWd1hNVGtDZz09Cg==",
+      "url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_x64.app.tar.gz"
     },
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSTHVTOHlFUmg4V2hXcFh4NWw0aVhIMTdmRkxRTnR6eFR2RXVmNkMrMm1YaE42RXM2d3lEaUlRbERKOGV4dCtJT01XRFBJZjBzRlNkUjFBZ1FUTys0ZEhtaHlaSUtVOWc4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg3MzM2ODM4CWZpbGU6RFNIIERlc2tfMC4xLjAtYWxwaGEuMTNfeDY0LXNldHVwLmV4ZQpmdkFXWElNU1p2MzRCSjZROHAzekFsbmNNSUUzOUs5b3N2ZXFOU0NGRkg3UCs5NWxpTnhzYTlRK1JzUXREeGxXYUNPWDRqTTBrL20wcEhqMmtZSzVDUT09Cg==",
-      "url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.13/DSH.Desk_0.1.0-alpha.13_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSTHVTOHlFUmg4V245OTNqUERPbnRwRGhPN0RZb0xtK3M3RFFFYTJ3THppRkRwRmdZcTQ2eG80UW1JMFQ2ME1mckxMT2dyKzN2SSs1d1hPSTYybEpxVDhwZ2dkWG42eXd3PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkwNjE3NzA2CWZpbGU6RFNIIERlc2tfMC4xLjAtYWxwaGEuMTRfeDY0LXNldHVwLmV4ZQpmTkMyOHFLKzRkTklacFFWOFRpcEtnei95SFBmb2VKdVR5a0dwYnl0TjFPYWV3d2NzYUxSU01TZnFWT3BWSjdiclBZL3Y4UXNzczM4RWFLa3pHQjhEQT09Cg==",
+      "url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_x64-setup.exe"
     },
     "windows-x86_64-nsis": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSTHVTOHlFUmg4V2hXcFh4NWw0aVhIMTdmRkxRTnR6eFR2RXVmNkMrMm1YaE42RXM2d3lEaUlRbERKOGV4dCtJT01XRFBJZjBzRlNkUjFBZ1FUTys0ZEhtaHlaSUtVOWc4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg3MzM2ODM4CWZpbGU6RFNIIERlc2tfMC4xLjAtYWxwaGEuMTNfeDY0LXNldHVwLmV4ZQpmdkFXWElNU1p2MzRCSjZROHAzekFsbmNNSUUzOUs5b3N2ZXFOU0NGRkg3UCs5NWxpTnhzYTlRK1JzUXREeGxXYUNPWDRqTTBrL20wcEhqMmtZSzVDUT09Cg==",
-      "url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.13/DSH.Desk_0.1.0-alpha.13_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSTHVTOHlFUmg4V245OTNqUERPbnRwRGhPN0RZb0xtK3M3RFFFYTJ3THppRkRwRmdZcTQ2eG80UW1JMFQ2ME1mckxMT2dyKzN2SSs1d1hPSTYybEpxVDhwZ2dkWG42eXd3PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkwNjE3NzA2CWZpbGU6RFNIIERlc2tfMC4xLjAtYWxwaGEuMTRfeDY0LXNldHVwLmV4ZQpmTkMyOHFLKzRkTklacFFWOFRpcEtnei95SFBmb2VKdVR5a0dwYnl0TjFPYWV3d2NzYUxSU01TZnFWT3BWSjdiclBZL3Y4UXNzczM4RWFLa3pHQjhEQT09Cg==",
+      "url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_x64-setup.exe"
     },
     "linux-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSTHVTOHlFUmg4V25POW9qaHlHZ0xWdi9PMCtQRzI0L2RMdUxwWHVTbktUc3M2aFJ3a2pkZkFWNXJibXRqVFhZVjBPQmxiSG0xQnVpSExwSHNWeWg5RXhFMWs4NVM3bEFRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg3MzM2Mzg2CWZpbGU6RFNIIERlc2tfMC4xLjAtYWxwaGEuMTNfYW1kNjQuQXBwSW1hZ2UKcSt6bHlORkxuL3NWd1pkeFhVQjh1bDVNM0hWMmxhWVJMdUdzcVVwbVFxRzl1M3JyVnZlUm96V2ozT1lDa1hkelpaczVBcjBGSzc4S3VwZWJielpNQ3c9PQo=",
-      "url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.13/DSH.Desk_0.1.0-alpha.13_amd64.AppImage"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSTHVTOHlFUmg4V25heTFBTTl5SURiejZkYnVnV3VEOG5PbW5KUUxWOEQraFlkMVBETmExeFFHVDk0OGdMaDBUdE1EL3J3R2g5N01YM0pHZmxlWUtCc1JMYUVVOGRudmdNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkwNjE3NDM4CWZpbGU6RFNIIERlc2tfMC4xLjAtYWxwaGEuMTRfYW1kNjQuQXBwSW1hZ2UKN2xqakFUNG0yKy9PazlNeWhjUWk4ZDBlZGFYcVpoS2xVYm5YQWhQcHJZSG9KVWVKRzJ5VXlaeGtWeTdtc0ZCZ3MvYmV0eldoOEVZcVJlRUNodXhoRFE9PQo=",
+      "url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_amd64.AppImage"
     },
     "linux-x86_64-appimage": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSTHVTOHlFUmg4V25POW9qaHlHZ0xWdi9PMCtQRzI0L2RMdUxwWHVTbktUc3M2aFJ3a2pkZkFWNXJibXRqVFhZVjBPQmxiSG0xQnVpSExwSHNWeWg5RXhFMWs4NVM3bEFRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg3MzM2Mzg2CWZpbGU6RFNIIERlc2tfMC4xLjAtYWxwaGEuMTNfYW1kNjQuQXBwSW1hZ2UKcSt6bHlORkxuL3NWd1pkeFhVQjh1bDVNM0hWMmxhWVJMdUdzcVVwbVFxRzl1M3JyVnZlUm96V2ozT1lDa1hkelpaczVBcjBGSzc4S3VwZWJielpNQ3c9PQo=",
-      "url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.13/DSH.Desk_0.1.0-alpha.13_amd64.AppImage"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSTHVTOHlFUmg4V25heTFBTTl5SURiejZkYnVnV3VEOG5PbW5KUUxWOEQraFlkMVBETmExeFFHVDk0OGdMaDBUdE1EL3J3R2g5N01YM0pHZmxlWUtCc1JMYUVVOGRudmdNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkwNjE3NDM4CWZpbGU6RFNIIERlc2tfMC4xLjAtYWxwaGEuMTRfYW1kNjQuQXBwSW1hZ2UKN2xqakFUNG0yKy9PazlNeWhjUWk4ZDBlZGFYcVpoS2xVYm5YQWhQcHJZSG9KVWVKRzJ5VXlaeGtWeTdtc0ZCZ3MvYmV0eldoOEVZcVJlRUNodXhoRFE9PQo=",
+      "url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_amd64.AppImage"
     },
     "linux-x86_64-deb": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSTHVTOHlFUmg4V2haVUJlSUo2dVNST01hVEpWU05RendRK1VFRHgzY0dERWtYN0N3K01ROTh1RmJsdXJkK2VkdnFoMHNIMFlTaFpZZHRacFNUc0NlbGhUUmVkQ3V5dmcwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg3MzM2Mzg2CWZpbGU6RFNIIERlc2tfMC4xLjAtYWxwaGEuMTNfYW1kNjQuZGViCmxtaFBER2Y4SC9Fa2JFelp0THR4eWJaSmdWU2w0SGdienI4UUNyZHUvOVZYcW9CT1RLQTJFaU5GLy9rZDgyTnpMVXpWWG1pSC9MNUZOUmUvTkVXQURnPT0K",
-      "url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.13/DSH.Desk_0.1.0-alpha.13_amd64.deb"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSTHVTOHlFUmg4V24rSzYxc3pNdTF0dzJIV1JzSzBlSHBVNThJN09ZWlM0MU9OV0hGa1h0TkY5Q3JmK3ZRZVFFZTR5M0FQclhyb0NmYVVyY3VIM0VkRW1MR1VYS1BWcmdzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkwNjE3NDM4CWZpbGU6RFNIIERlc2tfMC4xLjAtYWxwaGEuMTRfYW1kNjQuZGViCnRXcTJXTGFHR3NoRm5Xc3dUK0ZNKzFqajdraW1GSXZiZ0Q0ZFhreDV2SXgyRDRRVTlLUklMZ1A1a1l0ZmdFc3FDOXY2OGdwN2tmLzYrRDJtNlJlU0R3PT0K",
+      "url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_amd64.deb"
     }
   }
 }
