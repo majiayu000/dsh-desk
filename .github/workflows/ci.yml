@@ -21,14 +21,14 @@ jobs:
           - platform: Windows-x64
             runner: windows-2022
           - platform: Linux-x64
-            runner: ubuntu-24.04
+            runner: ubuntu-22.04
     steps:
       - uses: actions/checkout@v7
       - name: Install Linux desktop dependencies
         if: runner.os == 'Linux'
         run: >-
           sudo apt-get update && sudo apt-get install -y
-          libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+          libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf libfuse2 squashfs-tools xvfb x11-utils dbus-x11
       - uses: pnpm/action-setup@v6
         with:
           version: 12.3.4
@@ -72,3 +72,31 @@ jobs:
         run: pnpm test:plugin-source
       - name: Verify trusted plugin catalog
         run: pnpm test:plugin-catalog
+      - name: Prepare AppImage launcher permissions
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          # Tauri copies this cached launcher into AppRun.wrapped, preserving its mode.
+          # https://github.com/tauri-apps/tauri/issues/16155
+          cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/tauri"
+          mkdir -p "$cache_dir"
+          curl --fail --location --retry 3 \
+            https://github.com/tauri-apps/binary-releases/releases/download/apprun-old/AppRun-x86_64 \
+            --output "$cache_dir/AppRun-x86_64.download"
+          chmod 755 "$cache_dir/AppRun-x86_64.download"
+          mv "$cache_dir/AppRun-x86_64.download" "$cache_dir/AppRun-x86_64"
+      - name: Build Linux AppImage
+        if: runner.os == 'Linux'
+        run: pnpm tauri build --bundles appimage --config src-tauri/tauri.unsigned-preview.json
+      - name: Verify finished AppImage as a different user
+        if: runner.os == 'Linux'
+        run: bash scripts/test-appimage.sh src-tauri/target/release/bundle/appimage/*.AppImage
+      - name: Upload verified Linux AppImage
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: linux-appimage-${{ github.sha }}
+          path: src-tauri/target/release/bundle/appimage/*.AppImage
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0

@@ -74,17 +74,22 @@ function verifyPackagedNativeVariants() {
   const manifest = JSON.parse(readFileSync(join(runtimeRoot, "runtime-manifest.json"), "utf8"));
   if (process.platform !== "linux" || process.arch !== "x64") return;
 
-  const koffiRoot = join(runtimeRoot, "node_modules", "@koromix", "koffi-linux-x64");
-  if (!existsSync(koffiRoot)) return;
-  const muslVariant = "@koromix/koffi-linux-x64/musl_x64";
-  if (!manifest.prunedNativeVariants?.includes(muslVariant)) {
-    fail(`runtime manifest does not record pruned native variant ${muslVariant}`);
-  }
-  if (existsSync(join(koffiRoot, "musl_x64"))) {
-    fail("glibc runtime still contains the incompatible Koffi musl binary");
-  }
-  if (!existsSync(join(koffiRoot, "linux_x64", "koffi.node"))) {
-    fail("glibc runtime is missing the required Koffi binary");
+  for (const [packageName, glibcPath, muslPath] of [
+    ["@koromix/koffi-linux-x64", "linux_x64/koffi.node", "musl_x64"],
+    ["@deepseek-ai/node-addon-system-linux-x64", "bin/glibc/system.node", "bin/musl"],
+  ]) {
+    const packageRoot = join(runtimeRoot, "node_modules", packageName);
+    if (!existsSync(packageRoot)) continue;
+    const muslVariant = `${packageName}/${muslPath}`;
+    if (!manifest.prunedNativeVariants?.includes(muslVariant)) {
+      fail(`runtime manifest does not record pruned native variant ${muslVariant}`);
+    }
+    if (existsSync(join(packageRoot, muslPath))) {
+      fail(`glibc runtime still contains incompatible variant ${muslVariant}`);
+    }
+    if (!existsSync(join(packageRoot, glibcPath))) {
+      fail(`glibc runtime is missing ${packageName}/${glibcPath}`);
+    }
   }
 }
 

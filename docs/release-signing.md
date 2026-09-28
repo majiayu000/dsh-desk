@@ -55,7 +55,9 @@ Linux AppImage 与 deb 会生成 SHA-256，并由 GitHub OIDC artifact attestati
 
 Linux 构建在 Tauri 打包前将官方 `AppRun-x86_64` 缓存设置为 `0755`。当前 bundler 下载时使用的 `0770` 会被复制到 `AppRun.wrapped`，导致 root 挂载、普通用户运行的 Firejail/AppImage 目录测试返回 `Permission denied`，详见 [Tauri #16155](https://github.com/tauri-apps/tauri/issues/16155)。权限修复发生在打包和 updater 签名前，不修改已签名安装包。
 
-正式 Release 与 unsigned preview 在上传前运行 `scripts/test-appimage.sh`：以 root 解包成品，再由普通用户检查启动器与内置 Node，并在 Xvfb 中确认窗口出现且程序持续运行。失败会阻止后续校验和生成与上传。此检查需要 Linux x86_64、免密 sudo、squashfs-tools、xvfb、x11-utils 和 dbus-x11；它覆盖安装包启动，不替代模型配置和首次任务的人工验收。
+Ubuntu x64 的 runtime 准备阶段保留 Koffi 和 `@deepseek-ai/node-addon-system-linux-x64` 的 glibc 二进制，并移除不适用的 musl 变体，避免 linuxdeploy 对 musl 库执行 `ldd` 时终止打包。
+
+Linux CI、正式 Release 与 unsigned preview 在上传前运行 `scripts/test-appimage.sh`：以 root 解包成品，再由普通用户检查启动器与内置 Node，并在 Xvfb 中确认窗口出现且程序持续运行。失败会阻止后续校验和生成与上传。Linux CI 与发布构建统一使用 Ubuntu 22.04，直接验证发布基线。此检查需要 Linux x86_64、免密 sudo、squashfs-tools、xvfb、x11-utils 和 dbus-x11；它覆盖安装包启动，不替代模型配置和首次任务的人工验收。
 
 ## 发布前人工检查
 
