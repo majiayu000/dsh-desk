@@ -72,17 +72,23 @@ function makeSymlinksPortable(root, sourceRoot, destinationRoot) {
 function pruneIncompatibleNativeVariants(modulesRoot) {
   if (process.platform !== "linux" || process.arch !== "x64") return [];
 
-  const koffiRoot = join(modulesRoot, "@koromix", "koffi-linux-x64");
-  if (!existsSync(koffiRoot)) return [];
-  const glibcBinary = join(koffiRoot, "linux_x64", "koffi.node");
-  if (!existsSync(glibcBinary)) {
-    throw new Error(`glibc Koffi binary missing from Linux runtime: ${glibcBinary}`);
+  const pruned = [];
+  for (const [packageName, glibcPath, muslPath] of [
+    ["@koromix/koffi-linux-x64", "linux_x64/koffi.node", "musl_x64"],
+    ["@deepseek-ai/node-addon-system-linux-x64", "bin/glibc/system.node", "bin/musl"],
+  ]) {
+    const packageRoot = join(modulesRoot, packageName);
+    if (!existsSync(packageRoot)) continue;
+    const glibcBinary = join(packageRoot, glibcPath);
+    if (!existsSync(glibcBinary)) {
+      throw new Error(`glibc binary missing from Linux runtime: ${glibcBinary}`);
+    }
+    const muslVariant = join(packageRoot, muslPath);
+    if (!existsSync(muslVariant)) continue;
+    rmSync(muslVariant, { recursive: true, force: true });
+    pruned.push(relative(modulesRoot, muslVariant).split(sep).join("/"));
   }
-
-  const muslVariant = join(koffiRoot, "musl_x64");
-  if (!existsSync(muslVariant)) return [];
-  rmSync(muslVariant, { recursive: true, force: true });
-  return [relative(modulesRoot, muslVariant).split(sep).join("/")];
+  return pruned;
 }
 
 function runPnpm(args, options) {
