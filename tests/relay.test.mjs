@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { once } from 'node:events'
+import { fork } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
 import {
   assertRelayListenSafe,
   createRelayServer,
@@ -151,9 +153,11 @@ test('relay rejects invalid resource limits before listening', () => {
 test('listen safety treats loopback as token-optional and wildcards as non-loopback', () => {
   assert.equal(isLoopbackBindHost('127.0.0.1'), true)
   assert.equal(isLoopbackBindHost('127.0.0.2'), true)
-  assert.equal(isLoopbackBindHost('localhost'), true)
+  assert.equal(isLoopbackBindHost('localhost'), false)
   assert.equal(isLoopbackBindHost('::1'), true)
-  assert.equal(isLoopbackBindHost('[::1]'), true)
+  assert.equal(isLoopbackBindHost('[::1]'), false)
+  assert.equal(isLoopbackBindHost(' 127.0.0.1 '), false)
+  assert.equal(isLoopbackBindHost('127.01.0.1'), false)
   assert.equal(isLoopbackBindHost('0.0.0.0'), false)
   assert.equal(isLoopbackBindHost('::'), false)
   assert.equal(isLoopbackBindHost('192.168.1.10'), false)
@@ -237,4 +241,111 @@ test('relay rechecks one-time pairing expiry after the request body completes', 
     }),
   })
   assert.deepEqual(response, { status: 401, body: { error: 'pairing-capability-invalid' } })
+})
+
+// Exercise the CLI with real sockets while keeping resolver results deterministic.
+async function startRelay(context, host, { adminToken = '', allowInsecure = '', port = 0 } = {}) {
+  const preload = `
+    import dns from 'node:dns'
+    import { Server } from 'node:net'
+    const lookup = dns.lookup
+    dns.lookup = (host, options, callback) => {
+      if (['[::1]', 'localhost', ' 127.0.0.1 '].includes(host)) {
+        const address = { address: '0.0.0.0', family: 4 }
+        process.nextTick(() => callback(null, options.all ? [address] : address.address, 4))
+        return
+      }
+      return lookup(host, options, callback)
+    }
+    const listen = Server.prototype.listen
+    Server.prototype.listen = function (...args) {
+      this.once('listening', () => process.send({ address: this.address() }))
+      return listen.apply(this, args)
+    }
+  `
+  const child = fork(fileURLToPath(new URL('../relay/server.mjs', import.meta.url)), [], {
+    execArgv: ['--import', `data:text/javascript,${encodeURIComponent(preload)}`],
+    env: {
+      ...process.env,
+      RELAY_HOST: host,
+      RELAY_PORT: String(port),
+      RELAY_ADMIN_TOKEN: adminToken,
+      RELAY_ALLOW_INSECURE: allowInsecure,
+      NODE_OPTIONS: '',
+    },
+    silent: true,
+  })
+  let stdout = ''
+  let stderr = ''
+  child.stdout.on('data', (chunk) => { stdout += chunk })
+  child.stderr.on('data', (chunk) => { stderr += chunk })
+  const closed = once(child, 'close')
+  context.after(async () => {
+    if (child.exitCode === null && child.signalCode === null) child.kill()
+    await closed
+  })
+  let timer
+  try {
+    const result = await Promise.race([
+      once(child, 'message').then(([message]) => ({ address: message.address })),
+      closed.then(([code]) => ({ code })),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error('relay startup timed out')), 10_000)
+      }),
+    ])
+    return { ...result, stdout, stderr }
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+for (const host of ['[::1]', 'localhost', ' 127.0.0.1 ']) {
+  test(`relay CLI rejects DNS-backed token-optional host ${JSON.stringify(host)}`, async (context) => {
+    const result = await startRelay(context, host)
+    if (result.address) {
+      const response = await request(`http://127.0.0.1:${result.address.port}`, '/v1/mailboxes', { method: 'POST' })
+      assert.fail(`unsafe relay bound ${result.address.address} and returned ${response.status}`)
+    }
+    assert.equal(result.code, 1)
+    assert.match(result.stderr, /Refusing to bind.*RELAY_ADMIN_TOKEN/u)
+    assert.doesNotMatch(result.stdout, /listening/u)
+  })
+}
+
+for (const host of ['127.0.0.1', '::1']) {
+  test(`relay CLI permits literal loopback ${host} without an admin token`, async (context) => {
+    const result = await startRelay(context, host)
+    assert.equal(result.address?.address, host, result.stderr)
+    const base = `http://${host === '::1' ? '[::1]' : host}:${result.address.port}`
+    assert.equal((await request(base, '/v1/mailboxes', { method: 'POST' })).status, 201)
+  })
+}
+
+test('relay CLI keeps admin authentication on a DNS-resolved non-loopback bind', async (context) => {
+  const adminToken = 'a'.repeat(43)
+  const result = await startRelay(context, '[::1]', { adminToken })
+  assert.equal(result.address?.address, '0.0.0.0', result.stderr)
+  const base = `http://127.0.0.1:${result.address.port}`
+  assert.equal((await request(base, '/v1/mailboxes', { method: 'POST' })).status, 401)
+  assert.equal((await request(base, '/v1/mailboxes', {
+    method: 'POST', headers: { Authorization: `Bearer ${adminToken}` },
+  })).status, 201)
+})
+
+test('relay CLI preserves the explicit insecure escape hatch', async (context) => {
+  const result = await startRelay(context, '[::1]', { allowInsecure: '1' })
+  assert.equal(result.address?.address, '0.0.0.0', result.stderr)
+  assert.equal((await request(`http://127.0.0.1:${result.address.port}`, '/v1/mailboxes', { method: 'POST' })).status, 201)
+})
+
+test('relay CLI reports a listen error and exits before serving', async (context) => {
+  const occupied = createRelayServer()
+  occupied.listen(0, '127.0.0.1')
+  await once(occupied, 'listening')
+  context.after(() => occupied.close())
+  const { code, stderr, stdout } = await startRelay(context, '127.0.0.1', { port: occupied.address().port })
+  assert.equal(code, 1)
+  assert.match(stderr, /EADDRINUSE/u)
+  assert.doesNotMatch(stderr, /Unhandled 'error' event/u)
+  assert.doesNotMatch(stdout, /listening/u)
 })
