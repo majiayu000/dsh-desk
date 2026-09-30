@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="https://github.com/majiayu000/dsh-desk/releases"><strong>Download preview</strong></a> ·
-  <a href="https://majiayu000.github.io/dsh-desk/">Compatibility radar</a> ·
+  <a href="https://www.dshdesk.com/">Compatibility radar</a> ·
   <a href="docs/compatibility.md">Verification evidence</a> ·
   <a href="README.zh-CN.md">中文</a>
 </p>
@@ -55,7 +55,7 @@ DeepSeek Harness already provides the agent runtime, web UI, sessions, tools, ap
 | Windows x64 | `v0.1.0-alpha.13` NSIS installer | Unsigned alpha (SmartScreen notice); updater payloads independently signed |
 | Linux x64 | `v0.1.0-alpha.13` AppImage & deb | Updater signatures included |
 
-This repository now pins **DSH Desk `0.1.0-alpha.14`** with `@deepseek-ai/dsh@0.1.5-rc.3`. That combination is what CI verifies. GitHub Releases still serve `v0.1.0-alpha.13` (`@deepseek-ai/dsh@0.1.0-rc.6`) until the signed `v0.1.0-alpha.14` pipeline publishes. Windows alpha releases may be published without Authenticode and say so in their Release Notes. See the live [compatibility radar](https://majiayu000.github.io/dsh-desk/), [compatibility evidence](docs/compatibility.md), and individual [Actions runs](https://github.com/majiayu000/dsh-desk/actions) for the latest facts.
+This repository now pins **DSH Desk `0.1.0-alpha.14`** with `@deepseek-ai/dsh@0.1.5-rc.3`. That combination is what CI verifies. GitHub Releases still serve `v0.1.0-alpha.13` (`@deepseek-ai/dsh@0.1.0-rc.6`) until the signed `v0.1.0-alpha.14` pipeline publishes. Windows alpha releases may be published without Authenticode and say so in their Release Notes. See the live [compatibility radar](https://www.dshdesk.com/), [compatibility evidence](docs/compatibility.md), and individual [Actions runs](https://github.com/majiayu000/dsh-desk/actions) for the latest facts.
 
 ## What is different
 

@@ -16,7 +16,7 @@
 
 <p align="center">
   <a href="https://github.com/majiayu000/dsh-desk/releases"><strong>下载预览版</strong></a> ·
-  <a href="https://majiayu000.github.io/dsh-desk/">兼容雷达</a> ·
+  <a href="https://www.dshdesk.com/">兼容雷达</a> ·
   <a href="#快速开始">快速开始</a> ·
   <a href="docs/compatibility.md">兼容状态</a> ·
   <a href="README.md">English</a>
