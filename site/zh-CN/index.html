@@ -45,6 +45,7 @@
         <a href="#why">为什么选择桌面版</a>
         <a href="#trust">安全边界</a>
         <a href="#status">实时状态</a>
+        <a href="#getting-started">安装与常见问题</a>
         <a class="language-switch" href="../" lang="en" hreflang="en" aria-label="Switch to English">EN</a>
         <a class="nav-github" href="https://github.com/majiayu000/dsh-desk">GitHub <span aria-hidden="true">↗</span></a>
       </nav>
@@ -220,6 +221,22 @@
           </article>
         </div>
         <p class="radar-note">绿色表示对应的公开检查已经通过，但不代表未来所有上游版本都必然兼容，也不代表预览安装包已经具备正式的平台签名。</p>
+      </section>
+
+      <section class="section why" id="getting-started" aria-labelledby="setup-title">
+        <div class="section-intro">
+          <p class="eyebrow"><span></span> 安装与常见问题</p>
+          <h2 id="setup-title">先完成首个任务。<br><em>再添加你的插件。</em></h2>
+          <p>这里的 DSH Desk 指 <a href="https://github.com/majiayu000/dsh-desk">majiayu000/dsh-desk</a> 维护的社区桌面发行版。请使用本项目的下载和兼容性记录核对下面的步骤。</p>
+        </div>
+        <div class="feature-grid">
+          <article class="feature"><h3>怎样安装并开始首个任务？</h3><p>进入 <a href="https://github.com/majiayu000/dsh-desk/releases">Releases</a>，阅读发行说明，选择与你的系统和架构一致的安装包：macOS DMG、Windows x64 安装程序，或 Linux x64 AppImage/deb。打开 DSH Desk，在 Harness 引导页选择模型提供方，再发送一个小任务。模型访问由 Harness 配置。</p></article>
+          <article class="feature"><h3>需要安装 Node.js 或使用终端吗？</h3><p>桌面安装包自带 Node 和 Harness 运行时，不需要系统另装 Node.js。源码构建使用另一套开发工具，按<a href="https://github.com/majiayu000/dsh-desk#development">开发说明</a>操作。内置运行时不代表模型请求可以离线完成。</p></article>
+          <article class="feature"><h3>这是 DeepSeek 官方桌面应用吗？</h3><p>不是。DSH Desk 是独立社区项目，与 DeepSeek 无从属或官方背书关系，承载的是上游 Harness 界面。其他同名桌面外壳有各自的维护者、数据路径和发行策略；不能用另一项目的说明判断本项目的行为。</p></article>
+          <article class="feature"><h3>下载版本为什么和状态页不同？</h3><p><a href="https://github.com/majiayu000/dsh-desk/releases">发行说明</a>标明实际发布的桌面版及其内置 Harness 版本。<a href="#status">兼容性雷达</a>检查的是仓库和上游候选版本；绿色检查不等于新安装包已发布。请结合<a href="https://github.com/majiayu000/dsh-desk/blob/main/docs/compatibility.md">验证矩阵</a>核对。</p></article>
+          <article class="feature"><h3>怎样找到并安装插件？</h3><p>先在 <a href="https://plugin.dshdesk.com/">Harness Registry</a> 浏览，再打开 DSH Desk → Plugins…，核对包名、版本、来源、完整性、权限和兼容性后安装。复制的 <code>dsh plugin add</code> 命令也进入同一审查流程。Manifest 验证不是安全审计，也不表示插件已进入桌面的可信目录。作者可从<a href="https://github.com/majiayu000/dsh-desk/blob/main/templates/dsh-plugin/README.md">插件模板</a>和<a href="https://plugin.dshdesk.com/publish">目录提交说明</a>开始。</p></article>
+          <article class="feature"><h3>启动失败或插件出错怎么办？</h3><p>先用发行说明和<a href="#status">公开检查</a>核对已安装版本，记下桌面版本、系统与架构、显示的错误码和最小复现步骤。安装问题可去 <a href="https://github.com/majiayu000/dsh-desk/discussions">Discussions</a>，可复现的缺陷提交 <a href="https://github.com/majiayu000/dsh-desk/issues/new/choose">Issue</a>。按<a href="https://github.com/majiayu000/dsh-desk/blob/main/SUPPORT.md">支持清单</a>整理材料，发送前删除密钥、提示词、模型回复和私人路径。</p></article>
+        </div>
       </section>
 
       <section class="final-cta">
