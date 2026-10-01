@@ -45,6 +45,7 @@
         <a href="#why">Why Desk</a>
         <a href="#trust">Trust</a>
         <a href="#status">Live status</a>
+        <a href="#getting-started">Setup &amp; FAQ</a>
         <a class="language-switch" href="./zh-CN/" lang="zh-CN" hreflang="zh-CN" aria-label="切换到中文">中文</a>
         <a class="nav-github" href="https://github.com/majiayu000/dsh-desk">GitHub <span aria-hidden="true">↗</span></a>
       </nav>
@@ -220,6 +221,22 @@
           </article>
         </div>
         <p class="radar-note">Green means the named public check passed. It does not imply that every future upstream release is compatible or that preview installers carry production platform signatures.</p>
+      </section>
+
+      <section class="section why" id="getting-started" aria-labelledby="setup-title">
+        <div class="section-intro">
+          <p class="eyebrow"><span></span> Setup &amp; common questions</p>
+          <h2 id="setup-title">Your first task.<br><em>Then your first plugin.</em></h2>
+          <p>DSH Desk is the community desktop distribution maintained at <a href="https://github.com/majiayu000/dsh-desk">majiayu000/dsh-desk</a>. Use this project's downloads and compatibility evidence when following these steps.</p>
+        </div>
+        <div class="feature-grid">
+          <article class="feature"><h3>How do I install and start?</h3><p>Open <a href="https://github.com/majiayu000/dsh-desk/releases">Releases</a>, read the release notes, and choose the installer for your OS and architecture: macOS DMG, Windows x64 installer, or Linux x64 AppImage/deb. Open DSH Desk, choose a model provider in Harness onboarding, and send a small first task. Provider access is configured in Harness.</p></article>
+          <article class="feature"><h3>Do I need Node.js or a terminal?</h3><p>The desktop download bundles its Node and Harness runtime. It does not require a system Node.js installation. Building from source uses a separate development toolchain; follow the <a href="https://github.com/majiayu000/dsh-desk#development">development instructions</a> for that path. Bundling a runtime does not make model-provider requests offline.</p></article>
+          <article class="feature"><h3>Is this an official DeepSeek app?</h3><p>No. DSH Desk is an independent community project, not affiliated with or endorsed by DeepSeek. It hosts the upstream Harness UI. Other desktop wrappers have their own maintainers, data locations, and release policies; their instructions do not establish this project's behavior.</p></article>
+          <article class="feature"><h3>Which version am I downloading?</h3><p>The <a href="https://github.com/majiayu000/dsh-desk/releases">release notes</a> identify the published desktop and bundled Harness versions. The <a href="#status">compatibility radar</a> checks repository and upstream candidates; a green check does not publish a new installer. Read <a href="https://github.com/majiayu000/dsh-desk/blob/main/docs/compatibility.md">the verification matrix</a> before equating source versions with downloads.</p></article>
+          <article class="feature"><h3>How do I add a plugin?</h3><p>Browse <a href="https://plugin.dshdesk.com/">Harness Registry</a>, then open DSH Desk → Plugins… to review the exact package, version, source, integrity, permissions, and compatibility before installation. A copied <code>dsh plugin add</code> command enters the same review flow. Manifest verification is not a security audit or inclusion in the desktop's trusted catalog. Authors can start with the <a href="https://github.com/majiayu000/dsh-desk/blob/main/templates/dsh-plugin/README.md">plugin template</a> and <a href="https://plugin.dshdesk.com/publish">registry submission guide</a>.</p></article>
+          <article class="feature"><h3>What if startup or a plugin fails?</h3><p>Compare your installed release with <a href="#status">the public checks</a> and its release notes. Record the desktop version, OS/architecture, displayed error code, and minimal steps. Use <a href="https://github.com/majiayu000/dsh-desk/discussions">Discussions</a> for setup help or <a href="https://github.com/majiayu000/dsh-desk/issues/new/choose">Issues</a> for a reproducible bug. Follow the <a href="https://github.com/majiayu000/dsh-desk/blob/main/SUPPORT.md">support checklist</a> and remove keys, prompts, responses, and private paths before posting.</p></article>
+        </div>
       </section>
 
       <section class="final-cta">
