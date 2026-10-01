@@ -51,11 +51,11 @@ DeepSeek Harness already provides the agent runtime, web UI, sessions, tools, ap
 
 | Platform | Latest published download | Signing status |
 |---|---|---|
-| macOS Apple Silicon & Intel | `v0.1.0-alpha.13` DMG (both architectures) | Developer ID signed, notarized, stapled |
-| Windows x64 | `v0.1.0-alpha.13` NSIS installer | Unsigned alpha (SmartScreen notice); updater payloads independently signed |
-| Linux x64 | `v0.1.0-alpha.13` AppImage & deb | Updater signatures included |
+| macOS Apple Silicon & Intel | [`v0.1.0-alpha.14`](https://github.com/majiayu000/dsh-desk/releases/tag/v0.1.0-alpha.14) DMG (both architectures) | Developer ID signed, notarized, stapled |
+| Windows x64 | [`v0.1.0-alpha.14`](https://github.com/majiayu000/dsh-desk/releases/tag/v0.1.0-alpha.14) NSIS installer | Unsigned alpha (SmartScreen notice); updater payloads independently signed |
+| Linux x64 | [`v0.1.0-alpha.14`](https://github.com/majiayu000/dsh-desk/releases/tag/v0.1.0-alpha.14) AppImage & deb | Updater signatures included |
 
-This repository now pins **DSH Desk `0.1.0-alpha.14`** with `@deepseek-ai/dsh@0.1.5-rc.3`. That combination is what CI verifies. GitHub Releases still serve `v0.1.0-alpha.13` (`@deepseek-ai/dsh@0.1.0-rc.6`) until the signed `v0.1.0-alpha.14` pipeline publishes. Windows alpha releases may be published without Authenticode and say so in their Release Notes. See the live [compatibility radar](https://www.dshdesk.com/), [compatibility evidence](docs/compatibility.md), and individual [Actions runs](https://github.com/majiayu000/dsh-desk/actions) for the latest facts.
+This repository pins **DSH Desk `0.1.0-alpha.14`** with `@deepseek-ai/dsh@0.1.5-rc.3`. The [published alpha.14 release](https://github.com/majiayu000/dsh-desk/releases/tag/v0.1.0-alpha.14) provides the platform downloads, checksums, and updater artifacts. Windows alpha releases may be published without Authenticode and say so in their Release Notes. See the live [compatibility radar](https://www.dshdesk.com/), [compatibility evidence](docs/compatibility.md), and individual [Actions runs](https://github.com/majiayu000/dsh-desk/actions) for the latest facts.
 
 ## What is different
 
