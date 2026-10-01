@@ -54,15 +54,15 @@
 
 | 平台 | 已发布下载 | 签名状态 |
 |---|---|---|
-| macOS Apple Silicon 与 Intel | `v0.1.0-alpha.13` DMG（双架构） | Developer ID 签名、公证并 staple |
-| Windows x64 | `v0.1.0-alpha.13` NSIS 安装包 | Alpha 未签名（Release Notes 已说明 SmartScreen）；updater 工件独立签名 |
-| Linux x64 | `v0.1.0-alpha.13` AppImage / deb | 含 updater 签名 |
+| macOS Apple Silicon 与 Intel | [`v0.1.0-alpha.14`](https://github.com/majiayu000/dsh-desk/releases/tag/v0.1.0-alpha.14) DMG（双架构） | Developer ID 签名、公证并 staple |
+| Windows x64 | [`v0.1.0-alpha.14`](https://github.com/majiayu000/dsh-desk/releases/tag/v0.1.0-alpha.14) NSIS 安装包 | Alpha 未签名（Release Notes 已说明 SmartScreen）；updater 工件独立签名 |
+| Linux x64 | [`v0.1.0-alpha.14`](https://github.com/majiayu000/dsh-desk/releases/tag/v0.1.0-alpha.14) AppImage / deb | 含 updater 签名 |
 
-本仓库当前固定 **DSH Desk `0.1.0-alpha.14`** 与 `@deepseek-ai/dsh@0.1.5-rc.3`，由 CI 契约验证。GitHub Releases 在签名发布完成前仍提供 `v0.1.0-alpha.13`（Harness `0.1.0-rc.6`）。Release 工作流缺少生产证书时会直接失败，不会把未签名资产伪装成正式版。最新事实以[兼容矩阵](docs/compatibility.md)和具体 [Actions 运行记录](https://github.com/majiayu000/dsh-desk/actions)为准。
+本仓库当前固定 **DSH Desk `0.1.0-alpha.14`** 与 `@deepseek-ai/dsh@0.1.5-rc.3`。[已发布的 alpha.14](https://github.com/majiayu000/dsh-desk/releases/tag/v0.1.0-alpha.14) 提供各平台安装包、校验文件和 updater 工件。Windows Alpha 可能不含 Authenticode 签名，具体边界以 Release Notes 为准。最新事实以[兼容矩阵](docs/compatibility.md)和具体 [Actions 运行记录](https://github.com/majiayu000/dsh-desk/actions)为准。
 
 ## 快速开始
 
-1. 从 [Releases](https://github.com/majiayu000/dsh-desk/releases) 下载对应平台安装包（当前公开包为 `v0.1.0-alpha.13`；下一版为 `v0.1.0-alpha.14`）。
+1. 从 [alpha.14 Release](https://github.com/majiayu000/dsh-desk/releases/tag/v0.1.0-alpha.14) 下载对应平台安装包。
 2. 安装并启动 DSH Desk；应用自动验证并启动内置 Harness。
 3. 官方 Harness 首次启动弹窗会要求配置可用模型；填写 API Key 并点击“保存并继续”，即可发送第一条任务。
 
@@ -72,7 +72,7 @@ DSH Desk 不读取或保存模型 API Key；首次启动弹窗通过 Harness 官
 
 ## 当前限制
 
-- 公开下载已覆盖 macOS 双架构、Windows 与 Linux（`v0.1.0-alpha.13`），仍处 Alpha；下一固定组合是 `0.1.0-alpha.14` × `@deepseek-ai/dsh@0.1.5-rc.3`；
+- 公开下载已覆盖 macOS 双架构、Windows 与 Linux（`v0.1.0-alpha.14`），仍处 Alpha，固定组合为 `0.1.0-alpha.14` × `@deepseek-ai/dsh@0.1.5-rc.3`；
 - Windows 安装包未做 Authenticode 签名，SmartScreen 提示属预期，安装前请核对 SHA-256；
 - 离线包包含固定 Node.js 与完整 Harness runtime，当前 DMG 约 215 MB；
 - DeepSeek Harness 仍处于快速变化阶段，每日兼容测试只能发现漂移，不能保证未来永不发生破坏性变更；
