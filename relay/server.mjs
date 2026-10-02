@@ -1,5 +1,6 @@
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto'
 import { createServer } from 'node:http'
+import { isIP } from 'node:net'
 import { pathToFileURL } from 'node:url'
 
 const BODY_LIMIT = 80 * 1024
@@ -70,16 +71,13 @@ function validEnvelope(value, mailboxId, currentTime) {
 
 /** True for loopback-only bind targets safe for token-optional local development. */
 export function isLoopbackBindHost(host) {
-  const normalized = String(host ?? '').trim().toLowerCase()
-  if (normalized === 'localhost' || normalized === '::1' || normalized === '[::1]') return true
-  // IPv4 loopback range 127.0.0.0/8
-  if (/^127(?:\.(?:25[0-5]|2[0-4]\d|1?\d?\d)){3}$/u.test(normalized)) return true
-  return false
+  const family = isIP(host)
+  return (family === 4 && host.startsWith('127.')) || (family === 6 && host === '::1')
 }
 
 /**
- * Fail closed before listen when binding a non-loopback (incl. 0.0.0.0 / ::) host
- * without an admin token. RELAY_ALLOW_INSECURE=1 is an explicit escape hatch only;
+ * Without an admin token, fail closed before listen unless the host is a literal
+ * loopback IP. RELAY_ALLOW_INSECURE=1 is an explicit escape hatch only;
  * it does not weaken auth when adminToken is set.
  */
 export function assertRelayListenSafe({
@@ -271,6 +269,10 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
     process.exit(1)
   }
   const server = createRelayServer({ allowedOrigin, adminToken })
+  server.once('error', (error) => {
+    console.error(error.message)
+    process.exit(1)
+  })
   server.listen(port, host, () => {
     console.log(`DSH Desk opaque relay listening on http://${host}:${port}`)
     console.log(`Allowed browser origin: ${allowedOrigin}`)
