@@ -33,4 +33,4 @@ windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Securit
 
 [dev-dependencies]
 base64 = "0.22"
-minisign-verify = "0.2.5"
+minisign-verify = "0.3.0"
