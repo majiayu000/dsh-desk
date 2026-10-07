@@ -38,7 +38,7 @@ No system Node.js installation, npm setup, port selection, or terminal command i
 
 DeepSeek Harness already provides the agent runtime, web UI, sessions, tools, approvals, settings, and plugin protocol. DSH Desk does not fork those product surfaces. It owns the desktop responsibilities that should be boring and dependable:
 
-- bundles Node 24 and the exact `@deepseek-ai/dsh@0.1.5-rc.3` runtime;
+- bundles Node 24 and the exact Harness runtime listed below;
 - isolates state in a private `DSH_HOME` instead of modifying an existing CLI setup;
 - waits for a real HTTP health check on the launch-token loopback URL;
 - grants the remote Harness page no Tauri IPC, shell, or filesystem capability;
@@ -49,13 +49,24 @@ DeepSeek Harness already provides the agent runtime, web UI, sessions, tools, ap
 
 ## Current availability
 
-| Platform | Latest published download | Signing status |
-|---|---|---|
-| macOS Apple Silicon & Intel | [`v0.1.0-alpha.14`](https://github.com/majiayu000/dsh-desk/releases/tag/v0.1.0-alpha.14) DMG (both architectures) | Developer ID signed, notarized, stapled |
-| Windows x64 | [`v0.1.0-alpha.14`](https://github.com/majiayu000/dsh-desk/releases/tag/v0.1.0-alpha.14) NSIS installer | Unsigned alpha (SmartScreen notice); updater payloads independently signed |
-| Linux x64 | [`v0.1.0-alpha.14`](https://github.com/majiayu000/dsh-desk/releases/tag/v0.1.0-alpha.14) AppImage & deb | Updater signatures included |
+<!-- release-evidence:start -->
+Recorded public release: [`v0.1.0-alpha.14`](https://github.com/majiayu000/dsh-desk/releases/tag/v0.1.0-alpha.14), published 2026-09-28T18:09:55Z.
 
-This repository pins **DSH Desk `0.1.0-alpha.14`** with `@deepseek-ai/dsh@0.1.5-rc.3`. The [published alpha.14 release](https://github.com/majiayu000/dsh-desk/releases/tag/v0.1.0-alpha.14) provides the platform downloads, checksums, and updater artifacts. Windows alpha releases may be published without Authenticode and say so in their Release Notes. See the live [compatibility radar](https://www.dshdesk.com/), [compatibility evidence](docs/compatibility.md), and individual [Actions runs](https://github.com/majiayu000/dsh-desk/actions) for the latest facts.
+| Platform | Recorded download assets | Signing evidence |
+|---|---|---|
+| macOS Apple Silicon | [DMG](https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_aarch64.dmg) | Release CI passed Developer ID / notarization / staple checks |
+| macOS Intel | [DMG](https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_x64.dmg) | Release CI passed Developer ID / notarization / staple checks |
+| Windows x64 | [NSIS](https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_x64-setup.exe) | Unsigned alpha (SmartScreen notice); Updater verification passed release CI |
+| Linux x64 | [AppImage](https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_amd64.AppImage) / [deb](https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_amd64.deb) | Updater verification passed release CI |
+
+The release's [package.json](https://github.com/majiayu000/dsh-desk/blob/e45152db0c25da44c6c59951ce65fd1d0c40ef4e/package.json) pins DSH Desk `0.1.0-alpha.14` with Harness `0.1.5-rc.3`. [Release run](https://github.com/majiayu000/dsh-desk/actions/runs/36458490294): `completed/success`.
+
+Evidence observed 2026-10-06T14:06:00Z. This table checks saved public metadata; it is not an independent download/signature verification or a guarantee of continued availability. Updater signing does not establish Windows Authenticode identity.
+<!-- release-evidence:end -->
+
+<!-- build-versions:start -->
+Repository development version: DSH Desk `0.1.0-alpha.14` × Harness `0.1.5-rc.3` (from current `package.json`; published downloads follow the release evidence).
+<!-- build-versions:end -->
 
 ## What is different
 

@@ -57,7 +57,9 @@
     "release:macos:verify": "node scripts/macos-release.mjs verify-bundle",
     "prepare:runtime": "node scripts/prepare-runtime.mjs",
     "release:macos": "pnpm check:release-env macos && pnpm prepare:runtime && pnpm release:macos:sign-runtime && tauri build --bundles app && DSH_PRESERVE_SIGNATURE=1 node scripts/package-macos.mjs && pnpm release:macos:notarize-dmg && pnpm release:macos:verify && pnpm release:checksums",
-    "release:macos:preview": "pnpm prepare:runtime && tauri build --bundles app && DSH_ALLOW_ADHOC=1 node scripts/package-macos.mjs"
+    "release:macos:preview": "pnpm prepare:runtime && tauri build --bundles app && DSH_ALLOW_ADHOC=1 node scripts/package-macos.mjs",
+    "docs:release-evidence": "node scripts/release-evidence.mjs --write",
+    "test:release-evidence": "node --test tests/release-evidence.test.mjs && node scripts/release-evidence.mjs"
   },
   "dependencies": {
     "@deepseek-ai/dsh": "0.1.5-rc.3",

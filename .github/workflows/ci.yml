@@ -40,7 +40,7 @@ jobs:
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
       - name: Verify public growth surfaces
-        run: pnpm test:doc-links && pnpm test:status-page
+        run: pnpm test:doc-links && pnpm test:status-page && pnpm test:release-evidence
       - name: Enforce Rust formatting and lints
         run: >-
           cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check &&
