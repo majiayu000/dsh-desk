@@ -69,3 +69,16 @@ Linux CI、正式 Release 与 unsigned preview 在上传前运行 `scripts/test-
 6. 在 GitHub `production` environment 审批构建产物；审批后汇总任务才会公开 Release。
 7. 从上一个正式版本检查更新，验证提示、签名下载、runtime 停止、安装和重启后的版本。
 8. 将 `latest.json` 中的签名临时替换为无效值，在隔离测试 Release 中确认客户端拒绝安装。
+
+## 公开下载文案的离线证据
+
+`docs/release-evidence.json` 保存最近一次人工核对的公开 Release 元数据子集、标签对应 `package.json` 的版本与 Harness 固定版本，以及同一提交的发布工作流结果。它只驱动 README 中英文与兼容矩阵的 `release-evidence` 区块，不参与构建、签名、发布或 updater 决策。当前源码组合仍来自仓库 `package.json`，允许它领先于已发布版本。
+
+发布新版本后：
+
+1. 读取 `GET /repos/majiayu000/dsh-desk/releases/tags/<tag>`，确认 `draft: false`，记录 `tag_name`、`published_at`、`html_url` 和全部资产的 `name/state/browser_download_url`。不要把草稿、预览通道或仅递增的包版本当作公开发布。
+2. 从该 tag 的 Git ref 取得准确提交，读取该提交的 `package.json`，更新 `build.commit/version/harnessVersion`。不要从已有前进的 main 复制版本。
+3. 核对同一提交的 Release workflow 和 jobs，更新 `workflow` 的运行 ID、提交、状态、结论，以及 macOS 验证和 updater validate 的实际步骤结果。缺失、跳过或失败都不能填成成功。`windows_signing_notice` 只复制该 Release Notes 的 Windows 签名说明；没有明确说明时留空，表中显示未知，不能从 `.sig` 推断 Authenticode。
+4. 更新 `observedAt`，运行 `pnpm docs:release-evidence`，复核生成差异，再运行 `pnpm test:release-evidence`。已发布过的旧 run/tag 保留在历史证据中，不做全文替换。
+
+这些命令只读取仓库文件，离线且可重复；CI 不依赖 GitHub API 可用性或令牌。缺少安装包资产时不会生成该包的下载链接；缺少签名步骤证据时显示未知。该快照无法自动发现下一次发布，也无法检测观察后删除的资产，维护者必须在发布完成后刷新；网络或 API 失败不构成刷新成功。保存的 CI 结果不是本次独立下载、验签或实机测试。

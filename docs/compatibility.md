@@ -7,19 +7,34 @@ DSH Desk 将桌面壳、Node、DeepSeek Harness 和 Web UI 作为一个固定版
 
 ## 当前固定组合
 
-| DSH Desk | DeepSeek Harness | Node | macOS arm64 | Windows x64 | Linux x64 |
-|---|---|---|---|---|---|
-| `0.1.0-alpha.14` | `0.1.5-rc.3` | `24.x` | 本仓库契约 | 本仓库契约 | 本仓库契约 |
+<!-- build-versions:start -->
+本仓库开发版本：DSH Desk `0.1.0-alpha.14` × Harness `0.1.5-rc.3`（来自当前 `package.json`；公开下载以已发布证据为准）。
+<!-- build-versions:end -->
 
-这里的“已验证 / 本仓库契约”指该固定组合通过三平台 CI：TypeScript/Rust 构建、固定 DSH 版本、严格 loopback 就绪 URL（含启动 token）、HTTP 2xx/3xx 健康检查、离线 runtime 与插件 parity。合入后的公开运行以 [CI workflow](https://github.com/majiayu000/dsh-desk/actions/workflows/ci.yml) 为准。
+“本仓库契约”验证 Node 24 与上述固定组合的三平台 CI：TypeScript/Rust 构建、固定 DSH 版本、严格 loopback 就绪 URL（含启动 token）、HTTP 2xx/3xx 健康检查、离线 runtime 与插件 parity。合入后的公开运行以 [CI workflow](https://github.com/majiayu000/dsh-desk/actions/workflows/ci.yml) 为准。
 
-npm `latest` 自 2026-09-04 起与旧健康检查不兼容：`0.1.2-rc.1` 开始 Web 根路径需要一次性 launch token，无 token 的 `GET /` 返回 HTTP 401。桌面壳现在解析 `dsh web:` 行中的 token URL，并对该 URL 做不跟随跳转的健康探测。本仓库锁定 `0.1.5-rc.3`，与 Web 包家族一致。npm `latest` 与 `next` 现为 `0.1.7-rc.2`，每日候选检查会继续探测 `latest`，不会因此改写锁定版本。`alpha` `0.1.7-alpha.2` 不会被自动采用。
-
-GitHub Releases 当前公开安装包仍是 [`v0.1.0-alpha.13`](https://github.com/majiayu000/dsh-desk/releases/tag/v0.1.0-alpha.13)（Harness `0.1.0-rc.6`）。`0.1.0-alpha.14` 需要走同一套签名发布链路后才会替换下载入口。
+npm `latest` 自 2026-09-04 起与旧健康检查不兼容：`0.1.2-rc.1` 开始 Web 根路径需要一次性 launch token，无 token 的 `GET /` 返回 HTTP 401。桌面壳现在解析 `dsh web:` 行中的 token URL，并对该 URL 做不跟随跳转的健康探测。当前仓库锁定版本见上方组合。npm `latest` 与 `next` 现为 `0.1.7-rc.2`，每日候选检查会继续探测 `latest`，不会因此改写锁定版本。`alpha` `0.1.7-alpha.2` 不会被自动采用。
 
 ### 已发布证据
 
-`v0.1.0-alpha.13` 已于 2026-08-21 发布。其后 main 上合入了 Harness `0.1.0-rc.8`、pnpm 12、以及 #57/#58/#60 安全修复，但未再打公开标签。
+<!-- release-evidence:start -->
+已记录的公开版本：[`v0.1.0-alpha.14`](https://github.com/majiayu000/dsh-desk/releases/tag/v0.1.0-alpha.14)，发布于 2026-09-28T18:09:55Z。
+
+| 平台 | 已记录下载资产 | 签名证据 |
+|---|---|---|
+| macOS Apple Silicon | [DMG](https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_aarch64.dmg) | 发布 CI 已通过 Developer ID / 公证 / staple 检查 |
+| macOS Intel | [DMG](https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_x64.dmg) | 发布 CI 已通过 Developer ID / 公证 / staple 检查 |
+| Windows x64 | [NSIS](https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_x64-setup.exe) | Alpha 未做 Authenticode 签名（SmartScreen 提示）；updater 验签已通过发布 CI |
+| Linux x64 | [AppImage](https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_amd64.AppImage) / [deb](https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_amd64.deb) | updater 验签已通过发布 CI |
+
+发布版本的 [package.json](https://github.com/majiayu000/dsh-desk/blob/e45152db0c25da44c6c59951ce65fd1d0c40ef4e/package.json) 固定 DSH Desk `0.1.0-alpha.14` 与 Harness `0.1.5-rc.3`。[发布运行](https://github.com/majiayu000/dsh-desk/actions/runs/36458490294)：`completed/success`。
+
+证据观察时间：2026-10-06T14:06:00Z。此表检查已保存的公开元数据；不代表本次独立下载验签，也不保证资产持续在线。updater 签名不能证明 Windows Authenticode 身份。
+<!-- release-evidence:end -->
+
+### 历史证据
+
+`v0.1.0-alpha.13` 已于 2026-08-21 发布（Harness `0.1.0-rc.6`）。之后的发布版本见上方已发布证据。
 
 `v0.1.0-alpha.12` 已完成端到端发布验证：preflight、macOS arm64/x64、Windows x64、Linux x64、
 `Publish atomic release` 以及嵌套的 update-channel validate/publish 全部成功，共发布 18 个安装包、
@@ -29,8 +44,6 @@ updater、签名、SHA-256 与 `latest.json` 资产；`update-channel-alpha` 原
 [Release Actions #31999103490](https://github.com/majiayu000/dsh-desk/actions/runs/31999103490)。
 macOS 含 Developer ID 签名、notarization 与 DMG 内容验证；Windows 为无签名的 Alpha 安装包。
 验收清单见 [Issue #34](https://github.com/majiayu000/dsh-desk/issues/34)。
-
-### 历史证据
 
 三平台无系统签名 Preview 曾在同一公开运行中完成构建并上传 DMG、NSIS、AppImage 与 DEB：
 [GitHub Actions #31864820646](https://github.com/majiayu000/dsh-desk/actions/runs/31864820646)。
@@ -56,7 +69,8 @@ Developer ID 或 Windows Authenticode 签名。
 4. 组装不依赖系统 Node 的离线 runtime；
 5. 使用打包 runtime 再跑同一契约；
 6. 插件 add/why/update/remove 与原版 DSH parity；
-7. macOS 自定义应用菜单保留原生 Edit command，确保 `⌘X/C/V/A` 交给当前 WebView。
+7. 离线检查 README 中英文下载表与兼容文档是否匹配已保存的发布证据；
+8. macOS 自定义应用菜单保留原生 Edit command，确保 `⌘X/C/V/A` 交给当前 WebView。
 
 每日任务还会查询 npm `latest`，在临时 CI 工作区安装候选版本并执行同一套测试。候选失败只表示“尚未兼容最新上游”，不会修改仓库锁定版本或用户机器。
 

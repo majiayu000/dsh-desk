@@ -43,7 +43,7 @@
 
 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 已经拥有 Agent runtime、Web UI、会话、工具、审批、设置和插件协议。DSH Desk 不复制这些业务能力，只负责桌面产品必须可靠拥有的部分：
 
-- 固定并携带 Node 24 与 `@deepseek-ai/dsh@0.1.5-rc.3`，普通用户不安装 Node、不敲命令；
+- 固定并携带 Node 24 与下方记录的 Harness runtime，普通用户不安装 Node、不敲命令；
 - 随机 loopback 端口、携带启动 token 的 HTTP 健康检查和受监管的进程生命周期；
 - 精确 origin 导航限制，远端 Harness 页面没有 Tauri IPC、shell 或文件系统权限；
 - 独立 `DSH_HOME`，不污染已有 CLI 环境；
@@ -52,17 +52,28 @@
 
 ## 当前下载状态
 
-| 平台 | 已发布下载 | 签名状态 |
-|---|---|---|
-| macOS Apple Silicon 与 Intel | [`v0.1.0-alpha.14`](https://github.com/majiayu000/dsh-desk/releases/tag/v0.1.0-alpha.14) DMG（双架构） | Developer ID 签名、公证并 staple |
-| Windows x64 | [`v0.1.0-alpha.14`](https://github.com/majiayu000/dsh-desk/releases/tag/v0.1.0-alpha.14) NSIS 安装包 | Alpha 未签名（Release Notes 已说明 SmartScreen）；updater 工件独立签名 |
-| Linux x64 | [`v0.1.0-alpha.14`](https://github.com/majiayu000/dsh-desk/releases/tag/v0.1.0-alpha.14) AppImage / deb | 含 updater 签名 |
+<!-- release-evidence:start -->
+已记录的公开版本：[`v0.1.0-alpha.14`](https://github.com/majiayu000/dsh-desk/releases/tag/v0.1.0-alpha.14)，发布于 2026-09-28T18:09:55Z。
 
-本仓库当前固定 **DSH Desk `0.1.0-alpha.14`** 与 `@deepseek-ai/dsh@0.1.5-rc.3`。[已发布的 alpha.14](https://github.com/majiayu000/dsh-desk/releases/tag/v0.1.0-alpha.14) 提供各平台安装包、校验文件和 updater 工件。Windows Alpha 可能不含 Authenticode 签名，具体边界以 Release Notes 为准。最新事实以[兼容矩阵](docs/compatibility.md)和具体 [Actions 运行记录](https://github.com/majiayu000/dsh-desk/actions)为准。
+| 平台 | 已记录下载资产 | 签名证据 |
+|---|---|---|
+| macOS Apple Silicon | [DMG](https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_aarch64.dmg) | 发布 CI 已通过 Developer ID / 公证 / staple 检查 |
+| macOS Intel | [DMG](https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_x64.dmg) | 发布 CI 已通过 Developer ID / 公证 / staple 检查 |
+| Windows x64 | [NSIS](https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_x64-setup.exe) | Alpha 未做 Authenticode 签名（SmartScreen 提示）；updater 验签已通过发布 CI |
+| Linux x64 | [AppImage](https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_amd64.AppImage) / [deb](https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_amd64.deb) | updater 验签已通过发布 CI |
+
+发布版本的 [package.json](https://github.com/majiayu000/dsh-desk/blob/e45152db0c25da44c6c59951ce65fd1d0c40ef4e/package.json) 固定 DSH Desk `0.1.0-alpha.14` 与 Harness `0.1.5-rc.3`。[发布运行](https://github.com/majiayu000/dsh-desk/actions/runs/36458490294)：`completed/success`。
+
+证据观察时间：2026-10-06T14:06:00Z。此表检查已保存的公开元数据；不代表本次独立下载验签，也不保证资产持续在线。updater 签名不能证明 Windows Authenticode 身份。
+<!-- release-evidence:end -->
+
+<!-- build-versions:start -->
+本仓库开发版本：DSH Desk `0.1.0-alpha.14` × Harness `0.1.5-rc.3`（来自当前 `package.json`；公开下载以已发布证据为准）。
+<!-- build-versions:end -->
 
 ## 快速开始
 
-1. 从 [alpha.14 Release](https://github.com/majiayu000/dsh-desk/releases/tag/v0.1.0-alpha.14) 下载对应平台安装包。
+1. 从 [当前下载状态](#当前下载状态) 下载对应平台安装包。
 2. 安装并启动 DSH Desk；应用自动验证并启动内置 Harness。
 3. 官方 Harness 首次启动弹窗会要求配置可用模型；填写 API Key 并点击“保存并继续”，即可发送第一条任务。
 
@@ -72,8 +83,8 @@ DSH Desk 不读取或保存模型 API Key；首次启动弹窗通过 Harness 官
 
 ## 当前限制
 
-- 公开下载已覆盖 macOS 双架构、Windows 与 Linux（`v0.1.0-alpha.14`），仍处 Alpha，固定组合为 `0.1.0-alpha.14` × `@deepseek-ai/dsh@0.1.5-rc.3`；
-- Windows 安装包未做 Authenticode 签名，SmartScreen 提示属预期，安装前请核对 SHA-256；
+- 公开下载及其固定组合见上方已发布证据；仍处 Alpha；
+- Windows 签名状态见上方证据；未签名 Alpha 可能出现 SmartScreen 提示，安装前请核对 SHA-256；
 - 离线包包含固定 Node.js 与完整 Harness runtime，当前 DMG 约 215 MB；
 - DeepSeek Harness 仍处于快速变化阶段，每日兼容测试只能发现漂移，不能保证未来永不发生破坏性变更；
 - 跨设备查看仍是实验协议，尚未连接真实 Harness 会话或生产云中继，远程审批未开放。
