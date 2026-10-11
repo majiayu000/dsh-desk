@@ -100,7 +100,7 @@ for (const token of [
   ".browser_download_url = ($prefix + (.name | @uri))",
   "needs: preflight",
   "uploadUpdaterJson: false",
-  "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a",
+  "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9",
   "actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c",
   "merge-multiple: true",
   "environment:\n      name: production",
