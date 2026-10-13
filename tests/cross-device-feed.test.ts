@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { Buffer } from 'node:buffer'
 import test from 'node:test'
 import {
   createDeviceIdentity,
@@ -10,6 +11,22 @@ import {
 import { applyEnvelopes } from '../src/cross-device/feed.ts'
 
 const now = Date.parse('2026-08-15T00:00:00.000Z')
+
+function tamperCiphertext(ciphertext: string): string {
+  const bytes = Buffer.from(ciphertext, 'base64url')
+  bytes[0] ^= 1
+  return bytes.toString('base64url')
+}
+
+test('ciphertext tampering changes a decoded byte for every possible first byte', () => {
+  for (let firstByte = 0; firstByte <= 255; firstByte += 1) {
+    const original = Buffer.from([firstByte, 0x12, 0x34, 0x56])
+    const ciphertext = original.toString('base64url')
+    const tampered = tamperCiphertext(ciphertext)
+    assert.notEqual(tampered, ciphertext)
+    assert.deepEqual(Buffer.from(tampered, 'base64url'), Buffer.from([firstByte ^ 1, 0x12, 0x34, 0x56]))
+  }
+})
 
 interface Session {
   desktopKey: CryptoKey
@@ -80,7 +97,7 @@ test('an unauthenticated high sequence does not move the durable cursor', async 
     }, now)),
   }
   forged.header = { ...forged.header, sequence: 9_999 }
-  forged.ciphertext = `A${forged.ciphertext.slice(1)}`
+  forged.ciphertext = tamperCiphertext(forged.ciphertext)
   const valid = await encryptTaskSnapshot(session.desktopKey, snapshot('task-identity-feed00009', '真实快照'), {
     mailboxId: session.mailboxId,
     senderDeviceId: session.desktopId,
@@ -110,7 +127,7 @@ test('a tampered envelope is skipped without starving newer messages', async () 
       sequence: 4,
     }, now)),
   }
-  poisoned.ciphertext = `A${poisoned.ciphertext.slice(1)}`
+  poisoned.ciphertext = tamperCiphertext(poisoned.ciphertext)
   const valid = await encryptTaskSnapshot(session.desktopKey, snapshot('task-identity-feed00004', '后续快照'), {
     mailboxId: session.mailboxId,
     senderDeviceId: session.desktopId,
@@ -128,6 +145,7 @@ test('a tampered envelope is skipped without starving newer messages', async () 
   assert.equal(result.accepted, 1)
   assert.equal(result.skipped, 1)
   assert.equal(result.lastSequence, 5)
+  assert.equal(tasks.has('task-identity-feed00003'), false)
   assert.equal(tasks.has('task-identity-feed00004'), true)
 })
 
