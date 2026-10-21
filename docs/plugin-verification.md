@@ -27,7 +27,7 @@ jobs:
       - uses: majiayu000/dsh-desk/plugin-verification@main
         with:
           plugin-path: .
-          harness-version: 0.1.5-rc.3
+          harness-version: 0.2.1-rc.2
 ```
 
 Pin the action to a commit SHA before relying on it as a release gate. `@main` is shown only while DSH Desk has no stable action tag.
