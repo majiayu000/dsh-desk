@@ -65,7 +65,7 @@ Evidence observed 2026-10-06T14:06:00Z. This table checks saved public metadata;
 <!-- release-evidence:end -->
 
 <!-- build-versions:start -->
-Repository development version: DSH Desk `0.1.0-alpha.14` × Harness `0.1.5-rc.3` (from current `package.json`; published downloads follow the release evidence).
+Repository development version: DSH Desk `0.1.0-alpha.14` × Harness `0.2.1-rc.2` (from current `package.json`; published downloads follow the release evidence).
 <!-- build-versions:end -->
 
 ## What is different

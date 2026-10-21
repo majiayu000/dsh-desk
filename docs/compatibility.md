@@ -8,12 +8,14 @@ DSH Desk 将桌面壳、Node、DeepSeek Harness 和 Web UI 作为一个固定版
 ## 当前固定组合
 
 <!-- build-versions:start -->
-本仓库开发版本：DSH Desk `0.1.0-alpha.14` × Harness `0.1.5-rc.3`（来自当前 `package.json`；公开下载以已发布证据为准）。
+本仓库开发版本：DSH Desk `0.1.0-alpha.14` × Harness `0.2.1-rc.2`（来自当前 `package.json`；公开下载以已发布证据为准）。
 <!-- build-versions:end -->
 
 “本仓库契约”验证 Node 24 与上述固定组合的三平台 CI：TypeScript/Rust 构建、固定 DSH 版本、严格 loopback 就绪 URL（含启动 token）、HTTP 2xx/3xx 健康检查、离线 runtime 与插件 parity。合入后的公开运行以 [CI workflow](https://github.com/majiayu000/dsh-desk/actions/workflows/ci.yml) 为准。
 
-npm `latest` 自 2026-09-04 起与旧健康检查不兼容：`0.1.2-rc.1` 开始 Web 根路径需要一次性 launch token，无 token 的 `GET /` 返回 HTTP 401。桌面壳现在解析 `dsh web:` 行中的 token URL，并对该 URL 做不跟随跳转的健康探测。当前仓库锁定版本见上方组合。npm `latest` 与 `next` 现为 `0.1.7-rc.2`，每日候选检查会继续探测 `latest`，不会因此改写锁定版本。`alpha` `0.1.7-alpha.2` 不会被自动采用。
+`0.1.2-rc.1` 开始 Web 根路径需要一次性 launch token，无 token 的 `GET /` 返回 HTTP 401。桌面壳解析 `dsh web:` 行中的 token URL，并对该 URL 做不跟随跳转的健康探测。当前仓库锁定版本见上方组合；每日候选检查继续探测 npm `latest`，不会因此改写锁定版本。
+
+2026-10-21 决定采用 `0.2.1-rc.2`，使开发版宿主与本轮社区插件声明的精确版本一致。此次同时升级 Tauri JavaScript API、CLI、Rust runtime/build 和 dialog 依赖。验收包含固定版本启动、首次模型配置、打包 runtime 和插件 add/why/update/remove；三平台结果以该升级提交的 CI 为准，任一平台失败都不能据此发布桌面版本。Registry 收录保留各插件的宿主版本和平台限制，不将 manifest 检查等同于完整功能或安全验收。已发布安装包仍以以下发布证据为准。
 
 ### 已发布证据
 
