@@ -68,7 +68,7 @@
 <!-- release-evidence:end -->
 
 <!-- build-versions:start -->
-本仓库开发版本：DSH Desk `0.1.0-alpha.14` × Harness `0.2.1-rc.2`（来自当前 `package.json`；公开下载以已发布证据为准）。
+本仓库开发版本：DSH Desk `0.1.0-alpha.15` × Harness `0.2.1-rc.2`（来自当前 `package.json`；公开下载以已发布证据为准）。
 <!-- build-versions:end -->
 
 ## 快速开始

@@ -8,7 +8,7 @@ DSH Desk 将桌面壳、Node、DeepSeek Harness 和 Web UI 作为一个固定版
 ## 当前固定组合
 
 <!-- build-versions:start -->
-本仓库开发版本：DSH Desk `0.1.0-alpha.14` × Harness `0.2.1-rc.2`（来自当前 `package.json`；公开下载以已发布证据为准）。
+本仓库开发版本：DSH Desk `0.1.0-alpha.15` × Harness `0.2.1-rc.2`（来自当前 `package.json`；公开下载以已发布证据为准）。
 <!-- build-versions:end -->
 
 “本仓库契约”验证 Node 24 与上述固定组合的三平台 CI：TypeScript/Rust 构建、固定 DSH 版本、严格 loopback 就绪 URL（含启动 token）、HTTP 2xx/3xx 健康检查、离线 runtime 与插件 parity。合入后的公开运行以 [CI workflow](https://github.com/majiayu000/dsh-desk/actions/workflows/ci.yml) 为准。
