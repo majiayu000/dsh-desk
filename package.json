@@ -62,7 +62,7 @@
     "test:release-evidence": "node --test tests/release-evidence.test.mjs && node scripts/release-evidence.mjs"
   },
   "dependencies": {
-    "@deepseek-ai/dsh": "0.2.1-rc.2",
+    "@deepseek-ai/dsh": "0.2.1-rc.5",
     "@tauri-apps/api": "2.12.4",
     "@tauri-apps/plugin-dialog": "2.8.4",
     "pnpm": "12.3.4"
