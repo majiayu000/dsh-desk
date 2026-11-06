@@ -191,6 +191,12 @@ fn open_plugin_registry(window: tauri::WebviewWindow) -> Result<(), String> {
     window_manager::open_plugin_registry()
 }
 
+#[tauri::command]
+fn focus_harness_window(window: tauri::WebviewWindow, app: tauri::AppHandle) -> Result<(), String> {
+    require_command_window(&window, "focus_harness_window")?;
+    window_manager::focus_harness_window(&app)
+}
+
 pub fn run() {
     let (runtime, command_rx) = RuntimeHandle::new();
     let setup_receiver = Mutex::new(Some(command_rx));
@@ -209,6 +215,7 @@ pub fn run() {
             let application = SubmenuBuilder::with_id(app, "application-menu", APPLICATION_NAME)
                 .about(Some(about_metadata))
                 .separator()
+                .text("focus-harness", "返回 Harness 主界面")
                 .text("open-plugins", "插件管理…")
                 .text("software-update", "软件更新…")
                 .separator()
@@ -231,7 +238,11 @@ pub fn run() {
             menu.build()
         })
         .on_menu_event(|app, event| {
-            if event.id() == "open-plugins" {
+            if event.id() == "focus-harness" {
+                if let Err(error) = window_manager::focus_harness_window(app) {
+                    show_menu_action_error(app, "打开 Harness 主界面", error);
+                }
+            } else if event.id() == "open-plugins" {
                 if let Err(error) = window_manager::open_plugin_window(app) {
                     show_menu_action_error(app, "打开插件管理窗口", error);
                 }
@@ -258,6 +269,7 @@ pub fn run() {
             inspect_plugin_source,
             run_plugin_command,
             open_plugin_registry,
+            focus_harness_window,
         ])
         .setup(move |app| {
             updater::initialize(app.handle());

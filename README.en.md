@@ -82,6 +82,8 @@ DSH Desk does **not** claim to have the smallest installer. The offline runtime 
 
 ## Trusted plugin workflow
 
+The desktop plugin window links back to the existing Harness main window. Select **Plugins** in its sidebar to browse and configure the official extensions supported by the running version. Desk’s bundled-capability and curated cards are a separate, limited catalog. Returning to the main window does not reload the page or select a panel automatically.
+
 Open `DSH Desk → Plugins…` to inspect a plugin before installation:
 
 - exact package, resolved version, source, and integrity;

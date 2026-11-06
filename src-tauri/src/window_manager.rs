@@ -48,6 +48,17 @@ pub fn open_plugin_window(app: &tauri::AppHandle) -> tauri::Result<()> {
     Ok(())
 }
 
+/// Preserve the running Harness page, including its in-memory session state.
+/// The pinned upstream Plugins panel has no public deep link.
+pub fn focus_harness_window(app: &tauri::AppHandle) -> Result<(), String> {
+    let window = app
+        .get_webview_window("main")
+        .ok_or_else(|| "Harness 主窗口不可用，请重新打开 DSH Desk。".to_string())?;
+    window.unminimize().map_err(|error| error.to_string())?;
+    window.show().map_err(|error| error.to_string())?;
+    window.set_focus().map_err(|error| error.to_string())
+}
+
 pub fn open_update_window(app: &tauri::AppHandle) -> tauri::Result<()> {
     if let Some(window) = app.get_webview_window("updates") {
         window.show()?;

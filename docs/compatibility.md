@@ -19,6 +19,8 @@ DSH Desk 将桌面壳、Node、DeepSeek Harness 和 Web UI 作为一个固定版
 
 2026-11-03 升级到 `0.2.1-rc.5`（替代 Dependabot #111）。上游此区间主要改进对话中思考内容的展示；固定 Web Profile 自带的官方插件同步为 `0.2.1-rc.5`。验收口径与上一条相同，以该提交的三平台 CI 为准。
 
+官方插件入口复用当前 Harness Web UI：返回主窗口后从侧栏选择「插件」。固定版本 `0.2.1-rc.5` 没有公开插件面板 URL，Desk 不拼接深链、不重载会话页面，也不把新版官方名单复制到固定版本目录。
+
 ### 已发布证据
 
 <!-- release-evidence:start -->

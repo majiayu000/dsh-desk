@@ -183,10 +183,10 @@
           "markdownDescription": "Commands for the local startup and recovery page.\n#### This permission set includes:\n\n- `allow-get-runtime-status`\n- `allow-restart-runtime`\n- `allow-open-diagnostic-folder`\n- `allow-get-desktop-version`"
         },
         {
-          "description": "Commands for the local plugin manager window.\n#### This permission set includes:\n\n- `allow-list-plugins`\n- `allow-inspect-plugin-source`\n- `allow-run-plugin-command`\n- `allow-open-plugin-registry`",
+          "description": "Commands for the local plugin manager window.\n#### This permission set includes:\n\n- `allow-list-plugins`\n- `allow-inspect-plugin-source`\n- `allow-run-plugin-command`\n- `allow-open-plugin-registry`\n- `allow-focus-harness-window`",
           "type": "string",
           "const": "desktop-plugins",
-          "markdownDescription": "Commands for the local plugin manager window.\n#### This permission set includes:\n\n- `allow-list-plugins`\n- `allow-inspect-plugin-source`\n- `allow-run-plugin-command`\n- `allow-open-plugin-registry`"
+          "markdownDescription": "Commands for the local plugin manager window.\n#### This permission set includes:\n\n- `allow-list-plugins`\n- `allow-inspect-plugin-source`\n- `allow-run-plugin-command`\n- `allow-open-plugin-registry`\n- `allow-focus-harness-window`"
         },
         {
           "description": "Commands for the local software update window.\n#### This permission set includes:\n\n- `allow-get-update-status`\n- `allow-check-for-updates`\n- `allow-download-update`\n- `allow-install-update`\n- `allow-set-update-auto-download`",
@@ -205,6 +205,12 @@
           "type": "string",
           "const": "allow-download-update",
           "markdownDescription": "Download a verified desktop update payload."
+        },
+        {
+          "description": "Bring the existing Harness main window to the foreground without navigating it.",
+          "type": "string",
+          "const": "allow-focus-harness-window",
+          "markdownDescription": "Bring the existing Harness main window to the foreground without navigating it."
         },
         {
           "description": "Read the desktop application version.",

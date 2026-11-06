@@ -39,6 +39,7 @@ fn allowed_commands_for_window(window_label: &str) -> &'static [&'static str] {
             "inspect_plugin_source",
             "run_plugin_command",
             "open_plugin_registry",
+            "focus_harness_window",
         ],
         "updates" => &[
             "get_update_status",
@@ -107,6 +108,9 @@ mod tests {
         assert!(window_can_invoke("main", "restart_runtime"));
         assert!(window_can_invoke("plugins", "run_plugin_command"));
         assert!(window_can_invoke("plugins", "open_plugin_registry"));
+        assert!(window_can_invoke("plugins", "focus_harness_window"));
+        assert!(!window_can_invoke("main", "focus_harness_window"));
+        assert!(!window_can_invoke("updates", "focus_harness_window"));
         assert!(window_can_invoke("updates", "install_update"));
         assert!(!window_can_invoke("plugins", "restart_runtime"));
         assert!(!window_can_invoke("updates", "run_plugin_command"));
