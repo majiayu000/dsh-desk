@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
+import { valid } from "semver";
 import { assertContract as assert, createContractReader } from "./lib/contract.mjs";
 
 const root = resolve(import.meta.dirname, "..");
@@ -30,7 +31,10 @@ for (const entry of catalog.entries) {
   ids.add(entry.id);
   sources.add(entry.source);
   assert(entry.source === `${entry.package}@${entry.version}`, `${entry.id} must pin an exact source`);
-  assert(entry.version === harnessVersion, `${entry.id} must match the pinned Harness family`);
+  assert(valid(entry.version) === entry.version, `${entry.id} must pin an exact package version`);
+  if (entry.status === "bundled") {
+    assert(entry.version === harnessVersion, `${entry.id} must match the pinned Harness family`);
+  }
   assert(["available", "bundled"].includes(entry.status), `${entry.id} has an invalid status`);
   assert(entry.trust?.reviewedAt && entry.trust?.evidence?.length > 0, `${entry.id} lacks trust evidence`);
   assert(entry.capabilities?.length > 0, `${entry.id} lacks a capability summary`);
