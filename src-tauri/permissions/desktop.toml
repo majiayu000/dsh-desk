@@ -39,6 +39,11 @@ description = "Open the public community plugin registry in the system browser."
 commands.allow = ["open_plugin_registry"]
 
 [[permission]]
+identifier = "allow-focus-harness-window"
+description = "Bring the existing Harness main window to the foreground without navigating it."
+commands.allow = ["focus_harness_window"]
+
+[[permission]]
 identifier = "allow-get-update-status"
 description = "Read signed desktop update status."
 commands.allow = ["get_update_status"]
@@ -81,6 +86,7 @@ permissions = [
   "allow-inspect-plugin-source",
   "allow-run-plugin-command",
   "allow-open-plugin-registry",
+  "allow-focus-harness-window",
 ]
 
 [[set]]

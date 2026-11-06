@@ -95,6 +95,8 @@ const catalogFilters = document.querySelector<HTMLElement>('#catalog-filters')!
 const catalogList = document.querySelector<HTMLDivElement>('#catalog-list')!
 const catalogCount = document.querySelector<HTMLParagraphElement>('#catalog-count')!
 const openRegistry = document.querySelector<HTMLButtonElement>('#open-registry')!
+const focusHarness = document.querySelector<HTMLButtonElement>('#focus-harness')!
+const harnessNavigationError = document.querySelector<HTMLParagraphElement>('#harness-navigation-error')!
 const registryHint = document.querySelector<HTMLParagraphElement>('#registry-hint')!
 const clipboardOffer = document.querySelector<HTMLElement>('#clipboard-offer')!
 const clipboardSpec = document.querySelector<HTMLElement>('#clipboard-spec')!
@@ -118,6 +120,7 @@ function setBusy(value: boolean): void {
   catalogSearch.disabled = value
   cancelReview.disabled = value
   openRegistry.disabled = value
+  focusHarness.disabled = value
   pasteInstall.disabled = value
   reviewClipboard.disabled = value
   dismissClipboard.disabled = value
@@ -366,7 +369,7 @@ function renderCatalog(): void {
   if (entries.length === 0) {
     const empty = document.createElement('div')
     empty.className = 'empty-state'
-    empty.textContent = '没有匹配的可信目录条目。可打开社区目录浏览，或在下方手动检查其他来源。'
+    empty.textContent = '没有匹配的 Desk 精选条目。官方扩展请在主界面查看，也可打开社区目录浏览。'
     catalogList.append(empty)
   }
 }
@@ -398,6 +401,19 @@ install.addEventListener('click', () => beginReviewFromInput(source.value))
 source.addEventListener('keydown', (event) => {
   if (event.key === 'Enter') beginReviewFromInput(source.value)
 })
+focusHarness.addEventListener('click', async () => {
+  focusHarness.disabled = true
+  harnessNavigationError.hidden = true
+  try {
+    await invoke('focus_harness_window')
+  } catch (error) {
+    harnessNavigationError.textContent = `无法打开主界面：${String(error)}`
+    harnessNavigationError.hidden = false
+  } finally {
+    focusHarness.disabled = busy
+  }
+})
+
 openRegistry.addEventListener('click', () => {
   if (busy) return
   void (async () => {
