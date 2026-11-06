@@ -28,7 +28,7 @@ DSH Desk 不把 GitHub 搜索结果或 npm 包名直接标记为“可信插件�
 
 目录随应用一起发布，不在运行时抓取 GitHub topic。每个条目必须包含精确包版本、适配的 Harness/Desk 版本、三平台状态、能力上限、复核日期和信任依据。`bundled` 只表示它已由固定的 Harness Web Profile 挂载；未来的 `available` 条目点击安装后仍必须进入来源检查和人工确认，目录身份不能绕过安装审查。社区目录（[plugin.dshdesk.com](https://plugin.dshdesk.com/)）只用于浏览和复制安装命令，不会在运行时写入可信目录。
 
-当前 Desk 精选目录只列出已通过本项目组合配置检查的上游内置模块；这不代表社区缺少兼容插件。新增第三方条目前必须先在三平台完成 add、dump-config、update、remove 与失败回滚测试。
+当前 Desk 精选目录只列出已通过本项目组合配置检查的上游内置模块；这不代表社区缺少兼容插件。随附官方条目使用固定 Harness 版本；第三方条目锁定插件自己的精确版本，不要求与 Harness 版本号相同。宿主兼容性由当前 Harness 的安装与启动检查以及对应版本的生命周期验收确认。新增第三方条目前必须先在三平台完成 add、dump-config、update、remove 与失败回滚测试。
 
 ## 失败恢复
 
