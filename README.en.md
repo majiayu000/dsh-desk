@@ -50,18 +50,18 @@ DeepSeek Harness already provides the agent runtime, web UI, sessions, tools, ap
 ## Current availability
 
 <!-- release-evidence:start -->
-Recorded public release: [`v0.1.0-alpha.14`](https://github.com/majiayu000/dsh-desk/releases/tag/v0.1.0-alpha.14), published 2026-09-28T18:09:55Z.
+Recorded public release: [`v0.1.0-alpha.16`](https://github.com/majiayu000/dsh-desk/releases/tag/v0.1.0-alpha.16), published 2026-11-12T06:50:35Z.
 
 | Platform | Recorded download assets | Signing evidence |
 |---|---|---|
-| macOS Apple Silicon | [DMG](https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_aarch64.dmg) | Release CI passed Developer ID / notarization / staple checks |
-| macOS Intel | [DMG](https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_x64.dmg) | Release CI passed Developer ID / notarization / staple checks |
-| Windows x64 | [NSIS](https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_x64-setup.exe) | Unsigned alpha (SmartScreen notice); Updater verification passed release CI |
-| Linux x64 | [AppImage](https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_amd64.AppImage) / [deb](https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_amd64.deb) | Updater verification passed release CI |
+| macOS Apple Silicon | [DMG](https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.16/DSH.Desk_0.1.0-alpha.16_aarch64.dmg) | Release CI passed Developer ID / notarization / staple checks |
+| macOS Intel | [DMG](https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.16/DSH.Desk_0.1.0-alpha.16_x64.dmg) | Release CI passed Developer ID / notarization / staple checks |
+| Windows x64 | [NSIS](https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.16/DSH.Desk_0.1.0-alpha.16_x64-setup.exe) | Unsigned alpha (SmartScreen notice); Updater verification passed release CI |
+| Linux x64 | [AppImage](https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.16/DSH.Desk_0.1.0-alpha.16_amd64.AppImage) / [deb](https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.16/DSH.Desk_0.1.0-alpha.16_amd64.deb) | Updater verification passed release CI |
 
-The release's [package.json](https://github.com/majiayu000/dsh-desk/blob/e45152db0c25da44c6c59951ce65fd1d0c40ef4e/package.json) pins DSH Desk `0.1.0-alpha.14` with Harness `0.1.5-rc.3`. [Release run](https://github.com/majiayu000/dsh-desk/actions/runs/36458490294): `completed/success`.
+The release's [package.json](https://github.com/majiayu000/dsh-desk/blob/954c8f6903b81fa384999e68ef35bfb14a91f000/package.json) pins DSH Desk `0.1.0-alpha.16` with Harness `0.2.1-rc.5`. [Release run](https://github.com/majiayu000/dsh-desk/actions/runs/43147145743): `completed/success`.
 
-Evidence observed 2026-10-06T14:06:00Z. This table checks saved public metadata; it is not an independent download/signature verification or a guarantee of continued availability. Updater signing does not establish Windows Authenticode identity.
+Evidence observed 2026-11-12T08:54:31Z. This table checks saved public metadata; it is not an independent download/signature verification or a guarantee of continued availability. Updater signing does not establish Windows Authenticode identity.
 <!-- release-evidence:end -->
 
 <!-- build-versions:start -->
