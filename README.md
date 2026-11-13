@@ -53,18 +53,18 @@
 ## 当前下载状态
 
 <!-- release-evidence:start -->
-已记录的公开版本：[`v0.1.0-alpha.14`](https://github.com/majiayu000/dsh-desk/releases/tag/v0.1.0-alpha.14)，发布于 2026-09-28T18:09:55Z。
+已记录的公开版本：[`v0.1.0-alpha.16`](https://github.com/majiayu000/dsh-desk/releases/tag/v0.1.0-alpha.16)，发布于 2026-11-12T06:50:35Z。
 
 | 平台 | 已记录下载资产 | 签名证据 |
 |---|---|---|
-| macOS Apple Silicon | [DMG](https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_aarch64.dmg) | 发布 CI 已通过 Developer ID / 公证 / staple 检查 |
-| macOS Intel | [DMG](https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_x64.dmg) | 发布 CI 已通过 Developer ID / 公证 / staple 检查 |
-| Windows x64 | [NSIS](https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_x64-setup.exe) | Alpha 未做 Authenticode 签名（SmartScreen 提示）；updater 验签已通过发布 CI |
-| Linux x64 | [AppImage](https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_amd64.AppImage) / [deb](https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_amd64.deb) | updater 验签已通过发布 CI |
+| macOS Apple Silicon | [DMG](https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.16/DSH.Desk_0.1.0-alpha.16_aarch64.dmg) | 发布 CI 已通过 Developer ID / 公证 / staple 检查 |
+| macOS Intel | [DMG](https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.16/DSH.Desk_0.1.0-alpha.16_x64.dmg) | 发布 CI 已通过 Developer ID / 公证 / staple 检查 |
+| Windows x64 | [NSIS](https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.16/DSH.Desk_0.1.0-alpha.16_x64-setup.exe) | Alpha 未做 Authenticode 签名（SmartScreen 提示）；updater 验签已通过发布 CI |
+| Linux x64 | [AppImage](https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.16/DSH.Desk_0.1.0-alpha.16_amd64.AppImage) / [deb](https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.16/DSH.Desk_0.1.0-alpha.16_amd64.deb) | updater 验签已通过发布 CI |
 
-发布版本的 [package.json](https://github.com/majiayu000/dsh-desk/blob/e45152db0c25da44c6c59951ce65fd1d0c40ef4e/package.json) 固定 DSH Desk `0.1.0-alpha.14` 与 Harness `0.1.5-rc.3`。[发布运行](https://github.com/majiayu000/dsh-desk/actions/runs/36458490294)：`completed/success`。
+发布版本的 [package.json](https://github.com/majiayu000/dsh-desk/blob/954c8f6903b81fa384999e68ef35bfb14a91f000/package.json) 固定 DSH Desk `0.1.0-alpha.16` 与 Harness `0.2.1-rc.5`。[发布运行](https://github.com/majiayu000/dsh-desk/actions/runs/43147145743)：`completed/success`。
 
-证据观察时间：2026-10-06T14:06:00Z。此表检查已保存的公开元数据；不代表本次独立下载验签，也不保证资产持续在线。updater 签名不能证明 Windows Authenticode 身份。
+证据观察时间：2026-11-12T08:54:31Z。此表检查已保存的公开元数据；不代表本次独立下载验签，也不保证资产持续在线。updater 签名不能证明 Windows Authenticode 身份。
 <!-- release-evidence:end -->
 
 <!-- build-versions:start -->

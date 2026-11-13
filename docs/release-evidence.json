@@ -1,119 +1,119 @@
 {
   "schemaVersion": 1,
-  "observedAt": "2026-10-06T14:06:00Z",
+  "observedAt": "2026-11-12T08:54:31Z",
   "release": {
-    "tag_name": "v0.1.0-alpha.14",
+    "tag_name": "v0.1.0-alpha.16",
     "draft": false,
-    "published_at": "2026-09-28T18:09:55Z",
-    "html_url": "https://github.com/majiayu000/dsh-desk/releases/tag/v0.1.0-alpha.14",
+    "published_at": "2026-11-12T06:50:35Z",
+    "html_url": "https://github.com/majiayu000/dsh-desk/releases/tag/v0.1.0-alpha.16",
     "windows_signing_notice": "The Windows installer is an unsigned alpha build and may trigger Microsoft Defender SmartScreen. Verify its SHA-256 checksum and GitHub build provenance before choosing **More info → Run anyway**. Tauri updater artifacts remain independently signed and verified.",
     "assets": [
       {
-        "name": "DSH.Desk_0.1.0-alpha.14_aarch64.app.tar.gz",
+        "name": "DSH.Desk_0.1.0-alpha.16_aarch64.app.tar.gz",
         "state": "uploaded",
-        "browser_download_url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_aarch64.app.tar.gz"
+        "browser_download_url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.16/DSH.Desk_0.1.0-alpha.16_aarch64.app.tar.gz"
       },
       {
-        "name": "DSH.Desk_0.1.0-alpha.14_aarch64.app.tar.gz.sig",
+        "name": "DSH.Desk_0.1.0-alpha.16_aarch64.app.tar.gz.sig",
         "state": "uploaded",
-        "browser_download_url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_aarch64.app.tar.gz.sig"
+        "browser_download_url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.16/DSH.Desk_0.1.0-alpha.16_aarch64.app.tar.gz.sig"
       },
       {
-        "name": "DSH.Desk_0.1.0-alpha.14_aarch64.dmg",
+        "name": "DSH.Desk_0.1.0-alpha.16_aarch64.dmg",
         "state": "uploaded",
-        "browser_download_url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_aarch64.dmg"
+        "browser_download_url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.16/DSH.Desk_0.1.0-alpha.16_aarch64.dmg"
       },
       {
-        "name": "DSH.Desk_0.1.0-alpha.14_aarch64.dmg.sha256",
+        "name": "DSH.Desk_0.1.0-alpha.16_aarch64.dmg.sha256",
         "state": "uploaded",
-        "browser_download_url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_aarch64.dmg.sha256"
+        "browser_download_url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.16/DSH.Desk_0.1.0-alpha.16_aarch64.dmg.sha256"
       },
       {
-        "name": "DSH.Desk_0.1.0-alpha.14_amd64.AppImage",
+        "name": "DSH.Desk_0.1.0-alpha.16_amd64.AppImage",
         "state": "uploaded",
-        "browser_download_url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_amd64.AppImage"
+        "browser_download_url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.16/DSH.Desk_0.1.0-alpha.16_amd64.AppImage"
       },
       {
-        "name": "DSH.Desk_0.1.0-alpha.14_amd64.AppImage.sha256",
+        "name": "DSH.Desk_0.1.0-alpha.16_amd64.AppImage.sha256",
         "state": "uploaded",
-        "browser_download_url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_amd64.AppImage.sha256"
+        "browser_download_url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.16/DSH.Desk_0.1.0-alpha.16_amd64.AppImage.sha256"
       },
       {
-        "name": "DSH.Desk_0.1.0-alpha.14_amd64.AppImage.sig",
+        "name": "DSH.Desk_0.1.0-alpha.16_amd64.AppImage.sig",
         "state": "uploaded",
-        "browser_download_url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_amd64.AppImage.sig"
+        "browser_download_url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.16/DSH.Desk_0.1.0-alpha.16_amd64.AppImage.sig"
       },
       {
-        "name": "DSH.Desk_0.1.0-alpha.14_amd64.deb",
+        "name": "DSH.Desk_0.1.0-alpha.16_amd64.deb",
         "state": "uploaded",
-        "browser_download_url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_amd64.deb"
+        "browser_download_url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.16/DSH.Desk_0.1.0-alpha.16_amd64.deb"
       },
       {
-        "name": "DSH.Desk_0.1.0-alpha.14_amd64.deb.sha256",
+        "name": "DSH.Desk_0.1.0-alpha.16_amd64.deb.sha256",
         "state": "uploaded",
-        "browser_download_url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_amd64.deb.sha256"
+        "browser_download_url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.16/DSH.Desk_0.1.0-alpha.16_amd64.deb.sha256"
       },
       {
-        "name": "DSH.Desk_0.1.0-alpha.14_amd64.deb.sig",
+        "name": "DSH.Desk_0.1.0-alpha.16_amd64.deb.sig",
         "state": "uploaded",
-        "browser_download_url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_amd64.deb.sig"
+        "browser_download_url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.16/DSH.Desk_0.1.0-alpha.16_amd64.deb.sig"
       },
       {
-        "name": "DSH.Desk_0.1.0-alpha.14_x64-setup.exe",
+        "name": "DSH.Desk_0.1.0-alpha.16_x64-setup.exe",
         "state": "uploaded",
-        "browser_download_url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_x64-setup.exe"
+        "browser_download_url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.16/DSH.Desk_0.1.0-alpha.16_x64-setup.exe"
       },
       {
-        "name": "DSH.Desk_0.1.0-alpha.14_x64-setup.exe.sha256",
+        "name": "DSH.Desk_0.1.0-alpha.16_x64-setup.exe.sha256",
         "state": "uploaded",
-        "browser_download_url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_x64-setup.exe.sha256"
+        "browser_download_url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.16/DSH.Desk_0.1.0-alpha.16_x64-setup.exe.sha256"
       },
       {
-        "name": "DSH.Desk_0.1.0-alpha.14_x64-setup.exe.sig",
+        "name": "DSH.Desk_0.1.0-alpha.16_x64-setup.exe.sig",
         "state": "uploaded",
-        "browser_download_url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_x64-setup.exe.sig"
+        "browser_download_url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.16/DSH.Desk_0.1.0-alpha.16_x64-setup.exe.sig"
       },
       {
-        "name": "DSH.Desk_0.1.0-alpha.14_x64.app.tar.gz",
+        "name": "DSH.Desk_0.1.0-alpha.16_x64.app.tar.gz",
         "state": "uploaded",
-        "browser_download_url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_x64.app.tar.gz"
+        "browser_download_url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.16/DSH.Desk_0.1.0-alpha.16_x64.app.tar.gz"
       },
       {
-        "name": "DSH.Desk_0.1.0-alpha.14_x64.app.tar.gz.sig",
+        "name": "DSH.Desk_0.1.0-alpha.16_x64.app.tar.gz.sig",
         "state": "uploaded",
-        "browser_download_url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_x64.app.tar.gz.sig"
+        "browser_download_url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.16/DSH.Desk_0.1.0-alpha.16_x64.app.tar.gz.sig"
       },
       {
-        "name": "DSH.Desk_0.1.0-alpha.14_x64.dmg",
+        "name": "DSH.Desk_0.1.0-alpha.16_x64.dmg",
         "state": "uploaded",
-        "browser_download_url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_x64.dmg"
+        "browser_download_url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.16/DSH.Desk_0.1.0-alpha.16_x64.dmg"
       },
       {
-        "name": "DSH.Desk_0.1.0-alpha.14_x64.dmg.sha256",
+        "name": "DSH.Desk_0.1.0-alpha.16_x64.dmg.sha256",
         "state": "uploaded",
-        "browser_download_url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/DSH.Desk_0.1.0-alpha.14_x64.dmg.sha256"
+        "browser_download_url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.16/DSH.Desk_0.1.0-alpha.16_x64.dmg.sha256"
       },
       {
         "name": "latest.json",
         "state": "uploaded",
-        "browser_download_url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.14/latest.json"
+        "browser_download_url": "https://github.com/majiayu000/dsh-desk/releases/download/v0.1.0-alpha.16/latest.json"
       }
     ]
   },
   "build": {
-    "commit": "e45152db0c25da44c6c59951ce65fd1d0c40ef4e",
-    "version": "0.1.0-alpha.14",
-    "harnessVersion": "0.1.5-rc.3"
+    "commit": "954c8f6903b81fa384999e68ef35bfb14a91f000",
+    "version": "0.1.0-alpha.16",
+    "harnessVersion": "0.2.1-rc.5"
   },
   "workflow": {
-    "id": 36458490294,
-    "head_sha": "e45152db0c25da44c6c59951ce65fd1d0c40ef4e",
+    "id": 43147145743,
+    "head_sha": "954c8f6903b81fa384999e68ef35bfb14a91f000",
     "status": "completed",
     "conclusion": "success",
     "jobs": [
       {
         "name": "macos-arm64 release bundle",
-        "html_url": "https://github.com/majiayu000/dsh-desk/actions/runs/36458490294/job/109052584337",
+        "html_url": "https://github.com/majiayu000/dsh-desk/actions/runs/43147145743/job/130949431646",
         "status": "completed",
         "conclusion": "success",
         "steps": [
@@ -126,7 +126,7 @@
       },
       {
         "name": "macos-x64 release bundle",
-        "html_url": "https://github.com/majiayu000/dsh-desk/actions/runs/36458490294/job/109052584570",
+        "html_url": "https://github.com/majiayu000/dsh-desk/actions/runs/43147145743/job/130949431801",
         "status": "completed",
         "conclusion": "success",
         "steps": [
@@ -139,7 +139,7 @@
       },
       {
         "name": "Publish verified update channel / validate",
-        "html_url": "https://github.com/majiayu000/dsh-desk/actions/runs/36458490294/job/109066874725",
+        "html_url": "https://github.com/majiayu000/dsh-desk/actions/runs/43147145743/job/131023911694",
         "status": "completed",
         "conclusion": "success",
         "steps": [
