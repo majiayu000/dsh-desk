@@ -69,7 +69,7 @@
   },
   "devDependencies": {
     "@tauri-apps/cli": "2.12.4",
-    "semver": "7.8.5",
+    "semver": "7.8.6",
     "typescript": "7.0.2",
     "vite": "8.3.5"
   }
