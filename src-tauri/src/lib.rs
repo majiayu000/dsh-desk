@@ -191,7 +191,9 @@ fn open_plugin_registry(window: tauri::WebviewWindow) -> Result<(), String> {
     window_manager::open_plugin_registry()
 }
 
-#[tauri::command]
+// Runs off the main thread: it may have to rebuild the main window, and building a
+// window inside a synchronous command deadlocks WebView2 on Windows.
+#[tauri::command(async)]
 fn focus_harness_window(window: tauri::WebviewWindow, app: tauri::AppHandle) -> Result<(), String> {
     require_command_window(&window, "focus_harness_window")?;
     window_manager::focus_harness_window(&app)
@@ -208,7 +210,17 @@ pub fn run() {
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.show();
                 let _ = window.set_focus();
+                return;
             }
+            // The main window was closed while another Desk window kept the app alive.
+            // Windows delivers this callback inside a cross-process window message, so
+            // rebuild the window from another thread.
+            let app = app.clone();
+            std::thread::spawn(move || {
+                if let Err(error) = window_manager::focus_harness_window(&app) {
+                    eprintln!("failed to reopen the Harness main window: {error}");
+                }
+            });
         }))
         .menu(|app| {
             let about_metadata = desktop_about_metadata(&app.package_info().version.to_string());

@@ -174,6 +174,11 @@ impl RuntimeHandle {
         *self.status.lock().expect("runtime status mutex poisoned") = status.clone();
         let _ = app.emit("runtime-status", status);
     }
+
+    #[cfg(test)]
+    pub(crate) fn set_status(&self, status: RuntimeStatus) {
+        *self.status.lock().expect("runtime status mutex poisoned") = status;
+    }
 }
 
 pub(crate) struct RuntimeFailure {

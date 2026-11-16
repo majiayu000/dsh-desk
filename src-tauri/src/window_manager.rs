@@ -1,7 +1,10 @@
 use tauri::{AppHandle, Manager, Runtime, WebviewUrl, WebviewWindowBuilder};
 use url::Url;
 
-use crate::{runtime_supervisor::RuntimeHandle, security_policy::is_allowed_navigation};
+use crate::{
+    runtime_supervisor::{RuntimeHandle, RuntimePhase},
+    security_policy::is_allowed_navigation,
+};
 
 pub const PLUGIN_REGISTRY_URL: &str = "https://plugin.dshdesk.com/";
 
@@ -53,13 +56,23 @@ pub fn open_plugin_window(app: &tauri::AppHandle) -> tauri::Result<()> {
 
 /// Preserve the running Harness page, including its in-memory session state.
 /// The pinned upstream Plugins panel has no public deep link.
-pub fn focus_harness_window(app: &tauri::AppHandle) -> Result<(), String> {
-    let window = app
-        .get_webview_window("main")
-        .ok_or_else(|| "Harness 主窗口不可用，请重新打开 DSH Desk。".to_string())?;
-    window.unminimize().map_err(|error| error.to_string())?;
-    window.show().map_err(|error| error.to_string())?;
-    window.set_focus().map_err(|error| error.to_string())
+///
+/// The main window can be closed while another Desk window keeps the app and Harness
+/// alive. Nothing is left to preserve then, so it is reopened the way startup opens it.
+pub fn focus_harness_window<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("main") {
+        window.unminimize().map_err(|error| error.to_string())?;
+        window.show().map_err(|error| error.to_string())?;
+        return window.set_focus().map_err(|error| error.to_string());
+    }
+
+    let runtime = app.state::<RuntimeHandle>().inner().clone();
+    create_main_window(app, runtime.clone()).map_err(|error| error.to_string())?;
+    let status = runtime.status();
+    match status.url {
+        Some(url) if status.phase == RuntimePhase::Ready => navigate_to_runtime(app, &url),
+        _ => Ok(()),
+    }
 }
 
 pub fn open_update_window(app: &tauri::AppHandle) -> tauri::Result<()> {
@@ -152,14 +165,68 @@ fn bootstrap_url<R: Runtime>(app: &AppHandle<R>) -> Url {
 #[cfg(test)]
 mod tests {
     use super::{
-        PLUGIN_REGISTRY_URL, bootstrap_url, create_main_window,
+        PLUGIN_REGISTRY_URL, bootstrap_url, create_main_window, focus_harness_window,
         is_allowed_secondary_window_navigation, navigate_to_runtime, restore_bootstrap,
     };
-    use crate::runtime_supervisor::RuntimeHandle;
+    use crate::runtime_supervisor::{RuntimeHandle, RuntimePhase, RuntimeStatus};
     use tauri::Manager;
     use url::Url;
 
     const RUNTIME_URL: &str = "http://127.0.0.1:43123/?token=launch";
+
+    fn ready_runtime() -> RuntimeHandle {
+        let (runtime, _commands) = RuntimeHandle::new();
+        runtime.set_status(RuntimeStatus {
+            phase: RuntimePhase::Ready,
+            url: Some(RUNTIME_URL.to_string()),
+            error_code: None,
+            message: None,
+        });
+        runtime
+    }
+
+    #[test]
+    fn focusing_harness_reopens_a_closed_main_window_on_the_running_harness() {
+        let app = tauri::test::mock_app();
+        app.manage(ready_runtime());
+        assert!(app.get_webview_window("main").is_none());
+
+        focus_harness_window(app.handle()).unwrap();
+
+        let main = app
+            .get_webview_window("main")
+            .expect("a closed main window must be reopened");
+        assert_eq!(main.url().unwrap().as_str(), RUNTIME_URL);
+    }
+
+    #[test]
+    fn focusing_harness_reopens_the_bootstrap_page_while_harness_is_not_ready() {
+        let app = tauri::test::mock_app();
+        let (runtime, _commands) = RuntimeHandle::new();
+        app.manage(runtime);
+
+        focus_harness_window(app.handle()).unwrap();
+
+        let main = app
+            .get_webview_window("main")
+            .expect("a closed main window must be reopened");
+        assert_eq!(main.url().unwrap(), bootstrap_url(app.handle()));
+    }
+
+    #[test]
+    fn focusing_harness_leaves_an_open_main_window_on_its_page() {
+        let app = tauri::test::mock_app();
+        let runtime = ready_runtime();
+        app.manage(runtime.clone());
+        create_main_window(app.handle(), runtime).unwrap();
+        let session = "http://127.0.0.1:43123/session/one";
+        navigate_to_runtime(app.handle(), session).unwrap();
+
+        focus_harness_window(app.handle()).unwrap();
+
+        let main = app.get_webview_window("main").unwrap();
+        assert_eq!(main.url().unwrap().as_str(), session);
+    }
 
     #[test]
     fn restoring_bootstrap_reuses_the_main_window() {

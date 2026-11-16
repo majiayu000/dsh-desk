@@ -207,10 +207,10 @@
           "markdownDescription": "Download a verified desktop update payload."
         },
         {
-          "description": "Bring the existing Harness main window to the foreground without navigating it.",
+          "description": "Bring the Harness main window to the foreground without navigating it, or reopen it if it was closed.",
           "type": "string",
           "const": "allow-focus-harness-window",
-          "markdownDescription": "Bring the existing Harness main window to the foreground without navigating it."
+          "markdownDescription": "Bring the Harness main window to the foreground without navigating it, or reopen it if it was closed."
         },
         {
           "description": "Read the desktop application version.",
