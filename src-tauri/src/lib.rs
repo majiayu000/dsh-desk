@@ -207,20 +207,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            if let Some(window) = app.get_webview_window("main") {
-                let _ = window.show();
-                let _ = window.set_focus();
-                return;
-            }
-            // The main window was closed while another Desk window kept the app alive.
-            // Windows delivers this callback inside a cross-process window message, so
-            // rebuild the window from another thread.
-            let app = app.clone();
-            std::thread::spawn(move || {
-                if let Err(error) = window_manager::focus_harness_window(&app) {
-                    eprintln!("failed to reopen the Harness main window: {error}");
-                }
-            });
+            window_manager::handle_second_launch(app);
         }))
         .menu(|app| {
             let about_metadata = desktop_about_metadata(&app.package_info().version.to_string());
@@ -313,6 +300,14 @@ pub fn run() {
             if let Err(error) = app.state::<RuntimeHandle>().shutdown_blocking() {
                 eprintln!("refusing to exit while the Harness process tree may be alive: {error}");
                 api.prevent_exit();
+            }
+        }
+        // Opening the running app again from the Dock, Finder or Spotlight starts no
+        // second process on macOS, so the single-instance callback never hears of it.
+        #[cfg(target_os = "macos")]
+        tauri::RunEvent::Reopen { .. } => {
+            if let Err(error) = window_manager::reopen_closed_harness_window(app) {
+                eprintln!("failed to reopen the Harness main window: {error}");
             }
         }
         _ => {}

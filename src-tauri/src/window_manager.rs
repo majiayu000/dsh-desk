@@ -1,3 +1,5 @@
+use std::thread::JoinHandle;
+
 use tauri::{AppHandle, Manager, Runtime, WebviewUrl, WebviewWindowBuilder};
 use url::Url;
 
@@ -73,6 +75,37 @@ pub fn focus_harness_window<R: Runtime>(app: &AppHandle<R>) -> Result<(), String
         Some(url) if status.phase == RuntimePhase::Ready => navigate_to_runtime(app, &url),
         _ => Ok(()),
     }
+}
+
+/// A second launch of the running app, reported by the single-instance plugin: bring the
+/// main window forward, or reopen it if it was closed. Returns the thread that reopens it.
+pub fn handle_second_launch<R: Runtime>(app: &AppHandle<R>) -> Option<JoinHandle<()>> {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.show();
+        let _ = window.set_focus();
+        return None;
+    }
+    // Windows delivers this callback inside a cross-process window message, so rebuild
+    // the window from another thread.
+    let app = app.clone();
+    Some(std::thread::spawn(move || {
+        if let Err(error) = reopen_closed_harness_window(&app) {
+            eprintln!("failed to reopen the Harness main window: {error}");
+        }
+    }))
+}
+
+/// Reopen the main window if it was closed while another Desk window kept the app alive.
+/// An open main window is left as it is.
+///
+/// This is what launching the running app again comes down to. A second process reaches
+/// it through the single-instance plugin. macOS starts no second process for the Dock,
+/// Finder or Spotlight and only delivers `RunEvent::Reopen`.
+pub fn reopen_closed_harness_window<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
+    if app.get_webview_window("main").is_some() {
+        return Ok(());
+    }
+    focus_harness_window(app)
 }
 
 pub fn open_update_window(app: &tauri::AppHandle) -> tauri::Result<()> {
@@ -166,7 +199,8 @@ fn bootstrap_url<R: Runtime>(app: &AppHandle<R>) -> Url {
 mod tests {
     use super::{
         PLUGIN_REGISTRY_URL, bootstrap_url, create_main_window, focus_harness_window,
-        is_allowed_secondary_window_navigation, navigate_to_runtime, restore_bootstrap,
+        handle_second_launch, is_allowed_secondary_window_navigation, navigate_to_runtime,
+        reopen_closed_harness_window, restore_bootstrap,
     };
     use crate::runtime_supervisor::{RuntimeHandle, RuntimePhase, RuntimeStatus};
     use tauri::Manager;
@@ -223,6 +257,83 @@ mod tests {
         navigate_to_runtime(app.handle(), session).unwrap();
 
         focus_harness_window(app.handle()).unwrap();
+
+        let main = app.get_webview_window("main").unwrap();
+        assert_eq!(main.url().unwrap().as_str(), session);
+    }
+
+    #[test]
+    fn second_launch_reopens_a_closed_main_window_on_the_running_harness() {
+        let app = tauri::test::mock_app();
+        app.manage(ready_runtime());
+        assert!(app.get_webview_window("main").is_none());
+
+        // On macOS and Linux the single-instance plugin calls back from its own thread.
+        let handle = app.handle().clone();
+        let reopening = std::thread::spawn(move || handle_second_launch(&handle))
+            .join()
+            .unwrap()
+            .expect("a second launch must start reopening a closed main window");
+        reopening.join().unwrap();
+
+        let main = app
+            .get_webview_window("main")
+            .expect("a second launch must reopen a closed main window");
+        assert_eq!(main.url().unwrap().as_str(), RUNTIME_URL);
+    }
+
+    #[test]
+    fn second_launch_leaves_an_open_main_window_on_its_page() {
+        let app = tauri::test::mock_app();
+        let runtime = ready_runtime();
+        app.manage(runtime.clone());
+        create_main_window(app.handle(), runtime).unwrap();
+        let session = "http://127.0.0.1:43123/session/one";
+        navigate_to_runtime(app.handle(), session).unwrap();
+
+        let handle = app.handle().clone();
+        let reopening = std::thread::spawn(move || handle_second_launch(&handle))
+            .join()
+            .unwrap();
+
+        assert!(reopening.is_none());
+        let main = app.get_webview_window("main").unwrap();
+        assert_eq!(main.url().unwrap().as_str(), session);
+    }
+
+    #[test]
+    fn reopening_the_app_rebuilds_a_closed_main_window_beside_another_window() {
+        let app = tauri::test::mock_app();
+        app.manage(ready_runtime());
+        // The window that kept the app alive is visible, so macOS reports
+        // `has_visible_windows` for this reopen.
+        tauri::WebviewWindowBuilder::new(
+            app.handle(),
+            "plugins",
+            tauri::WebviewUrl::App("plugins.html".into()),
+        )
+        .build()
+        .unwrap();
+
+        reopen_closed_harness_window(app.handle()).unwrap();
+
+        let main = app
+            .get_webview_window("main")
+            .expect("reopening the app must rebuild a closed main window");
+        assert_eq!(main.url().unwrap().as_str(), RUNTIME_URL);
+        assert!(app.get_webview_window("plugins").is_some());
+    }
+
+    #[test]
+    fn reopening_the_app_leaves_an_open_main_window_on_its_page() {
+        let app = tauri::test::mock_app();
+        let runtime = ready_runtime();
+        app.manage(runtime.clone());
+        create_main_window(app.handle(), runtime).unwrap();
+        let session = "http://127.0.0.1:43123/session/one";
+        navigate_to_runtime(app.handle(), session).unwrap();
+
+        reopen_closed_harness_window(app.handle()).unwrap();
 
         let main = app.get_webview_window("main").unwrap();
         assert_eq!(main.url().unwrap().as_str(), session);
