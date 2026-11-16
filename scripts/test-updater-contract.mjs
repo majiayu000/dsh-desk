@@ -207,7 +207,7 @@ for (const token of [
   "node scripts/validate-update-manifest.mjs",
   "tag_name: preview-channel",
   "overwrite_files: true",
-  "softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64",
+  "softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3",
 ]) {
   assert(updatePreviewWorkflow.includes(token), `Update preview workflow is missing ${token}`);
 }
