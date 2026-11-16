@@ -1,4 +1,4 @@
-use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
+use tauri::{AppHandle, Manager, Runtime, WebviewUrl, WebviewWindowBuilder};
 use url::Url;
 
 use crate::{runtime_supervisor::RuntimeHandle, security_policy::is_allowed_navigation};
@@ -11,7 +11,10 @@ fn is_allowed_secondary_window_navigation(url: &Url) -> bool {
     is_allowed_navigation(url, None)
 }
 
-pub fn create_main_window(app: &tauri::AppHandle, runtime: RuntimeHandle) -> tauri::Result<()> {
+pub fn create_main_window<R: Runtime>(
+    app: &AppHandle<R>,
+    runtime: RuntimeHandle,
+) -> tauri::Result<()> {
     if app.get_webview_window("main").is_some() {
         return Ok(());
     }
@@ -78,7 +81,7 @@ pub fn open_update_window(app: &tauri::AppHandle) -> tauri::Result<()> {
     Ok(())
 }
 
-pub fn navigate_to_runtime(app: &tauri::AppHandle, value: &str) -> Result<(), String> {
+pub fn navigate_to_runtime<R: Runtime>(app: &AppHandle<R>, value: &str) -> Result<(), String> {
     let url = Url::parse(value).map_err(|error| format!("invalid runtime URL: {error}"))?;
     let window = app
         .get_webview_window("main")
@@ -113,17 +116,91 @@ fn open_system_target(target: &str) -> Result<(), String> {
         .map_err(|error| format!("无法打开社区插件目录：{error}"))
 }
 
-pub fn restore_bootstrap(app: &tauri::AppHandle, runtime: RuntimeHandle) -> Result<(), String> {
-    if let Some(window) = app.get_webview_window("main") {
-        window.destroy().map_err(|error| error.to_string())?;
+/// Return the main window to the bundled startup and recovery page.
+///
+/// The window is reused. `destroy()` only queues the request on the event loop, so a
+/// replacement built right after it is skipped while the old label is still registered,
+/// and destroying the last window makes Tauri request an exit.
+pub fn restore_bootstrap<R: Runtime>(
+    app: &AppHandle<R>,
+    runtime: RuntimeHandle,
+) -> Result<(), String> {
+    match app.get_webview_window("main") {
+        Some(window) => window
+            .navigate(bootstrap_url(app))
+            .map_err(|error| error.to_string()),
+        None => create_main_window(app, runtime).map_err(|error| error.to_string()),
     }
-    create_main_window(app, runtime).map_err(|error| error.to_string())
+}
+
+/// The address Tauri resolves `WebviewUrl::App("index.html")` to: the dev server under
+/// `tauri dev`, otherwise the origin that serves the bundled frontend.
+fn bootstrap_url<R: Runtime>(app: &AppHandle<R>) -> Url {
+    if tauri::is_dev()
+        && let Some(url) = app.config().build.dev_url.clone()
+    {
+        return url;
+    }
+    let origin = if cfg!(windows) {
+        "http://tauri.localhost"
+    } else {
+        "tauri://localhost"
+    };
+    Url::parse(origin).expect("bundled frontend origin must parse")
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{PLUGIN_REGISTRY_URL, is_allowed_secondary_window_navigation};
+    use super::{
+        PLUGIN_REGISTRY_URL, bootstrap_url, create_main_window,
+        is_allowed_secondary_window_navigation, navigate_to_runtime, restore_bootstrap,
+    };
+    use crate::runtime_supervisor::RuntimeHandle;
+    use tauri::Manager;
     use url::Url;
+
+    const RUNTIME_URL: &str = "http://127.0.0.1:43123/?token=launch";
+
+    #[test]
+    fn restoring_bootstrap_reuses_the_main_window() {
+        let app = tauri::test::mock_app();
+        let (runtime, _commands) = RuntimeHandle::new();
+        create_main_window(app.handle(), runtime.clone()).unwrap();
+        let main = app.get_webview_window("main").unwrap();
+        let bootstrap = main.url().unwrap();
+        navigate_to_runtime(app.handle(), RUNTIME_URL).unwrap();
+        assert_eq!(main.url().unwrap().as_str(), RUNTIME_URL);
+
+        restore_bootstrap(app.handle(), runtime).unwrap();
+
+        let restored = app
+            .get_webview_window("main")
+            .expect("the main window must survive a bootstrap restore");
+        assert_eq!(restored.url().unwrap(), bootstrap);
+    }
+
+    #[test]
+    fn restoring_bootstrap_rebuilds_a_missing_main_window() {
+        let app = tauri::test::mock_app();
+        let (runtime, _commands) = RuntimeHandle::new();
+        assert!(app.get_webview_window("main").is_none());
+
+        restore_bootstrap(app.handle(), runtime).unwrap();
+
+        assert!(app.get_webview_window("main").is_some());
+    }
+
+    #[test]
+    fn bootstrap_url_follows_the_dev_server_under_tauri_dev() {
+        let mut context = tauri::test::mock_context(tauri::test::noop_assets());
+        context.config_mut().build.dev_url = Some(Url::parse("http://127.0.0.1:1420").unwrap());
+        let app = tauri::test::mock_builder().build(context).unwrap();
+        let (runtime, _commands) = RuntimeHandle::new();
+        create_main_window(app.handle(), runtime).unwrap();
+        let main = app.get_webview_window("main").unwrap();
+
+        assert_eq!(bootstrap_url(app.handle()), main.url().unwrap());
+    }
 
     #[test]
     fn plugin_registry_url_is_the_public_https_site() {
