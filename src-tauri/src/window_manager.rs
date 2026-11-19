@@ -197,187 +197,194 @@ fn bootstrap_url<R: Runtime>(app: &AppHandle<R>) -> Url {
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        PLUGIN_REGISTRY_URL, bootstrap_url, create_main_window, focus_harness_window,
-        handle_second_launch, is_allowed_secondary_window_navigation, navigate_to_runtime,
-        reopen_closed_harness_window, restore_bootstrap,
-    };
-    use crate::runtime_supervisor::{RuntimeHandle, RuntimePhase, RuntimeStatus};
-    use tauri::Manager;
+    use super::{PLUGIN_REGISTRY_URL, is_allowed_secondary_window_navigation};
     use url::Url;
 
-    const RUNTIME_URL: &str = "http://127.0.0.1:43123/?token=launch";
+    // Tauri's mock runtime test binary does not start on the Windows runners
+    // (STATUS_ENTRYPOINT_NOT_FOUND), so these run on macOS and Linux only.
+    #[cfg(not(windows))]
+    mod mock_runtime {
+        use super::super::{
+            bootstrap_url, create_main_window, focus_harness_window, handle_second_launch,
+            navigate_to_runtime, reopen_closed_harness_window, restore_bootstrap,
+        };
+        use crate::runtime_supervisor::{RuntimeHandle, RuntimePhase, RuntimeStatus};
+        use tauri::Manager;
+        use url::Url;
 
-    fn ready_runtime() -> RuntimeHandle {
-        let (runtime, _commands) = RuntimeHandle::new();
-        runtime.set_status(RuntimeStatus {
-            phase: RuntimePhase::Ready,
-            url: Some(RUNTIME_URL.to_string()),
-            error_code: None,
-            message: None,
-        });
-        runtime
-    }
+        const RUNTIME_URL: &str = "http://127.0.0.1:43123/?token=launch";
 
-    #[test]
-    fn focusing_harness_reopens_a_closed_main_window_on_the_running_harness() {
-        let app = tauri::test::mock_app();
-        app.manage(ready_runtime());
-        assert!(app.get_webview_window("main").is_none());
+        fn ready_runtime() -> RuntimeHandle {
+            let (runtime, _commands) = RuntimeHandle::new();
+            runtime.set_status(RuntimeStatus {
+                phase: RuntimePhase::Ready,
+                url: Some(RUNTIME_URL.to_string()),
+                error_code: None,
+                message: None,
+            });
+            runtime
+        }
 
-        focus_harness_window(app.handle()).unwrap();
+        #[test]
+        fn focusing_harness_reopens_a_closed_main_window_on_the_running_harness() {
+            let app = tauri::test::mock_app();
+            app.manage(ready_runtime());
+            assert!(app.get_webview_window("main").is_none());
 
-        let main = app
-            .get_webview_window("main")
-            .expect("a closed main window must be reopened");
-        assert_eq!(main.url().unwrap().as_str(), RUNTIME_URL);
-    }
+            focus_harness_window(app.handle()).unwrap();
 
-    #[test]
-    fn focusing_harness_reopens_the_bootstrap_page_while_harness_is_not_ready() {
-        let app = tauri::test::mock_app();
-        let (runtime, _commands) = RuntimeHandle::new();
-        app.manage(runtime);
+            let main = app
+                .get_webview_window("main")
+                .expect("a closed main window must be reopened");
+            assert_eq!(main.url().unwrap().as_str(), RUNTIME_URL);
+        }
 
-        focus_harness_window(app.handle()).unwrap();
+        #[test]
+        fn focusing_harness_reopens_the_bootstrap_page_while_harness_is_not_ready() {
+            let app = tauri::test::mock_app();
+            let (runtime, _commands) = RuntimeHandle::new();
+            app.manage(runtime);
 
-        let main = app
-            .get_webview_window("main")
-            .expect("a closed main window must be reopened");
-        assert_eq!(main.url().unwrap(), bootstrap_url(app.handle()));
-    }
+            focus_harness_window(app.handle()).unwrap();
 
-    #[test]
-    fn focusing_harness_leaves_an_open_main_window_on_its_page() {
-        let app = tauri::test::mock_app();
-        let runtime = ready_runtime();
-        app.manage(runtime.clone());
-        create_main_window(app.handle(), runtime).unwrap();
-        let session = "http://127.0.0.1:43123/session/one";
-        navigate_to_runtime(app.handle(), session).unwrap();
+            let main = app
+                .get_webview_window("main")
+                .expect("a closed main window must be reopened");
+            assert_eq!(main.url().unwrap(), bootstrap_url(app.handle()));
+        }
 
-        focus_harness_window(app.handle()).unwrap();
+        #[test]
+        fn focusing_harness_leaves_an_open_main_window_on_its_page() {
+            let app = tauri::test::mock_app();
+            let runtime = ready_runtime();
+            app.manage(runtime.clone());
+            create_main_window(app.handle(), runtime).unwrap();
+            let session = "http://127.0.0.1:43123/session/one";
+            navigate_to_runtime(app.handle(), session).unwrap();
 
-        let main = app.get_webview_window("main").unwrap();
-        assert_eq!(main.url().unwrap().as_str(), session);
-    }
+            focus_harness_window(app.handle()).unwrap();
 
-    #[test]
-    fn second_launch_reopens_a_closed_main_window_on_the_running_harness() {
-        let app = tauri::test::mock_app();
-        app.manage(ready_runtime());
-        assert!(app.get_webview_window("main").is_none());
+            let main = app.get_webview_window("main").unwrap();
+            assert_eq!(main.url().unwrap().as_str(), session);
+        }
 
-        // On macOS and Linux the single-instance plugin calls back from its own thread.
-        let handle = app.handle().clone();
-        let reopening = std::thread::spawn(move || handle_second_launch(&handle))
-            .join()
-            .unwrap()
-            .expect("a second launch must start reopening a closed main window");
-        reopening.join().unwrap();
+        #[test]
+        fn second_launch_reopens_a_closed_main_window_on_the_running_harness() {
+            let app = tauri::test::mock_app();
+            app.manage(ready_runtime());
+            assert!(app.get_webview_window("main").is_none());
 
-        let main = app
-            .get_webview_window("main")
-            .expect("a second launch must reopen a closed main window");
-        assert_eq!(main.url().unwrap().as_str(), RUNTIME_URL);
-    }
+            // On macOS and Linux the single-instance plugin calls back from its own thread.
+            let handle = app.handle().clone();
+            let reopening = std::thread::spawn(move || handle_second_launch(&handle))
+                .join()
+                .unwrap()
+                .expect("a second launch must start reopening a closed main window");
+            reopening.join().unwrap();
 
-    #[test]
-    fn second_launch_leaves_an_open_main_window_on_its_page() {
-        let app = tauri::test::mock_app();
-        let runtime = ready_runtime();
-        app.manage(runtime.clone());
-        create_main_window(app.handle(), runtime).unwrap();
-        let session = "http://127.0.0.1:43123/session/one";
-        navigate_to_runtime(app.handle(), session).unwrap();
+            let main = app
+                .get_webview_window("main")
+                .expect("a second launch must reopen a closed main window");
+            assert_eq!(main.url().unwrap().as_str(), RUNTIME_URL);
+        }
 
-        let handle = app.handle().clone();
-        let reopening = std::thread::spawn(move || handle_second_launch(&handle))
-            .join()
+        #[test]
+        fn second_launch_leaves_an_open_main_window_on_its_page() {
+            let app = tauri::test::mock_app();
+            let runtime = ready_runtime();
+            app.manage(runtime.clone());
+            create_main_window(app.handle(), runtime).unwrap();
+            let session = "http://127.0.0.1:43123/session/one";
+            navigate_to_runtime(app.handle(), session).unwrap();
+
+            let handle = app.handle().clone();
+            let reopening = std::thread::spawn(move || handle_second_launch(&handle))
+                .join()
+                .unwrap();
+
+            assert!(reopening.is_none());
+            let main = app.get_webview_window("main").unwrap();
+            assert_eq!(main.url().unwrap().as_str(), session);
+        }
+
+        #[test]
+        fn reopening_the_app_rebuilds_a_closed_main_window_beside_another_window() {
+            let app = tauri::test::mock_app();
+            app.manage(ready_runtime());
+            // The window that kept the app alive is visible, so macOS reports
+            // `has_visible_windows` for this reopen.
+            tauri::WebviewWindowBuilder::new(
+                app.handle(),
+                "plugins",
+                tauri::WebviewUrl::App("plugins.html".into()),
+            )
+            .build()
             .unwrap();
 
-        assert!(reopening.is_none());
-        let main = app.get_webview_window("main").unwrap();
-        assert_eq!(main.url().unwrap().as_str(), session);
-    }
+            reopen_closed_harness_window(app.handle()).unwrap();
 
-    #[test]
-    fn reopening_the_app_rebuilds_a_closed_main_window_beside_another_window() {
-        let app = tauri::test::mock_app();
-        app.manage(ready_runtime());
-        // The window that kept the app alive is visible, so macOS reports
-        // `has_visible_windows` for this reopen.
-        tauri::WebviewWindowBuilder::new(
-            app.handle(),
-            "plugins",
-            tauri::WebviewUrl::App("plugins.html".into()),
-        )
-        .build()
-        .unwrap();
+            let main = app
+                .get_webview_window("main")
+                .expect("reopening the app must rebuild a closed main window");
+            assert_eq!(main.url().unwrap().as_str(), RUNTIME_URL);
+            assert!(app.get_webview_window("plugins").is_some());
+        }
 
-        reopen_closed_harness_window(app.handle()).unwrap();
+        #[test]
+        fn reopening_the_app_leaves_an_open_main_window_on_its_page() {
+            let app = tauri::test::mock_app();
+            let runtime = ready_runtime();
+            app.manage(runtime.clone());
+            create_main_window(app.handle(), runtime).unwrap();
+            let session = "http://127.0.0.1:43123/session/one";
+            navigate_to_runtime(app.handle(), session).unwrap();
 
-        let main = app
-            .get_webview_window("main")
-            .expect("reopening the app must rebuild a closed main window");
-        assert_eq!(main.url().unwrap().as_str(), RUNTIME_URL);
-        assert!(app.get_webview_window("plugins").is_some());
-    }
+            reopen_closed_harness_window(app.handle()).unwrap();
 
-    #[test]
-    fn reopening_the_app_leaves_an_open_main_window_on_its_page() {
-        let app = tauri::test::mock_app();
-        let runtime = ready_runtime();
-        app.manage(runtime.clone());
-        create_main_window(app.handle(), runtime).unwrap();
-        let session = "http://127.0.0.1:43123/session/one";
-        navigate_to_runtime(app.handle(), session).unwrap();
+            let main = app.get_webview_window("main").unwrap();
+            assert_eq!(main.url().unwrap().as_str(), session);
+        }
 
-        reopen_closed_harness_window(app.handle()).unwrap();
+        #[test]
+        fn restoring_bootstrap_reuses_the_main_window() {
+            let app = tauri::test::mock_app();
+            let (runtime, _commands) = RuntimeHandle::new();
+            create_main_window(app.handle(), runtime.clone()).unwrap();
+            let main = app.get_webview_window("main").unwrap();
+            let bootstrap = main.url().unwrap();
+            navigate_to_runtime(app.handle(), RUNTIME_URL).unwrap();
+            assert_eq!(main.url().unwrap().as_str(), RUNTIME_URL);
 
-        let main = app.get_webview_window("main").unwrap();
-        assert_eq!(main.url().unwrap().as_str(), session);
-    }
+            restore_bootstrap(app.handle(), runtime).unwrap();
 
-    #[test]
-    fn restoring_bootstrap_reuses_the_main_window() {
-        let app = tauri::test::mock_app();
-        let (runtime, _commands) = RuntimeHandle::new();
-        create_main_window(app.handle(), runtime.clone()).unwrap();
-        let main = app.get_webview_window("main").unwrap();
-        let bootstrap = main.url().unwrap();
-        navigate_to_runtime(app.handle(), RUNTIME_URL).unwrap();
-        assert_eq!(main.url().unwrap().as_str(), RUNTIME_URL);
+            let restored = app
+                .get_webview_window("main")
+                .expect("the main window must survive a bootstrap restore");
+            assert_eq!(restored.url().unwrap(), bootstrap);
+        }
 
-        restore_bootstrap(app.handle(), runtime).unwrap();
+        #[test]
+        fn restoring_bootstrap_rebuilds_a_missing_main_window() {
+            let app = tauri::test::mock_app();
+            let (runtime, _commands) = RuntimeHandle::new();
+            assert!(app.get_webview_window("main").is_none());
 
-        let restored = app
-            .get_webview_window("main")
-            .expect("the main window must survive a bootstrap restore");
-        assert_eq!(restored.url().unwrap(), bootstrap);
-    }
+            restore_bootstrap(app.handle(), runtime).unwrap();
 
-    #[test]
-    fn restoring_bootstrap_rebuilds_a_missing_main_window() {
-        let app = tauri::test::mock_app();
-        let (runtime, _commands) = RuntimeHandle::new();
-        assert!(app.get_webview_window("main").is_none());
+            assert!(app.get_webview_window("main").is_some());
+        }
 
-        restore_bootstrap(app.handle(), runtime).unwrap();
+        #[test]
+        fn bootstrap_url_follows_the_dev_server_under_tauri_dev() {
+            let mut context = tauri::test::mock_context(tauri::test::noop_assets());
+            context.config_mut().build.dev_url = Some(Url::parse("http://127.0.0.1:1420").unwrap());
+            let app = tauri::test::mock_builder().build(context).unwrap();
+            let (runtime, _commands) = RuntimeHandle::new();
+            create_main_window(app.handle(), runtime).unwrap();
+            let main = app.get_webview_window("main").unwrap();
 
-        assert!(app.get_webview_window("main").is_some());
-    }
-
-    #[test]
-    fn bootstrap_url_follows_the_dev_server_under_tauri_dev() {
-        let mut context = tauri::test::mock_context(tauri::test::noop_assets());
-        context.config_mut().build.dev_url = Some(Url::parse("http://127.0.0.1:1420").unwrap());
-        let app = tauri::test::mock_builder().build(context).unwrap();
-        let (runtime, _commands) = RuntimeHandle::new();
-        create_main_window(app.handle(), runtime).unwrap();
-        let main = app.get_webview_window("main").unwrap();
-
-        assert_eq!(bootstrap_url(app.handle()), main.url().unwrap());
+            assert_eq!(bootstrap_url(app.handle()), main.url().unwrap());
+        }
     }
 
     #[test]
