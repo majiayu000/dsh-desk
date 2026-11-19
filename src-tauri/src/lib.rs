@@ -191,7 +191,9 @@ fn open_plugin_registry(window: tauri::WebviewWindow) -> Result<(), String> {
     window_manager::open_plugin_registry()
 }
 
-#[tauri::command]
+// Runs off the main thread: it may have to rebuild the main window, and building a
+// window inside a synchronous command deadlocks WebView2 on Windows.
+#[tauri::command(async)]
 fn focus_harness_window(window: tauri::WebviewWindow, app: tauri::AppHandle) -> Result<(), String> {
     require_command_window(&window, "focus_harness_window")?;
     window_manager::focus_harness_window(&app)
@@ -205,10 +207,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            if let Some(window) = app.get_webview_window("main") {
-                let _ = window.show();
-                let _ = window.set_focus();
-            }
+            window_manager::handle_second_launch(app);
         }))
         .menu(|app| {
             let about_metadata = desktop_about_metadata(&app.package_info().version.to_string());
@@ -301,6 +300,14 @@ pub fn run() {
             if let Err(error) = app.state::<RuntimeHandle>().shutdown_blocking() {
                 eprintln!("refusing to exit while the Harness process tree may be alive: {error}");
                 api.prevent_exit();
+            }
+        }
+        // Opening the running app again from the Dock, Finder or Spotlight starts no
+        // second process on macOS, so the single-instance callback never hears of it.
+        #[cfg(target_os = "macos")]
+        tauri::RunEvent::Reopen { .. } => {
+            if let Err(error) = window_manager::reopen_closed_harness_window(app) {
+                eprintln!("failed to reopen the Harness main window: {error}");
             }
         }
         _ => {}

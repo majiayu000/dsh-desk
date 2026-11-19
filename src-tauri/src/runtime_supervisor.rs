@@ -174,6 +174,12 @@ impl RuntimeHandle {
         *self.status.lock().expect("runtime status mutex poisoned") = status.clone();
         let _ = app.emit("runtime-status", status);
     }
+
+    // Only the mock runtime window tests use it, and they do not build on Windows.
+    #[cfg(all(test, not(windows)))]
+    pub(crate) fn set_status(&self, status: RuntimeStatus) {
+        *self.status.lock().expect("runtime status mutex poisoned") = status;
+    }
 }
 
 pub(crate) struct RuntimeFailure {

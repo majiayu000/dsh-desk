@@ -40,7 +40,7 @@ commands.allow = ["open_plugin_registry"]
 
 [[permission]]
 identifier = "allow-focus-harness-window"
-description = "Bring the existing Harness main window to the foreground without navigating it."
+description = "Bring the Harness main window to the foreground without navigating it, or reopen it if it was closed."
 commands.allow = ["focus_harness_window"]
 
 [[permission]]

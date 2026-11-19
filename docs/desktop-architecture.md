@@ -130,7 +130,7 @@ tests/
 
 ### 6.1 启动协议
 
-1. Tauri core 获取单实例锁；第二实例只激活已有窗口。
+1. Tauri core 获取单实例锁；第二实例只激活已有主窗口，主窗口已被关闭时由原实例重建。
 2. 校验 runtime manifest、入口文件与完整性；任何不一致直接进入 `failed`，不联网补装。
 3. 创建 Desktop 专用 `DSH_HOME`，通过受限的 Tauri sidecar 启动固定 Node runtime 与 dsh：`dsh web --host 127.0.0.1 --port 0 --no-open`。
 4. 最多等待 20 秒读取严格格式的 `dsh web: http://127.0.0.1:<port>/?token=...`；拒绝非 loopback host；不把 LAN URL 当作桌面导航目标。
